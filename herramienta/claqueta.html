@@ -1,0 +1,544 @@
+<title>Claqueta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabecera con proyecto, tira de 6 fases como claqueta, un panel de trabajo por fase. */
+:root{
+  --bg:#eceff2; --surface:#ffffff; --surface-2:#f4f6f8; --line:#d5dae0; --fg:#14181f; --muted:#5a6572;
+  --accent:#0b6d78; --accent-fg:#ffffff; --accent-soft:#d9eef0;
+  --ok:#2a7a46; --ok-soft:#dcefe2; --warn:#9a6200; --warn-soft:#f8ead0; --bad:#b3261e; --bad-soft:#f9dcd9;
+  --f-display:'Archivo','Arial Narrow',Arial,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1317; --surface:#171c22; --surface-2:#1e242b; --line:#2b333c; --fg:#e8ecf0; --muted:#97a3b0;
+  --accent:#4cc3cb; --accent-fg:#06262a; --accent-soft:#12383c;
+  --ok:#6cc48a; --ok-soft:#173424; --warn:#e3b04d; --warn-soft:#3a2d12; --bad:#ff8f86; --bad-soft:#3d1c19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1317; --surface:#171c22; --surface-2:#1e242b; --line:#2b333c; --fg:#e8ecf0; --muted:#97a3b0;
+  --accent:#4cc3cb; --accent-fg:#06262a; --accent-soft:#12383c;
+  --ok:#6cc48a; --ok-soft:#173424; --warn:#e3b04d; --warn-soft:#3a2d12; --bad:#ff8f86; --bad-soft:#3d1c19; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--f-body);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1040px;margin:0 auto}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* cabecera */
+header{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;padding-block:18px 14px}
+.logo{display:flex;align-items:center;gap:10px;font:800 26px/1 var(--f-display);font-stretch:75%;letter-spacing:.06em;text-transform:uppercase}
+.slate{width:30px;height:24px;border-radius:3px;border:2px solid var(--fg);position:relative;background:
+  repeating-linear-gradient(115deg,var(--fg) 0 5px,transparent 5px 10px) top/100% 8px no-repeat}
+.hdr-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto;min-width:0}
+.hdr-actions select{max-width:260px;min-width:0}
+.saved{font:12px var(--f-mono);color:var(--muted)}
+
+/* controles */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500;line-height:1.2}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+textarea{resize:vertical;line-height:1.45}
+input[type=checkbox]{width:auto;accent-color:var(--accent)}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+label.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+label.f>span,.lbl{font:600 11px var(--f-display);font-stretch:85%;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+
+/* tira de fases */
+nav.strip{display:grid;grid-template-columns:repeat(6,minmax(128px,1fr));gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px}
+nav.strip button{text-align:left;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--line);border-radius:6px;padding:9px 10px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+nav.strip button.on{border-top-color:var(--accent);background:var(--surface);box-shadow:0 0 0 1px var(--accent) inset}
+nav.strip button.done{border-top-color:var(--ok)}
+.tc{font:500 11px var(--f-mono);color:var(--muted)}
+.ph-name{font:700 15px/1.1 var(--f-display);font-stretch:80%;text-transform:uppercase;letter-spacing:.03em}
+.bar{height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.done .bar>i{background:var(--ok)}
+
+/* paneles */
+.panel{display:flex;flex-direction:column;gap:16px}
+h2{font:800 28px/1.05 var(--f-display);font-stretch:75%;text-transform:uppercase;letter-spacing:.03em;margin:0;text-wrap:balance}
+h3{font:700 16px/1.2 var(--f-display);font-stretch:85%;text-transform:uppercase;letter-spacing:.05em;margin:0}
+.tip{color:var(--muted);max-width:68ch;margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.flat{background:var(--surface-2)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.grid.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.sp{justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer}
+.chip:hover{border-color:var(--bad)}
+.chip.sug{border-style:dashed;color:var(--muted)}
+.chip.sug:hover{border-color:var(--accent);color:var(--fg)}
+.sw{width:14px;height:14px;border-radius:3px;border:1px solid var(--line)}
+.badge{font:600 11px var(--f-mono);padding:2px 8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);white-space:nowrap}
+.badge.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.badge.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.badge.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.out{background:var(--surface-2);font-family:var(--f-mono);font-size:12.5px;line-height:1.55}
+
+/* checklist */
+.check{display:flex;flex-direction:column;gap:2px}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:7px 8px;border-radius:6px;cursor:pointer}
+.check label:hover{background:var(--surface-2)}
+.check input{margin-top:3px}
+.check input:checked+span{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+
+/* guion */
+.timeline{position:relative;height:34px;background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--bg) 6px 12px);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.timeline .seg{position:absolute;top:0;bottom:0;background:var(--accent-soft);border-inline:1px solid var(--accent);font:500 11px var(--f-mono);padding:2px 4px;overflow:hidden;white-space:nowrap}
+.timeline .cut{position:absolute;top:0;bottom:0;width:2px;background:var(--fg)}
+.ticks{display:flex;justify-content:space-between;font:11px var(--f-mono);color:var(--muted);margin-top:4px}
+.shot{display:grid;grid-template-columns:96px 1fr;gap:14px}
+.shot .time{display:flex;flex-direction:column;gap:8px}
+.shot .body{display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (max-width:620px){.shot{grid-template-columns:1fr}.shot .time{flex-direction:row}}
+.warn-list{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.warn-list li{background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:7px 10px;font-size:13px}
+.warn-list li.ok{background:var(--ok-soft);color:var(--ok)}
+
+/* bloques / prompts */
+.meter{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;flex:1;min-width:80px}
+.meter>i{display:block;height:100%;background:var(--ok)}
+.meter.warn>i{background:var(--warn)}.meter.bad>i{background:var(--bad)}
+.state{width:auto}
+.status{padding:12px 14px;border-radius:6px;background:var(--surface-2);border:1px solid var(--line);font-size:13px}
+
+.empty{padding:48px 16px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="slate" aria-hidden="true"></span>Claqueta</div>
+    <div class="hdr-actions">
+      <span class="saved" id="saved" aria-live="polite"></span>
+      <select id="projSel" aria-label="Proyecto"></select>
+      <button class="btn" data-a="newproj">Nuevo vídeo</button>
+      <button class="btn danger" data-a="delproj" id="delBtn">Borrar</button>
+    </div>
+  </header>
+  <nav class="strip" id="strip" aria-label="Fases del proceso"></nav>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LIMITE=10000;
+const FRASE="The quick beige fox jumped in the air over each thin dog.";
+const CAMS=["Plano aéreo picado","Plano general","Plano medio","Primer plano","Plano detalle","Over-the-shoulder","Travelling lento","Cámara en mano","Contrapicado","Plano subjetivo"];
+const MICRO=["se muerde el labio","levanta la ceja izquierda","los hombros caen por decepción","mira rápido aguantando la risa","traga saliva","desvía la mirada","exhala por la nariz","aprieta la mandíbula"];
+
+const FASES=[
+ {id:"f1",tc:"F1",n:"Preproducción",tip:"No busques solo una imagen bonita: busca el fotograma que transmita la emoción del vídeo y apunta todos sus datos técnicos. Servirán para que la IA mantenga profundidad de campo, luz y look en todas las escenas.",
+  items:[["a1","Fotograma de Shotdeck elegido por su emoción, no por estética"],["a2","Cámara, lente, película y códigos hex anotados"],["a3","Captura del fotograma y de sus datos técnicos guardada"]]},
+ {id:"f2",tc:"F2",n:"Assets",tip:"Entornos, personajes y utilería. Cada asset se genera una vez y se reutiliza en todos los bloques.",
+  items:[["b1","Prompt de Midjourney creado con la lente y la cámara del fotograma"],["b2","Entorno generado con el fotograma como Style Reference e Image Prompt"],["b3","Personajes sobrantes borrados con Edit y primer plano añadido (p. ej. un arbusto desenfocado)"],["b4","Character sheets generadas en ChatGPT / DALL·E 3"],["b5","Props sin texto ni marcas, limpiados en Photoshop"]]},
+ {id:"f3",tc:"F3",n:"Guion",tip:"El guion describe la escena segundo a segundo. Las microexpresiones son lo que marca la diferencia. Si algo cae o se lanza, di sobre qué superficie para que la IA asocie el sonido correcto.",
+  items:[["c1","Plano, cámara y duración definidos segundo a segundo"],["c2","Posición espacial de los personajes en el entorno"],["c3","Microexpresiones detalladas en cada plano"],["c4","Física y sonido especificados (superficies, materiales)"],["c5","Voz, origen y acento asignados a cada personaje"]]},
+ {id:"f4",tc:"F4",n:"Mega-prompt",tip:"Un prompt por bloque continuo. Los bloques de 30 s evitan que los personajes cambien de lugar entre cortes. El límite de Seedance son 10.000 caracteres.",
+  items:[["d1","Imágenes de assets y guion subidos a Claude"],["d2","Cada prompt revisado y por debajo de 10.000 caracteres"],["d3","Metadatos de cámara al inicio de cada prompt"]]},
+ {id:"f5",tc:"F5",n:"Generación",tip:"Primero fija las voces, después genera y corrige. Describe a Claude exactamente qué falló y en qué segundo.",
+  items:[["e1","Frases de voz grabadas y exportadas como MP4 en negro"],["e2","Sheets de personajes, props y locaciones subidos a Artcraft"],["e3","Primer bloque generado y revisado"],["e4","Todos los bloques iterados hasta que la toma convence"]]},
+ {id:"f6",tc:"F6",n:"Postproducción",tip:"Mina los 2 o 3 segundos buenos de cada generación, quita los silencios y unifica el color.",
+  items:[["g1","Scene Edit Detection aplicada en Premiere"],["g2","Mejores 2-3 segundos de cada generación minados y unidos"],["g3","Espacios muertos y silencios eliminados"],["g4","Diseño sonoro en Artlist: 3-4 pistas en los primeros 15 s y efectos puntuales"],["g5","Banda sonora generada en Udio o Suno"],["g6","Capa Lumetri copiada a todos los clips"],["g7","Subtítulos añadidos"]]}
+];
+
+/* ---------- estado ---------- */
+let P=null, list=[], db=null, tab="f1", saveT=null, localOnly=false;
+const uid=()=>"p_"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+
+function nuevo(nombre){
+  return {id:uid(),nombre:nombre||"Vídeo sin título",duracion:60,bloque:30,
+   estilo:{referencia:"",emocion:"",camara:"Arri Alexa 35",lente:"Signature Prime",pelicula:"",hex:[],notas:""},
+   locaciones:[{nombre:"Entorno principal",desc:"",weird:250,chaos:10,listo:false}],
+   personajes:[{id:"A",nombre:"Personaje A",ropa:"",voz:"",audio:"Video 1",listo:false,voxOk:false}],
+   props:[],guion:[],bloques:{},chk:{},
+   musica:{bpm:62,tono:"Do menor",instr:"piano lento",estilo:"",hits:[{t:12,d:"impacto"}]},
+   frase:FRASE,updated:Date.now()};
+}
+function ejemplo(){
+  const p=nuevo("Ejemplo: Tamagotchi en el parque");
+  p.estilo={referencia:"Fotograma de Shotdeck: dos amigos en un parque al atardecer",emocion:"Vergüenza cómplice que acaba en risa",camara:"Arri Alexa 35",lente:"Signature Prime 35mm",pelicula:"Kodak Vision3 500T",hex:["#C9A66B","#3E5B3A","#1B2A2F"],notas:"Profundidad de campo corta, luz de atardecer cálida desde la izquierda, grano fino."};
+  p.locaciones=[{nombre:"Parque al atardecer",desc:"Césped abierto con un banco de madera, árboles al fondo, un arbusto desenfocado en primer plano",weird:250,chaos:10,listo:false}];
+  p.personajes=[{id:"A",nombre:"Leo",ropa:"sudadera gris, vaqueros, zapatillas blancas",voz:"amigo australiano del sureste asiático, tono cálido y burlón",audio:"Video 1",listo:false,voxOk:false},{id:"B",nombre:"Mia",ropa:"chaqueta verde oliva, camiseta blanca",voz:"voz suave, acento neutro, ríe fácilmente",audio:"Video 2",listo:false,voxOk:false}];
+  p.props=[{real:"Tamagotchi",generico:"Pixel Pal",desc:"mascota virtual de bolsillo con carcasa de huevo y pantalla pequeña de píxeles",listo:false}];
+  const s=(ini,fin,camara,espacio,accion,micro,fis,pj,txt)=>({ini,fin,camara,espacio,accion,micro,fisica:fis,pj:pj||"",texto:txt||""});
+  p.guion=[
+   s(0,2,"Plano aéreo picado","Leo sentado en el césped a la izquierda del encuadre, Mia de pie a su derecha, a dos metros","Mia llega con las manos en la espalda",["mira rápido aguantando la risa"],"pasos suaves sobre césped"),
+   s(2,6,"Plano medio","Leo en el centro, banco detrás","Mia deja el Tamagotchi en su mano",["levanta la ceja izquierda","se muerde el labio"],"clic suave de botones","B","Se ha muerto. Otra vez."),
+   s(6,11,"Primer plano","Leo a cuadro, Mia fuera de campo a la derecha","Leo mira la pantalla y los hombros caen",["los hombros caen por decepción","traga saliva"],"viento ligero entre los árboles","A","¿En serio? Lo alimenté ayer."),
+   s(11,14,"Plano detalle","Manos de Leo sobre el césped","Leo lanza el Tamagotchi",[],"el objeto cae sobre el césped con un golpe sordo, no sobre concreto"),
+   s(14,20,"Plano general","Los dos separados por el banco, arbusto desenfocado en primer plano","Mia rompe a reír y Leo intenta no hacerlo",["mira rápido aguantando la risa","exhala por la nariz"],"risa de Mia que se corta y vuelve","B","No me mires así.")
+  ];
+  p.musica={bpm:62,tono:"Do menor",instr:"piano lento",estilo:"íntimo, con un riser suave antes del golpe",hits:[{t:11,d:"golpe del objeto al caer"}]};
+  return p;
+}
+
+/* ---------- almacenamiento ---------- */
+const LS="claqueta:v1";
+function lsRead(){try{return JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){return []}}
+function lsWrite(a){try{localStorage.setItem(LS,JSON.stringify(a))}catch(e){}}
+async function init(){
+  try{db=await (window.claude&&window.claude.use?window.claude.use("db"):null)}catch(e){db=null}
+  if(db){
+    let first=true;
+    db.collection("projects").onSnapshot(s=>{
+      list=s.docs.map(d=>d.data()).filter(Boolean).sort((a,b)=>(b.updated||0)-(a.updated||0));
+      const cambio=first||!P||!list.some(x=>x.id===P.id);first=false;
+      if(cambio){P=list[0]?hydrate(list[0]):null;renderAll()}else renderHeader();
+    },()=>{db=null;localOnly=true;list=lsRead();P=list[0]?hydrate(list[0]):null;renderAll()});
+  }else{localOnly=true;list=lsRead();P=list[0]?hydrate(list[0]):null;renderAll()}
+}
+function hydrate(p){const b=nuevo();return Object.assign(b,JSON.parse(JSON.stringify(p)),{estilo:Object.assign(b.estilo,p.estilo||{}),musica:Object.assign(b.musica,p.musica||{})})}
+function plain(o){return JSON.parse(JSON.stringify(o))}
+function save(){
+  if(!P)return;
+  P.updated=Date.now();$("#saved").textContent="Guardando…";
+  clearTimeout(saveT);
+  saveT=setTimeout(async()=>{
+    try{
+      if(db)await db.collection("projects").doc(P.id).set(plain(P));
+      else{const a=lsRead().filter(x=>x.id!==P.id);a.unshift(plain(P));lsWrite(a);list=a}
+      $("#saved").textContent=db?"Guardado":"Guardado en este navegador";
+    }catch(e){$("#saved").textContent="No se pudo guardar";toast("No se pudo guardar: "+(e&&e.message||"error de almacenamiento"))}
+    syncList();
+  },500);
+}
+function syncList(){
+  const i=list.findIndex(x=>x.id===P.id);
+  if(i>=0)list[i]={id:P.id,nombre:P.nombre,updated:P.updated};else list.unshift({id:P.id,nombre:P.nombre,updated:P.updated});
+  renderHeader();
+}
+
+/* ---------- utilidades ---------- */
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2600)}
+function fmt(s){s=Math.max(0,Math.round(s*10)/10);const m=Math.floor(s/60),r=s-m*60;return m+":"+(r<10?"0":"")+(Number.isInteger(r)?r:r.toFixed(1))}
+function getp(path){return path.split(".").reduce((o,k)=>o==null?o:o[k],P)}
+function setp(path,v){const k=path.split(".");let o=P;for(let i=0;i<k.length-1;i++){if(o[k[i]]==null)o[k[i]]={};o=o[k[i]]}o[k[k.length-1]]=v}
+async function copyText(txt){
+  try{await navigator.clipboard.writeText(txt);toast("Copiado")}
+  catch(e){toast("No se pudo copiar: selecciona el texto y usa Ctrl+C")}
+}
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const rx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+
+/* ---------- generadores ---------- */
+function sanear(t){return P.props.reduce((a,p)=>p.real?a.replace(new RegExp(rx(p.real),"gi"),p.generico||"objeto genérico"):a,t)}
+function look(){const e=P.estilo;return `LOOK GLOBAL (idéntico en todo el bloque): cámara ${e.camara||"—"}, lente ${e.lente||"—"}, película ${e.pelicula||"—"}, paleta de color ${e.hex.length?e.hex.join(", "):"—"}.${e.notas?" "+e.notas:""}`}
+function refs(){
+  const r=[];
+  P.locaciones.forEach((l,i)=>r.push(`Locación ${i+1} (${l.nombre}): usa la imagen de referencia.${l.desc?" "+l.desc+".":""}`));
+  P.personajes.forEach(c=>{r.push(`Personaje ${c.id} (${c.nombre}): usa su character sheet.${c.ropa?" Viste "+c.ropa+".":""}${c.voz?" Voz: "+c.voz+".":""}`);if(c.audio)r.push(`Usa el ${c.audio} como referencia de audio para el Personaje ${c.id}.`)});
+  P.props.forEach(p=>r.push(`Utilería: ${p.generico||p.real} (usa su prop sheet).${p.desc?" "+p.desc+".":""}`));
+  return r;
+}
+function planoTxt(s,off){
+  const L=[`[${fmt(s.ini-off)}–${fmt(s.fin-off)}] Cámara: ${s.camara||"—"}. Espacio: ${s.espacio||"—"}.`];
+  if(s.accion)L.push("  Acción: "+s.accion+".");
+  if(s.micro&&s.micro.length)L.push("  Microexpresiones: "+s.micro.join("; ")+".");
+  if(s.fisica)L.push("  Física y sonido: "+s.fisica+".");
+  if(s.texto){const c=P.personajes.find(c=>c.id===s.pj);L.push(`  ${c?c.nombre:"Personaje"} dice: "${s.texto}"`)}
+  return L.join("\n");
+}
+function blocks(){
+  const n=Math.max(1,Math.ceil(P.duracion/P.bloque));
+  return Array.from({length:n},(_,i)=>{
+    const ini=i*P.bloque,fin=Math.min(ini+P.bloque,P.duracion);
+    const pl=P.guion.filter(s=>s.ini>=ini&&s.ini<fin).sort((a,b)=>a.ini-b.ini);
+    const body=pl.length?pl.map(s=>planoTxt(s,ini)).join("\n"):"(sin planos en este bloque)";
+    const txt=sanear(`BLOQUE ${i+1} de ${n}: ${fin-ini} segundos continuos. Los personajes no cambian de lugar entre cortes.\n\n${look()}\n\nREFERENCIAS:\n${refs().join("\n")}\n\nGUION SEGUNDO A SEGUNDO:\n${body}\n`);
+    return {n:i,ini,fin,txt};
+  });
+}
+function blockText(i){const b=P.bloques[i];if(b&&b.final)return b.final;const bl=blocks()[i];return bl?bl.txt:""}
+function mjPrompt(i){
+  const l=P.locaciones[i],e=P.estilo;if(!l)return"";
+  return `${l.desc||"[describe el entorno]"}. Fotograma de cine rodado con ${e.camara||"[cámara]"} y lente ${e.lente||"[lente]"}${e.pelicula?", película "+e.pelicula:""}, profundidad de campo y luz idénticas a la referencia${e.hex.length?", paleta "+e.hex.join(" "):""}. ${e.notas||""}\n\nParámetros: --sref [URL del fotograma] --iw 2 --ar 16:9 --w ${l.weird} --chaos ${l.chaos} --v 7\nSube también el fotograma como Image Prompt.`;
+}
+function charPrompt(i){
+  const c=P.personajes[i],e=P.estilo;if(!c)return"";
+  return `Hoja de personaje fotorrealista de la persona de la foto adjunta (mantén el rostro exacto): vistas de frente, perfil, tres cuartos y espalda, más primeros planos de expresiones neutra y sonriente. Vestuario: ${c.ropa||"[describe la ropa]"}. Fondo gris neutro, luz suave, mismo look que ${e.camara||"la cámara de referencia"} con ${e.lente||"la lente de referencia"}.`;
+}
+function propPrompt(i){
+  const p=P.props[i];if(!p)return"";
+  return `${p.desc||"[describe el objeto]"}. Producto genérico llamado "${p.generico||"[nombre genérico]"}", sin ningún texto, logotipo ni marca visible. Hoja de utilería con vistas de frente, lateral y detalle sobre fondo neutro, luz suave, look de cine ${P.estilo.camara||""}.`;
+}
+function musicPrompt(){
+  const m=P.musica,cortes=P.guion.slice().sort((a,b)=>a.ini-b.ini).map(s=>fmt(s.ini)).join(", ");
+  const hits=m.hits.filter(h=>h.d||h.t!==""&&h.t!=null).map(h=>`${h.d||"impacto"} en el segundo ${h.t}`).join("; ");
+  return `${cap(m.instr||"piano")}, ${m.bpm} BPM, ${m.tono}. ${m.estilo?cap(m.estilo)+". ":""}Duración total ${P.duracion} segundos. ${hits?"Momentos clave: "+hits+". ":""}${cortes?"Cambios de plano en: "+cortes+". ":""}Instrumental, sin voz; la dinámica sigue el arco emocional del vídeo.`;
+}
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function avisos(){
+  const A=[],g=P.guion.slice().sort((a,b)=>a.ini-b.ini);
+  if(!g.length)return [["Aún no hay planos. Añade el primero.",0]];
+  let t=0;
+  g.forEach(s=>{
+    if(s.fin<=s.ini)A.push([`Plano ${fmt(s.ini)}: el final debe ser posterior al inicio.`]);
+    if(s.ini>t+.05)A.push([`Hueco sin describir entre ${fmt(t)} y ${fmt(s.ini)}.`]);
+    if(s.ini<t-.05)A.push([`El plano de ${fmt(s.ini)} se solapa con el anterior.`]);
+    t=Math.max(t,s.fin);
+    const b=Math.floor(s.ini/P.bloque);if(s.fin>(b+1)*P.bloque+.05)A.push([`El plano ${fmt(s.ini)}–${fmt(s.fin)} cruza el límite del bloque ${b+1}; divídelo.`]);
+    if(!(s.micro||[]).length)A.push([`El plano ${fmt(s.ini)} no tiene microexpresiones.`]);
+    if(!s.espacio)A.push([`El plano ${fmt(s.ini)} no indica la posición espacial.`]);
+  });
+  if(t<P.duracion-.05)A.push([`Faltan ${fmt(P.duracion-t)} por describir hasta el final (${fmt(P.duracion)}).`]);
+  return A.length?A:[["Guion completo y sin huecos.",1]];
+}
+const progreso=f=>{const c=(P.chk[f.id]||{});return f.items.filter(i=>c[i[0]]).length};
+
+/* ---------- render ---------- */
+function renderAll(){renderHeader();renderStrip();renderPanel()}
+function renderHeader(){
+  const sel=$("#projSel");
+  sel.innerHTML=list.length?list.map(p=>`<option value="${esc(p.id)}"${P&&p.id===P.id?" selected":""}>${esc(p.nombre)}</option>`).join(""):`<option>Sin proyectos</option>`;
+  sel.disabled=!list.length;$("#delBtn").hidden=!P;$("#delBtn").textContent="Borrar";$("#delBtn").dataset.arm="";
+}
+function renderStrip(){
+  const s=$("#strip");
+  if(!P){s.hidden=true;return}s.hidden=false;
+  s.innerHTML=FASES.map(f=>{const d=progreso(f),tot=f.items.length;return `<button data-a="tab" data-t="${f.id}" class="${f.id===tab?"on":""} ${d===tot?"done":""}" aria-current="${f.id===tab}"><span class="tc">${f.tc} · ${d}/${tot}</span><span class="ph-name">${f.n}</span><span class="bar"><i style="width:${d/tot*100}%"></i></span></button>`}).join("");
+}
+const checklist=f=>`<div class="card"><h3>Checklist de la fase</h3><div class="check">${f.items.map(i=>`<label><input type="checkbox" data-c="chk.${f.id}.${i[0]}"${(P.chk[f.id]||{})[i[0]]?" checked":""}><span>${i[1]}</span></label>`).join("")}</div></div>`;
+const fld=(l,p,o={})=>{const v=getp(p);return `<label class="f ${o.cls||""}"><span>${l}</span>${o.rows?`<textarea data-b="${p}" rows="${o.rows}" placeholder="${esc(o.ph||"")}">${esc(v)}</textarea>`:`<input type="${o.type||"text"}" data-b="${p}" value="${esc(v)}" placeholder="${esc(o.ph||"")}"${o.step?` step="${o.step}"`:""}${o.list?` list="${o.list}"`:""}>`}</label>`};
+const copyBtn=k=>`<button class="btn sm" data-a="copy" data-k="${k}">Copiar</button>`;
+const outBox=(k,rows)=>`<textarea class="out" readonly rows="${rows||5}" data-out="${k}" aria-label="Texto generado"></textarea>`;
+
+function renderPanel(){
+  const m=$("#main");
+  if(!P){m.innerHTML=`<div class="card empty"><h2>Tu primera pieza</h2><p class="tip">Claqueta recorre las 6 fases de tu proceso y genera los prompts de cada bloque a partir de tu guion. Empieza con un proyecto vacío o carga uno de ejemplo para ver cómo se rellena.</p><div class="row"><button class="btn primary" data-a="newproj">Nuevo vídeo</button><button class="btn" data-a="example">Cargar ejemplo</button></div></div>`;return}
+  const f=FASES.find(x=>x.id===tab);
+  m.innerHTML=`<div class="panel"><div><h2>${f.n}</h2><p class="tip">${f.tip}</p></div>${PANELS[tab]()}${checklist(f)}</div>`;
+  live();
+}
+
+const PANELS={
+f1:()=>`
+ <div class="card"><h3>Proyecto</h3><div class="grid">
+  ${fld("Nombre","nombre")}${fld("Duración total (s)","duracion",{type:"number"})}${fld("Segundos por bloque","bloque",{type:"number"})}
+ </div></div>
+ <div class="card"><h3>Fotograma de referencia (Shotdeck)</h3>
+  <div class="grid g2">${fld("Fotograma y fuente","estilo.referencia",{ph:"película, escena o enlace"})}${fld("Emoción que transmite","estilo.emocion",{ph:"p. ej. vergüenza cómplice"})}</div>
+  <div class="grid">${fld("Cámara","estilo.camara")}${fld("Lente","estilo.lente")}${fld("Película","estilo.pelicula",{ph:"p. ej. Kodak Vision3 500T"})}</div>
+  <div><span class="lbl">Códigos hex</span><div class="chips" id="hexChips" style="margin:6px 0"></div>
+   <input id="hexIn" placeholder="#C9A66B y pulsa Enter" aria-label="Añadir código hex" style="max-width:240px" class="mono"></div>
+  ${fld("Notas de look","estilo.notas",{rows:2,ph:"profundidad de campo, iluminación, grano…"})}
+ </div>
+ <div class="card flat"><h3>Look global</h3><p class="tip">Este bloque se inserta al inicio de cada prompt para unificar el color.</p><textarea class="out" readonly rows="3" data-out="look"></textarea></div>`,
+
+f2:()=>`
+ <div class="card"><div class="row sp"><h3>Entornos · Midjourney</h3><button class="btn sm" data-a="addloc">Añadir entorno</button></div>
+  <p class="tip">Sube el fotograma de Shotdeck como Style Reference e Image Prompt. Más variedad = valor de --w y --chaos más alto.</p>
+  ${P.locaciones.map((l,i)=>`<div class="card flat"><div class="row sp"><strong>${esc(l.nombre||"Entorno")}</strong><span class="row"><label class="row"><input type="checkbox" data-c="locaciones.${i}.listo"${l.listo?" checked":""}> Generado</label><button class="btn sm danger" data-a="rmloc" data-i="${i}">Quitar</button></span></div>
+   <div class="grid">${fld("Nombre","locaciones."+i+".nombre")}${fld("Variedad --w (0-3000)","locaciones."+i+".weird",{type:"number"})}${fld("--chaos (0-100)","locaciones."+i+".chaos",{type:"number"})}</div>
+   ${fld("Descripción","locaciones."+i+".desc",{rows:2,ph:"qué hay en el entorno"})}
+   <div class="row sp"><span class="lbl">Prompt de Midjourney</span>${copyBtn("mj:"+i)}</div>${outBox("mj:"+i,5)}</div>`).join("")}</div>
+ <div class="card"><div class="row sp"><h3>Personajes · ChatGPT / DALL·E 3</h3><button class="btn sm" data-a="addchar">Añadir personaje</button></div>
+  ${P.personajes.map((c,i)=>`<div class="card flat"><div class="row sp"><strong>Personaje ${esc(c.id)}</strong><span class="row"><label class="row"><input type="checkbox" data-c="personajes.${i}.listo"${c.listo?" checked":""}> Sheet lista</label><button class="btn sm danger" data-a="rmchar" data-i="${i}">Quitar</button></span></div>
+   <div class="grid">${fld("Nombre","personajes."+i+".nombre")}${fld("Vestuario","personajes."+i+".ropa",{ph:"ropa específica"})}</div>
+   <div class="row sp"><span class="lbl">Prompt de la hoja (sube una foto del rostro)</span>${copyBtn("char:"+i)}</div>${outBox("char:"+i,4)}</div>`).join("")}</div>
+ <div class="card"><div class="row sp"><h3>Utilería</h3><button class="btn sm" data-a="addprop">Añadir objeto</button></div>
+  <p class="tip">Si el objeto tiene derechos de autor, la IA de vídeo bloqueará la generación. Borra su texto en Photoshop y usa un nombre genérico: Claqueta lo sustituye automáticamente en todos los prompts.</p>
+  ${P.props.length?P.props.map((p,i)=>`<div class="card flat"><div class="row sp"><strong>${esc(p.real||"Objeto")} → ${esc(p.generico||"…")}</strong><span class="row"><label class="row"><input type="checkbox" data-c="props.${i}.listo"${p.listo?" checked":""}> Limpio y listo</label><button class="btn sm danger" data-a="rmprop" data-i="${i}">Quitar</button></span></div>
+   <div class="grid">${fld("Nombre real","props."+i+".real",{ph:"Tamagotchi"})}${fld("Nombre genérico","props."+i+".generico",{ph:"Pixel Pal"})}</div>
+   ${fld("Descripción","props."+i+".desc",{rows:2})}
+   <div class="row sp"><span class="lbl">Prompt del prop</span>${copyBtn("prop:"+i)}</div>${outBox("prop:"+i,3)}</div>`).join(""):`<p class="tip">Sin objetos clave todavía.</p>`}</div>`,
+
+f3:()=>`
+ <datalist id="cams">${CAMS.map(c=>`<option value="${c}">`).join("")}</datalist>
+ <div class="card"><h3>Línea de tiempo</h3><div data-html="timeline"></div><ul class="warn-list" data-html="avisos"></ul></div>
+ ${P.guion.map((s,i)=>`<div class="card"><div class="shot">
+   <div class="time">${fld("Inicio (s)","guion."+i+".ini",{type:"number",step:"0.5"})}${fld("Fin (s)","guion."+i+".fin",{type:"number",step:"0.5"})}
+     <button class="btn sm" data-a="dupshot" data-i="${i}">Duplicar</button><button class="btn sm danger" data-a="rmshot" data-i="${i}">Quitar</button></div>
+   <div class="body"><div class="grid g2">${fld("Cámara y movimiento","guion."+i+".camara",{list:"cams",ph:"Plano aéreo picado"})}${fld("Posición espacial","guion."+i+".espacio",{ph:"dónde está cada personaje"})}</div>
+    ${fld("Acción","guion."+i+".accion",{rows:2})}
+    <div><span class="lbl">Microexpresiones</span><div class="chips" id="mc${i}" style="margin:6px 0"></div>
+     <input data-micro="${i}" placeholder="Escribe una y pulsa Enter" aria-label="Añadir microexpresión"></div>
+    ${fld("Física y sonido","guion."+i+".fisica",{ph:"p. ej. el teléfono cae sobre el césped, golpe sordo"})}
+    <div class="grid g2"><label class="f"><span>Personaje que habla</span><select data-b="guion.${i}.pj"><option value="">Ninguno</option>${P.personajes.map(c=>`<option value="${esc(c.id)}"${c.id===s.pj?" selected":""}>${esc(c.id)} · ${esc(c.nombre)}</option>`).join("")}</select></label>${fld("Diálogo","guion."+i+".texto")}</div>
+   </div></div></div>`).join("")}
+ <div class="row"><button class="btn primary" data-a="addshot">Añadir plano</button></div>`,
+
+f4:()=>`
+ <div class="card"><div class="row sp"><h3>Prompts por bloque</h3><span class="row"><button class="btn sm" data-a="copyall">Copiar todos</button><button class="btn sm" data-a="dl">Descargar .txt</button></span></div>
+  <p class="status" data-out="sust"></p></div>
+ ${blocks().map(b=>`<div class="card"><div class="row sp"><h3>Bloque ${b.n+1} · ${fmt(b.ini)}–${fmt(b.fin)}</h3><span class="row" data-html="badge:${b.n}"></span></div>
+  <textarea class="out" rows="14" data-blk="${b.n}" aria-label="Prompt del bloque ${b.n+1}"></textarea>
+  <div class="row"><div class="meter" data-html="meter:${b.n}"><i></i></div><span class="mono" data-out="cnt:${b.n}"></span></div>
+  <div class="row"><button class="btn sm primary" data-a="copy" data-k="blk:${b.n}">Copiar</button><button class="btn sm" data-a="expand" data-n="${b.n}">Ampliar con Claude</button><button class="btn sm" data-a="resetblk" data-n="${b.n}">Volver al generado</button></div></div>`).join("")}`,
+
+f5:()=>`
+ <div class="card"><h3>Voice lock</h3>
+  <p class="tip">Para que cada voz sea idéntica en todas las generaciones: graba la frase, exporta el audio como MP4 con pantalla negra y súbelo a Artcraft. El prompt ya incluye la línea de referencia de audio.</p>
+  ${fld("Frase con todos los fonemas","frase",{rows:2})}
+  <div class="row"><button class="btn sm" data-a="copy" data-k="frase">Copiar frase</button></div>
+  <div class="grid">${P.personajes.map((c,i)=>`<div class="card flat"><strong>${esc(c.nombre)} (${esc(c.id)})</strong>${fld("Etiqueta en Artcraft","personajes."+i+".audio",{ph:"Video 1"})}<label class="row"><input type="checkbox" data-c="personajes.${i}.voxOk"${c.voxOk?" checked":""}> MP4 negro subido</label></div>`).join("")}</div></div>
+ ${blocks().map(b=>{const st=P.bloques[b.n]||{};return `<div class="card"><div class="row sp"><h3>Bloque ${b.n+1} · ${fmt(b.ini)}–${fmt(b.fin)}</h3>
+   <label class="row"><span class="lbl">Estado</span><select class="state" data-b="bloques.${b.n}.estado"><option value="pend"${(st.estado||"pend")==="pend"?" selected":""}>Pendiente</option><option value="gen"${st.estado==="gen"?" selected":""}>Generado</option><option value="iter"${st.estado==="iter"?" selected":""}>Iterando</option><option value="ok"${st.estado==="ok"?" selected":""}>Aprobado</option></select></label></div>
+   <div><span class="lbl">Qué falló (segundo y corrección)</span><div class="chips" id="nt${b.n}" style="margin:6px 0"></div>
+    <input data-nota="${b.n}" placeholder="p. ej. En el segundo 5 hay un silencio incómodo, que empiece a reír en el 4. Enter para guardar" aria-label="Añadir nota del bloque ${b.n+1}"></div>
+   <div class="row"><button class="btn sm primary" data-a="revise" data-n="${b.n}">Pedir nuevo prompt a Claude</button><button class="btn sm" data-a="copy" data-k="blk:${b.n}">Copiar prompt actual</button></div>
+   <textarea class="out" rows="6" data-blk="${b.n}" aria-label="Prompt actual del bloque ${b.n+1}"></textarea><div class="mono" data-out="cnt:${b.n}"></div></div>`}).join("")}`,
+
+f6:()=>`
+ <div class="card"><h3>Banda sonora · Udio / Suno</h3>
+  <div class="grid">${fld("Tempo (BPM)","musica.bpm",{type:"number"})}${fld("Tonalidad","musica.tono")}${fld("Instrumentos","musica.instr")}</div>
+  ${fld("Estilo y emoción","musica.estilo",{ph:"íntimo, riser suave antes del golpe"})}
+  <div><span class="lbl">Impactos (segundo)</span>
+   ${P.musica.hits.map((h,i)=>`<div class="row" style="margin-top:6px"><input type="number" step="0.5" style="width:90px" data-b="musica.hits.${i}.t" value="${esc(h.t)}" aria-label="Segundo"><input data-b="musica.hits.${i}.d" value="${esc(h.d)}" placeholder="qué ocurre" style="flex:1" aria-label="Descripción"><button class="btn sm danger" data-a="rmhit" data-i="${i}">Quitar</button></div>`).join("")}
+   <div style="margin-top:8px"><button class="btn sm" data-a="addhit">Añadir impacto</button></div></div>
+  <div class="row sp"><span class="lbl">Prompt de música</span>${copyBtn("music")}</div>${outBox("music",4)}</div>
+ <div class="card"><h3>Efectos de sonido del guion</h3><p class="tip">Sacados de la física y sonido de cada plano, con su tiempo en el vídeo final antes de minar.</p><div data-html="sfx"></div></div>`
+};
+
+/* ---------- salidas en vivo ---------- */
+function outVal(k){
+  const [a,b]=k.split(":");const i=+b;
+  switch(a){
+    case"look":return look();
+    case"mj":return mjPrompt(i);
+    case"char":return charPrompt(i);
+    case"prop":return propPrompt(i);
+    case"music":return musicPrompt();
+    case"frase":return P.frase;
+    case"cnt":{const n=blockText(i).length;return `${n.toLocaleString("es")} / ${LIMITE.toLocaleString("es")} caracteres`}
+    case"sust":{const s=P.props.filter(p=>p.real);return s.length?"Sustituciones anti-copyright activas: "+s.map(p=>`${p.real} → ${p.generico||"objeto genérico"}`).join(", "):"Sin sustituciones. Si un objeto tiene marca, añádelo en Assets con un nombre genérico."}
+    case"blk":return blockText(i);
+  }return"";
+}
+function htmlVal(k){
+  const [a,b]=k.split(":");const i=+b;
+  switch(a){
+    case"timeline":{
+      const D=P.duracion||1,n=Math.ceil(D/P.bloque);
+      const segs=P.guion.map(s=>`<div class="seg" style="left:${s.ini/D*100}%;width:${Math.max(0,(s.fin-s.ini))/D*100}%" title="${fmt(s.ini)}–${fmt(s.fin)}">${esc(fmt(s.ini))}</div>`).join("");
+      const cuts=Array.from({length:n-1},(_,j)=>`<div class="cut" style="left:${(j+1)*P.bloque/D*100}%"></div>`).join("");
+      return `<div class="timeline">${segs}${cuts}</div><div class="ticks"><span>0:00</span>${n>1?`<span>bloques de ${fmt(P.bloque)}</span>`:""}<span>${fmt(D)}</span></div>`}
+    case"avisos":return avisos().map(a=>`<li class="${a[1]?"ok":""}">${esc(a[0])}</li>`).join("");
+    case"badge":{const n=blockText(i).length,ed=P.bloques[i]&&P.bloques[i].final;return `${ed?`<span class="badge">editado</span>`:""}<span class="badge ${n>LIMITE?"bad":n>LIMITE*.9?"warn":"ok"}">${n>LIMITE?"excede el límite":"dentro del límite"}</span>`}
+    case"meter":{const n=blockText(i).length;return `<i style="width:${Math.min(100,n/LIMITE*100)}%"></i>`}
+    case"sfx":{
+      const r=P.guion.slice().sort((a,b)=>a.ini-b.ini).filter(s=>s.fisica);
+      return r.length?`<div class="check">${r.map(s=>`<div style="display:flex;gap:12px;padding:6px 8px"><span class="mono" style="min-width:48px">${fmt(s.ini)}</span><span>${esc(s.fisica)}</span></div>`).join("")}</div>`:`<p class="tip">Ningún plano tiene física y sonido todavía.</p>`}
+  }return"";
+}
+function live(){
+  document.querySelectorAll("[data-out]").forEach(el=>{const v=outVal(el.dataset.out);if("value"in el)el.value=v;else el.textContent=v});
+  document.querySelectorAll("textarea[data-blk]").forEach(el=>{if(document.activeElement!==el)el.value=blockText(+el.dataset.blk)});
+  document.querySelectorAll("[data-html]").forEach(el=>{
+    const k=el.dataset.html;if(k.startsWith("meter")){const n=blockText(+k.split(":")[1]).length;el.className="meter "+(n>LIMITE?"bad":n>LIMITE*.9?"warn":"");el.innerHTML=htmlVal(k)}else el.innerHTML=htmlVal(k)});
+  document.querySelectorAll("[id^=mc]").forEach(el=>{const i=+el.id.slice(2);el.innerHTML=chipsMicro(i)});
+  document.querySelectorAll("[id^=nt]").forEach(el=>{const i=+el.id.slice(2);el.innerHTML=chipsNotas(i)});
+  const h=$("#hexChips");if(h)h.innerHTML=chipsHex();
+}
+const chipsHex=()=>P.estilo.hex.map((x,i)=>`<button class="chip" data-a="rmhex" data-i="${i}" title="Quitar"><span class="sw" style="background:${esc(x)}"></span><span class="mono">${esc(x)}</span> ×</button>`).join("")||`<span class="tip">Sin colores todavía.</span>`;
+const chipsMicro=i=>{const s=P.guion[i];if(!s)return"";const sug=MICRO.filter(m=>!(s.micro||[]).includes(m)).slice(0,5);
+  return (s.micro||[]).map((m,j)=>`<button class="chip" data-a="rmmicro" data-i="${i}" data-j="${j}" title="Quitar">${esc(m)} ×</button>`).join("")+sug.map(m=>`<button class="chip sug" data-a="addmicro" data-i="${i}" data-v="${esc(m)}">+ ${esc(m)}</button>`).join("")};
+const chipsNotas=i=>((P.bloques[i]||{}).notas||[]).map((m,j)=>`<button class="chip" data-a="rmnota" data-n="${i}" data-j="${j}" title="Quitar">${esc(m)} ×</button>`).join("")||`<span class="tip">Sin notas. Cuando generes el bloque, anota aquí lo que falló.</span>`;
+
+/* ---------- Claude (sample) ---------- */
+async function pedir(n,instr,btn){
+  let sample=null;try{sample=await (window.claude&&window.claude.use?window.claude.use("sample"):null)}catch(e){}
+  if(!sample){toast("Esta función solo está disponible al abrir la página en Claude.");return}
+  const orig=btn.textContent;btn.disabled=true;btn.textContent="Claude está escribiendo…";
+  const ta=document.querySelector(`textarea[data-blk="${n}"]`);
+  try{
+    const r=await sample(instr,{modelTier:"complex",cache:false,onText:({text})=>{if(ta)ta.value=text}});
+    const t=(r.text||"").trim();
+    if(!t)throw{message:"respuesta vacía"};
+    P.bloques[n]=Object.assign(P.bloques[n]||{},{final:t});
+    save();live();
+    toast(r.truncated?"Respuesta cortada, revisa el final del prompt":t.length>LIMITE?"El nuevo prompt supera los 10.000 caracteres":"Prompt actualizado");
+  }catch(e){
+    if(ta)ta.value=blockText(n);
+    toast(e&&e.code==="not_granted"?"Permite que Claude responda en esta página para usar esta función.":"No se pudo completar: "+((e&&e.message)||"error"));
+  }finally{btn.disabled=false;btn.textContent=orig}
+}
+const REGLAS=`Reglas: conserva el bloque LOOK GLOBAL al inicio, las referencias y la línea de audio de cada personaje; no cambies los tiempos ni la posición de los personajes; no uses nombres de marcas; el resultado completo debe tener como máximo ${LIMITE-500} caracteres. Devuelve solo el prompt final, sin explicaciones.`;
+
+/* ---------- eventos ---------- */
+document.addEventListener("input",e=>{
+  const t=e.target;if(!P)return;
+  if(t.dataset.b){
+    const v=t.type==="number"?num(t.value):t.value;setp(t.dataset.b,v);
+    if(t.dataset.b==="nombre")syncList();
+    if(t.dataset.b==="duracion"||t.dataset.b==="bloque"){P.duracion=Math.max(1,P.duracion||1);P.bloque=Math.max(1,P.bloque||1)}
+    save();live();
+    if(/^(duracion|bloque)$/.test(t.dataset.b))renderStrip();
+  }else if(t.dataset.blk!==undefined){
+    const n=+t.dataset.blk;P.bloques[n]=Object.assign(P.bloques[n]||{},{final:t.value});save();
+    document.querySelectorAll(`[data-out="cnt:${n}"]`).forEach(x=>x.textContent=outVal("cnt:"+n));
+  }
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="projSel"){const p=list.find(x=>x.id===t.value);if(!p)return;if(db){db.collection("projects").doc(p.id).get().then(s=>{P=hydrate(s.data());renderAll()})}else{P=hydrate(lsRead().find(x=>x.id===p.id)||p);renderAll()}return}
+  if(!P)return;
+  if(t.dataset.c){setp(t.dataset.c,t.checked);save();renderStrip()}
+  else if(t.dataset.b&&t.tagName==="SELECT"){setp(t.dataset.b,t.value);save();renderPanel()}
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter"||!P)return;const t=e.target,v=(t.value||"").trim();
+  if(t.id==="hexIn"){e.preventDefault();if(!v)return;const h=/^#?[0-9a-f]{3,8}$/i.test(v)?(v[0]==="#"?v:"#"+v).toUpperCase():null;if(!h){toast("Escribe un código hex, p. ej. #C9A66B");return}P.estilo.hex.push(h);t.value="";save();live()}
+  else if(t.dataset.micro!==undefined){e.preventDefault();if(!v)return;const s=P.guion[+t.dataset.micro];(s.micro=s.micro||[]).push(v);t.value="";save();live()}
+  else if(t.dataset.nota!==undefined){e.preventDefault();if(!v)return;const n=+t.dataset.nota,b=P.bloques[n]=P.bloques[n]||{};(b.notas=b.notas||[]).push(v);if(!b.estado||b.estado==="pend"||b.estado==="gen")b.estado="iter";t.value="";save();live()}
+});
+document.addEventListener("click",async e=>{
+  const el=e.target.closest("[data-a]");if(!el)return;const a=el.dataset.a,i=+el.dataset.i,n=+el.dataset.n;
+  if(a==="newproj"){if(P)await flush();P=nuevo();list.unshift({id:P.id,nombre:P.nombre,updated:P.updated});tab="f1";save();renderAll();return}
+  if(a==="example"){P=ejemplo();list.unshift({id:P.id,nombre:P.nombre,updated:P.updated});tab="f1";save();renderAll();return}
+  if(a==="delproj"){
+    if(el.dataset.arm!=="1"){el.dataset.arm="1";el.textContent="¿Seguro? Pulsa otra vez";return}
+    const id=P.id;try{if(db)await db.collection("projects").doc(id).delete();else lsWrite(lsRead().filter(x=>x.id!==id))}catch(err){toast("No se pudo borrar");return}
+    list=list.filter(x=>x.id!==id);
+    const next=list[0];
+    if(next){P=hydrate(db?(await db.collection("projects").doc(next.id).get()).data():(lsRead().find(x=>x.id===next.id)||next))}else P=null;
+    renderAll();return}
+  if(!P)return;
+  switch(a){
+   case"tab":tab=el.dataset.t;renderStrip();renderPanel();window.scrollTo({top:0});break;
+   case"copy":{const k=el.dataset.k;copyText(k==="frase"?P.frase:outVal(k));break}
+   case"copyall":copyText(blocks().map((b,j)=>`===== BLOQUE ${j+1} =====\n${blockText(j)}`).join("\n\n"));break;
+   case"dl":{
+     const txt=blocks().map((b,j)=>`===== BLOQUE ${j+1} =====\n${blockText(j)}`).join("\n\n");
+     try{const d=await window.claude.use("downloads");if(!d)throw 0;await d.save({filename:(P.nombre||"video").replace(/[^\w-]+/g,"-")+"-prompts.txt",data:txt});toast("Archivo guardado")}
+     catch(err){copyText(txt);toast("No se pudo descargar; los prompts están en el portapapeles")}break}
+   case"addloc":P.locaciones.push({nombre:"Entorno "+(P.locaciones.length+1),desc:"",weird:250,chaos:10,listo:false});save();renderPanel();break;
+   case"rmloc":P.locaciones.splice(i,1);save();renderPanel();break;
+   case"addchar":{const L="ABCDEFGHIJKLMNOPQRSTUVWXYZ";const id=L[P.personajes.length%26];P.personajes.push({id,nombre:"Personaje "+id,ropa:"",voz:"",audio:"Video "+(P.personajes.length+1),listo:false,voxOk:false});save();renderPanel();break}
+   case"rmchar":P.personajes.splice(i,1);save();renderPanel();break;
+   case"addprop":P.props.push({real:"",generico:"",desc:"",listo:false});save();renderPanel();break;
+   case"rmprop":P.props.splice(i,1);save();renderPanel();break;
+   case"addshot":{const last=P.guion.reduce((m,s)=>Math.max(m,s.fin),0);P.guion.push({ini:last,fin:Math.min(last+3,P.duracion),camara:"",espacio:"",accion:"",micro:[],fisica:"",pj:"",texto:""});save();renderPanel();break}
+   case"dupshot":P.guion.splice(i+1,0,plain(P.guion[i]));save();renderPanel();break;
+   case"rmshot":P.guion.splice(i,1);save();renderPanel();break;
+   case"rmhex":P.estilo.hex.splice(i,1);save();live();break;
+   case"addmicro":(P.guion[i].micro=P.guion[i].micro||[]).push(el.dataset.v);save();live();break;
+   case"rmmicro":P.guion[i].micro.splice(+el.dataset.j,1);save();live();break;
+   case"rmnota":P.bloques[n].notas.splice(+el.dataset.j,1);save();live();break;
+   case"addhit":P.musica.hits.push({t:"",d:""});save();renderPanel();break;
+   case"rmhit":P.musica.hits.splice(i,1);save();renderPanel();break;
+   case"resetblk":if(P.bloques[n])delete P.bloques[n].final;save();live();break;
+   case"expand":pedir(n,`Eres director de fotografía y prompt engineer de Seedance. Amplía este prompt de vídeo con el máximo detalle de actuación: microexpresiones, mirada, manos, respiración, ritmo, física de los objetos y sonido ambiente, aprovechando hasta unos ${LIMITE-1000} caracteres.\n${REGLAS}\n\nPROMPT ACTUAL:\n${blockText(n)}`,el);break;
+   case"revise":{const notas=((P.bloques[n]||{}).notas||[]);if(!notas.length){toast("Anota primero qué falló en este bloque");break}
+     pedir(n,`Eres director de fotografía y prompt engineer de Seedance. Se generó el bloque con el prompt de abajo y estos son los fallos observados. Reescribe el prompt para corregirlos exactamente donde se indica, sin tocar lo que funcionó.\n${REGLAS}\n\nFALLOS OBSERVADOS:\n${notas.map((x,j)=>`${j+1}. ${x}`).join("\n")}\n\nPROMPT ACTUAL:\n${blockText(n)}`,el);break}
+  }
+});
+async function flush(){clearTimeout(saveT);try{if(db)await db.collection("projects").doc(P.id).set(plain(P));else{const a=lsRead().filter(x=>x.id!==P.id);a.unshift(plain(P));lsWrite(a)}}catch(e){}}
+
+init();
+})();
+</script>

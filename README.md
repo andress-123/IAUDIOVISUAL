@@ -84,3 +84,7 @@ python herramienta/vpipe.py musica "Mi vídeo"        # prompt para Udio/Suno
 ```
 
 Todo el estado vive en `proyectos/<nombre>/project.json` (estilo Shotdeck, personajes, props, guion plano a plano, música). `prompt` antepone los metadatos de cámara a cada bloque, cita el audio de referencia y sustituye automáticamente nombres con copyright por el genérico (p. ej. Tamagotchi → Pixel Pal).
+
+### Versión visual: `Claqueta`
+
+`herramienta/claqueta.html` es la misma idea como aplicación web (artifact de Claude): una tira con las 6 fases y su progreso, formularios para estilo/assets/guion, línea de tiempo con avisos, prompts por bloque con contador de 10.000 caracteres, botones para pedir a Claude que amplíe o corrija un prompt, y generador de prompt de música. Los proyectos se guardan en la base de datos del artifact.
