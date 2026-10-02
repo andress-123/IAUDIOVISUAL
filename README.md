@@ -68,3 +68,19 @@ Cuando quieras generar un prompt para una herramienta concreta, dime:
 - y qué quieres conseguir (estilo, escena, movimiento de cámara, etc.)
 
 y usaré lo recopilado en `recursos/` y `metodologias/` para construir el prompt, además de las plantillas de `plantillas/`.
+
+## Herramienta: `vpipe` (workflow de piezas de vídeo)
+
+CLI en Python (sin dependencias) que sistematiza el workflow de 6 fases: preproducción (Shotdeck) → assets → guion técnico → mega-prompt → generación/voice lock → postproducción.
+
+```bash
+python herramienta/vpipe.py nueva "Mi vídeo" --duracion 60 --bloque 30   # crea proyectos/mi-video/
+python herramienta/vpipe.py estado "Mi vídeo"        # checklist por fase
+python herramienta/vpipe.py check "Mi vídeo" 1 2     # marca fase 1, item 2
+python herramienta/vpipe.py prompt "Mi vídeo"        # mega-prompts por bloque (límite 10.000 car.)
+python herramienta/vpipe.py voz "Mi vídeo"           # pasos del voice lock (MP4 negro)
+python herramienta/vpipe.py feedback "Mi vídeo" 1 "seg 5 silencio incómodo, reír en el 4"
+python herramienta/vpipe.py musica "Mi vídeo"        # prompt para Udio/Suno
+```
+
+Todo el estado vive en `proyectos/<nombre>/project.json` (estilo Shotdeck, personajes, props, guion plano a plano, música). `prompt` antepone los metadatos de cámara a cada bloque, cita el audio de referencia y sustituye automáticamente nombres con copyright por el genérico (p. ej. Tamagotchi → Pixel Pal).
