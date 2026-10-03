@@ -199,7 +199,7 @@ const uid=()=>"p_"+Date.now().toString(36)+Math.random().toString(36).slice(2,5)
 
 function nuevo(nombre){
   return {id:uid(),nombre:nombre||"Vídeo sin título",duracion:60,bloque:30,idea:"",
-   estilo:{img:null,emocion:"",camara:"",lente:"",pelicula:"",hex:[],notas:"",ia:""},
+   estilo:{img:null,panel:"",emocion:"",camara:"",lente:"",pelicula:"",hex:[],notas:"",ia:""},
    locaciones:[{nombre:"Entorno principal",desc:"",weird:250,chaos:10,listo:false,img:null,prompt:""}],
    personajes:[{id:"A",nombre:"Personaje A",ropa:"",voz:"",audio:"Video 1",listo:false,voxOk:false,img:null,prompt:""}],
    props:[],guion:[],bloques:{},chk:{},
@@ -370,27 +370,58 @@ const outEl=k=>document.querySelector(`[data-out="${k}"]`);
 const REGLAS=`Reglas: conserva el bloque LOOK GLOBAL al inicio, las referencias y la línea de audio de cada personaje; no cambies los tiempos ni la posición de los personajes; no uses nombres de marcas; el resultado completo debe tener como máximo ${LIMITE-500} caracteres. Devuelve solo el prompt final, sin explicaciones.`;
 const estiloTxt=()=>{const e=P.estilo;return `cámara ${e.camara||"—"}, lente ${e.lente||"—"}, película ${e.pelicula||"—"}, paleta ${e.hex.join(" ")||"—"}${e.notas?". "+e.notas:""}`};
 
+const ESQUEMA=`Responde con JSON: {"camara":"","lente":"","pelicula":"","hex_panel":["#RRGGBB"],"emocion":"emoción que transmite, una frase","notas":"iluminación, profundidad de campo, composición y grano, una o dos frases","fuente":"película o serie si se lee","leido":["campos copiados tal cual"],"estimado":["campos estimados"]}
+"hex_panel" solo con códigos hex que aparezcan escritos; si no hay, lista vacía. Textos en español, nombres técnicos en su idioma original.`;
+function aplicarEstilo(r,hexLocal,origen){
+  const E=P.estilo,s=v=>typeof v==="string"?v.trim():"";
+  ["camara","lente","pelicula","emocion","notas"].forEach(k=>{if(s(r[k]))E[k]=s(r[k])});
+  let hex=Array.isArray(r.hex_panel)?r.hex_panel.filter(h=>/^#[0-9a-f]{6}$/i.test(h)).map(h=>h.toUpperCase()):[];
+  const delPanel=hex.length>0;if(!hex.length)hex=hexLocal||[];
+  if(hex.length)E.hex=hex;
+  const leido=(r.leido||[]).join(", "),est=(r.estimado||[]).join(", ");
+  E.ia=`Autorrellenado ${origen}${s(r.fuente)?" ("+s(r.fuente)+")":""}. ${leido?"Leído tal cual: "+leido+". ":""}${est?"Estimado: "+est+". ":""}${hex.length?"Colores "+(delPanel?"del texto":"calculados de la imagen")+". ":""}Revisa los datos.`;
+}
+async function sinVision(blob){
+  let hex=[];try{hex=await colorsFromBlob(blob)}catch(e){}
+  if(hex.length)P.estilo.hex=hex;
+  P.estilo.ia="";f1Msg="";
+  f1Err="Esta vista no puede enviar imágenes a Claude, así que he calculado los colores de la imagen. Para el resto, copia el texto del panel de Shotdeck y pégalo en el recuadro de abajo.";
+  save();renderPanel();
+}
 async function analizarFotograma(btn){
   const ref=P.estilo.img;if(!ref)return;
   await busy(btn,"Leyendo…",async()=>{
     f1Err="";f1Msg="working";renderF1Status();
     const blob=await blobOf(ref);if(!blob){f1Msg="";f1Err="No se pudo leer la imagen guardada. Quítala y vuelve a subirla.";renderF1Status();throw{message:"no se pudo leer la imagen"}}
+    if(caps.sample&&!caps.img){await sinVision(blob);return}
     let r;
     try{
       r=await ask(`Eres director de fotografía. La imagen adjunta es una captura de Shotdeck: un fotograma de cine y, normalmente, un panel con datos técnicos.
 Si el panel muestra datos (cámara, lente, película o formato, colores hex, título), cópialos tal cual. Lo que no aparezca, estímalo mirando la imagen y márcalo como estimado.
-Responde solo con JSON: {"camara":"","lente":"","pelicula":"","hex_panel":["#RRGGBB"],"emocion":"emoción que transmite, una frase","notas":"iluminación, profundidad de campo, composición y grano, una o dos frases","fuente":"película o serie si se lee","leido":["campos copiados del panel"],"estimado":["campos estimados"]}
-"hex_panel" solo con códigos visibles en el panel; si no hay, lista vacía. Textos en español, nombres técnicos en su idioma original.`,{imgs:[await forAI(blob)],json:true});
-    }catch(e){f1Msg="";f1Err=errMsg(e);renderF1Status();throw e}
-    const E=P.estilo,s=v=>typeof v==="string"?v.trim():"";
-    ["camara","lente","pelicula","emocion","notas"].forEach(k=>{if(s(r[k]))E[k]=s(r[k])});
-    let hex=Array.isArray(r.hex_panel)?r.hex_panel.filter(h=>/^#[0-9a-f]{6}$/i.test(h)).map(h=>h.toUpperCase()):[];
-    const delPanel=hex.length>0;
-    if(!hex.length){try{hex=await colorsFromBlob(blob)}catch(e){}}
-    if(hex.length)E.hex=hex;
-    const leido=(r.leido||[]).join(", "),est=(r.estimado||[]).join(", ");
-    E.ia=`Autorrellenado${s(r.fuente)?" desde "+s(r.fuente):""}. ${leido?"Leído del panel: "+leido+". ":""}${est?"Estimado: "+est+". ":""}Colores ${delPanel?"del panel":"calculados de la imagen"}. Revisa los datos.`;
+${ESQUEMA}`,{imgs:[await forAI(blob)],json:true});
+    }catch(e){
+      if(e&&e.code==="images_unavailable"){caps.img=false;await sinVision(blob);return}
+      f1Msg="";f1Err=errMsg(e);renderF1Status();throw e;
+    }
+    let hex=[];try{hex=await colorsFromBlob(blob)}catch(e){}
+    aplicarEstilo(r,hex,"desde la imagen");
     f1Msg="";save();renderPanel();toast("Datos del fotograma rellenados");
+  });
+}
+async function desdeTexto(btn){
+  const txt=(P.estilo.panel||"").trim();
+  if(!txt){toast("Pega primero el texto del panel de Shotdeck");return}
+  await busy(btn,"Leyendo…",async()=>{
+    f1Err="";
+    try{
+      const r=await ask(`Eres director de fotografía. Este texto está copiado de la ficha técnica de un fotograma en Shotdeck. Extrae los datos tal cual aparecen; lo que falte, déjalo vacío (no inventes).
+TEXTO:
+${txt.slice(0,6000)}
+${ESQUEMA}`,{json:true,tier:"quick"});
+      let hex=[];if(P.estilo.img){try{const b=await blobOf(P.estilo.img);if(b)hex=await colorsFromBlob(b)}catch(e){}}
+      aplicarEstilo(r,hex,"desde el texto pegado");
+      save();renderPanel();toast("Datos rellenados");
+    }catch(e){f1Err=errMsg(e);renderF1Status();throw e}
   });
 }
 function renderF1Status(){const el=$("#f1status");if(el)el.innerHTML=f1Status()}
@@ -493,7 +524,8 @@ const PANELS={
 f1:()=>
  card("f1.foto","Fotograma de referencia",
   dz("estilo.img",{label:"Pega o sube el fotograma de Shotdeck",hint:"Incluye el panel con los datos técnicos. Arrastra, pega con Ctrl+V o haz clic.",big:true})+
-  `<div class="row sp"><div class="status" id="f1status">${f1Status()}</div>${P.estilo.img?aiBtn("analizar","Analizar con Claude"):""}</div>`)+
+  `<div class="row sp"><div class="status" id="f1status">${f1Status()}</div>${P.estilo.img?aiBtn("analizar","Analizar con Claude"):""}</div>
+   <div class="col">${fld("Datos del panel de Shotdeck, como texto (alternativa si no se puede enviar la imagen)","estilo.panel",{rows:3,ph:"Copia y pega aquí cámara, lente, película, colores…"})}<div>${aiBtn("texto","Rellenar desde el texto")}</div></div>`)+
  card("f1.datos","Datos técnicos",
   `<div class="grid">${fld("Cámara","estilo.camara",{ph:"Arri Alexa 35"})}${fld("Lente","estilo.lente",{ph:"Signature Prime"})}${fld("Película","estilo.pelicula",{ph:"Kodak Vision3 500T"})}</div>
    ${fld("Emoción que transmite","estilo.emocion",{ph:"p. ej. vergüenza cómplice"})}
@@ -595,7 +627,7 @@ function outVal(k){
     case"asset":return assetsResumen();
     case"cnt":{const n=blockText(i).length;return `${n.toLocaleString("es")} / ${LIMITE.toLocaleString("es")} caracteres`}
     case"sust":{const s=P.props.filter(p=>p.real);return s.length?"Sustituciones anti-copyright activas: "+s.map(p=>`${p.real} → ${p.generico||"objeto genérico"}`).join(", "):"Sin sustituciones anti-copyright. Si un objeto tiene marca, añádelo en Assets con un nombre genérico."}
-    case"nimg":{const n=imgRefs().length;return n?`Claude recibirá ${Math.min(n,caps.max)} de ${n} imágenes (fotograma, entornos, personajes y props) junto con cada borrador.`:"No hay imágenes subidas. Si subes el fotograma y los assets, Claude las verá al redactar cada bloque."}
+    case"nimg":{const n=imgRefs().length;if(caps.sample&&!caps.img)return "Esta vista no puede enviar imágenes a Claude: redactará solo con el texto de tu guion y tus assets.";return n?`Claude recibirá ${Math.min(n,caps.max)} de ${n} imágenes (fotograma, entornos, personajes y props) junto con cada borrador.`:"No hay imágenes subidas. Si subes el fotograma y los assets, Claude las verá al redactar cada bloque."}
     case"blk":return blockText(i);
   }return"";
 }
@@ -655,7 +687,7 @@ async function genAsset(btn,kind,i){
 async function describir(btn,kind,i){
   const arr=kind==="loc"?P.locaciones:kind==="chr"?P.personajes:P.props,o=arr[i];
   const pack=await imgPack([[o.img,"Imagen a describir"]]);
-  if(!pack.blobs.length){toast("No se pudo leer la imagen");return}
+  if(!pack.blobs.length){toast(caps.sample&&!caps.img?"Esta vista no puede enviar imágenes a Claude: escribe la descripción a mano.":"No se pudo leer la imagen");return}
   const q=kind==="loc"?"Describe en una o dos frases, en español, el entorno de la imagen: lugar, elementos principales, luz y hora del día. Sin personas.":
     kind==="chr"?"Describe solo la ropa y el estilo del vestuario de la persona de la imagen, en una frase en español, para un prompt. No describas rasgos faciales ni intentes identificarla.":
     "Describe en una o dos frases, en español, el objeto: forma, materiales y colores. No nombres la marca. Si ves texto o logotipos que habría que borrar, añádelo al final como 'Borrar: …'.";
@@ -797,6 +829,7 @@ document.addEventListener("click",async e=>{
    case"dzpick":pickPath=el.closest("[data-dz]").dataset.dz;$("#file").click();break;
    case"dzrm":{const path=el.closest("[data-dz]").dataset.dz,old=getp(path);setp(path,null);if(old&&!old.tmp&&caps.assets&&caps.assets.delete)caps.assets.delete(old.id).catch(()=>{});if(path==="estilo.img"){P.estilo.ia="";f1Err=""}save();renderPanel();break}
    case"analizar":analizarFotograma(el);break;
+   case"texto":desdeTexto(el);break;
    case"gen":genAsset(el,kind,i);break;
    case"descr":describir(el,kind,i);break;
    case"borrador":borrador(el);break;
