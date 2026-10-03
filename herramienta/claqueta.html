@@ -191,7 +191,7 @@ const FASES=[
 ];
 
 /* ---------- estado ---------- */
-let P=null, list=[], db=null, tab="f1", saveT=null, hoverPath=null, pickPath=null, f1Msg="";
+let P=null, list=[], db=null, tab="f1", saveT=null, hoverPath=null, pickPath=null, f1Msg="", f1Err="";
 const caps={sample:null,assets:null,img:false,max:5};
 const openMap=new Map();
 const blobs=new Map(), urls=new Map();
@@ -319,7 +319,7 @@ function imgRefs(){
 }
 async function imgPack(extra){
   const refs=(extra||imgRefs()).slice(0,caps.img?caps.max:0),bl=[],lab=[];
-  for(const [r,l] of refs){const b=await blobOf(r);if(b){bl.push(b);lab.push(l)}}
+  for(const [r,l] of refs){const b=await blobOf(r);if(b){bl.push(await forAI(b));lab.push(l)}}
   return {blobs:bl,text:bl.length?"Imágenes adjuntas, en este orden:\n"+lab.map((l,i)=>`${i+1}. ${l}`).join("\n")+"\n\n":""};
 }
 const dz=(path,{label="Subir imagen",hint="Arrastra, pega con Ctrl+V o haz clic",big=false}={})=>{
@@ -331,14 +331,37 @@ async function ask(prompt,{imgs=[],onText,json=false,tier="default"}={}){
   const s=caps.sample||await (window.claude&&window.claude.use?window.claude.use("sample"):null);
   if(!s)throw{code:"unavailable"};caps.sample=s;
   const o={modelTier:tier,cache:false};if(onText)o.onText=onText;if(imgs.length)o.images=imgs;
-  return json?s.json(prompt,o):s(prompt,o);
+  if(!json)return s(prompt,o);
+  let r;
+  try{r=await s(prompt+"\n\nResponde únicamente con el JSON, sin texto antes ni después ni bloques de código.",o)}
+  catch(e){if(e&&e.code==="invalid_json"&&e.text){const v=parseJson(e.text);if(v!==undefined)return v}throw e}
+  const v=parseJson(r.text);
+  if(v===undefined)throw{code:"invalid_json",message:"la respuesta no contenía JSON",text:r.text};
+  return v;
 }
-function aiErr(e){
-  if(e&&e.code==="unavailable")toast("Las funciones de Claude solo están disponibles al abrir la página dentro de Claude.");
-  else if(e&&e.code==="not_granted")toast("Permite que Claude responda en esta página para usar esta función.");
-  else if(e&&e.code==="rate_limited")toast("Demasiadas peticiones seguidas. Espera un momento.");
-  else toast("No se pudo completar: "+((e&&e.message)||"error"));
+function parseJson(txt){
+  txt=String(txt||"").replace(/```(?:json)?/gi,"").trim();
+  try{return JSON.parse(txt)}catch(e){}
+  const a=txt.search(/[\[{]/),b=Math.max(txt.lastIndexOf("}"),txt.lastIndexOf("]"));
+  if(a>=0&&b>a){try{return JSON.parse(txt.slice(a,b+1))}catch(e){}}
+  return undefined;
 }
+async function forAI(blob){
+  try{return blob.size>900000?await shrink(blob,1280):blob}catch(e){return blob}
+}
+function errMsg(e){
+  const c=e&&e.code;
+  if(c==="unavailable"||c==="capability_disabled"||c==="capability_removed")return"Las funciones de Claude solo están disponibles al abrir la página dentro de Claude, con una versión reciente de la app.";
+  if(c==="not_granted"||c==="not_declared"||c==="sampling_disabled")return"Claude no tiene permiso para responder en esta página. Acepta el aviso de permiso o revisa que tu cuenta tenga Claude disponible.";
+  if(c==="images_unavailable")return"Esta vista no puede enviar imágenes a Claude. Ábrela en la web o en la app de escritorio de Claude.";
+  if(c==="image_rejected")return"Claude rechazó la imagen (tipo, tamaño o formato). Prueba con otra captura en JPG o PNG.";
+  if(c==="rate_limited")return"Has alcanzado el límite de uso o hay demasiadas peticiones. Espera un momento y vuelve a intentarlo.";
+  if(c==="session_expired")return"Tu sesión ha caducado. Vuelve a iniciar sesión en Claude.";
+  if(c==="refused")return"Claude no ha querido responder a esta imagen. Prueba con otra captura.";
+  if(c==="invalid_json"||c==="empty_completion")return"Claude respondió en un formato que no se pudo leer. Pulsa de nuevo para reintentar.";
+  return"No se pudo completar"+((e&&e.message)?": "+e.message:"")+". Pulsa de nuevo para reintentar.";
+}
+function aiErr(e){toast(errMsg(e))}
 async function busy(btn,txt,fn){
   if(btn&&btn.disabled)return;const o=btn&&btn.textContent;if(btn){btn.disabled=true;btn.textContent=txt}
   try{await fn()}catch(e){aiErr(e)}finally{if(btn&&btn.isConnected){btn.disabled=false;btn.textContent=o}}
@@ -350,15 +373,15 @@ const estiloTxt=()=>{const e=P.estilo;return `cámara ${e.camara||"—"}, lente 
 async function analizarFotograma(btn){
   const ref=P.estilo.img;if(!ref)return;
   await busy(btn,"Leyendo…",async()=>{
-    f1Msg="working";renderF1Status();
-    const blob=await blobOf(ref);if(!blob){f1Msg="";renderF1Status();throw{message:"no se pudo leer la imagen"}}
+    f1Err="";f1Msg="working";renderF1Status();
+    const blob=await blobOf(ref);if(!blob){f1Msg="";f1Err="No se pudo leer la imagen guardada. Quítala y vuelve a subirla.";renderF1Status();throw{message:"no se pudo leer la imagen"}}
     let r;
     try{
       r=await ask(`Eres director de fotografía. La imagen adjunta es una captura de Shotdeck: un fotograma de cine y, normalmente, un panel con datos técnicos.
 Si el panel muestra datos (cámara, lente, película o formato, colores hex, título), cópialos tal cual. Lo que no aparezca, estímalo mirando la imagen y márcalo como estimado.
 Responde solo con JSON: {"camara":"","lente":"","pelicula":"","hex_panel":["#RRGGBB"],"emocion":"emoción que transmite, una frase","notas":"iluminación, profundidad de campo, composición y grano, una o dos frases","fuente":"película o serie si se lee","leido":["campos copiados del panel"],"estimado":["campos estimados"]}
-"hex_panel" solo con códigos visibles en el panel; si no hay, lista vacía. Textos en español, nombres técnicos en su idioma original.`,{imgs:[blob],json:true});
-    }catch(e){f1Msg="";renderF1Status();throw e}
+"hex_panel" solo con códigos visibles en el panel; si no hay, lista vacía. Textos en español, nombres técnicos en su idioma original.`,{imgs:[await forAI(blob)],json:true});
+    }catch(e){f1Msg="";f1Err=errMsg(e);renderF1Status();throw e}
     const E=P.estilo,s=v=>typeof v==="string"?v.trim():"";
     ["camara","lente","pelicula","emocion","notas"].forEach(k=>{if(s(r[k]))E[k]=s(r[k])});
     let hex=Array.isArray(r.hex_panel)?r.hex_panel.filter(h=>/^#[0-9a-f]{6}$/i.test(h)).map(h=>h.toUpperCase()):[];
@@ -371,7 +394,7 @@ Responde solo con JSON: {"camara":"","lente":"","pelicula":"","hex_panel":["#RRG
   });
 }
 function renderF1Status(){const el=$("#f1status");if(el)el.innerHTML=f1Status()}
-const f1Status=()=>f1Msg==="working"?`<span class="spin"></span>Claude está leyendo el fotograma…`:(P&&P.estilo.ia?`<span class="badge ai">IA</span>${esc(P.estilo.ia)}`:"");
+const f1Status=()=>f1Msg==="working"?`<span class="spin"></span>Claude está leyendo el fotograma…`:f1Err?`<span class="badge bad">Error</span>${esc(f1Err)}`:(P&&P.estilo.ia?`<span class="badge ai">IA</span>${esc(P.estilo.ia)}`:"");
 
 /* ---------- generadores locales ---------- */
 function sanear(t){return P.props.reduce((a,p)=>p.real?a.replace(new RegExp(rx(p.real),"gi"),p.generico||"objeto genérico"):a,t)}
@@ -703,7 +726,7 @@ async function redactar(btn,n,modo){
 async function handleFile(path,file){
   if(!file||!file.type.startsWith("image/")){toast("Sube una imagen (JPG, PNG o WebP)");return}
   try{await setImage(path,file)}catch(e){toast("No se pudo leer la imagen");return}
-  if(path==="estilo.img"){P.estilo.ia="";renderPanel();analizarFotograma($('[data-a="analizar"]'))}else renderPanel();
+  if(path==="estilo.img"){P.estilo.ia="";f1Err="";renderPanel();analizarFotograma($('[data-a="analizar"]'))}else renderPanel();
 }
 $("#file").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(f&&pickPath&&P)handleFile(pickPath,f)});
 document.addEventListener("dragover",e=>{const d=e.target.closest&&e.target.closest("[data-dz]");if(d){e.preventDefault();d.classList.add("over")}});
@@ -772,7 +795,7 @@ document.addEventListener("click",async e=>{
    case"tab":tab=el.dataset.t;renderStrip();renderPanel();window.scrollTo({top:0});break;
    case"foldall":document.querySelectorAll("#main details.card").forEach(d=>{d.open=el.dataset.v==="1";openMap.set(d.dataset.k,d.open)});break;
    case"dzpick":pickPath=el.closest("[data-dz]").dataset.dz;$("#file").click();break;
-   case"dzrm":{const path=el.closest("[data-dz]").dataset.dz,old=getp(path);setp(path,null);if(old&&!old.tmp&&caps.assets&&caps.assets.delete)caps.assets.delete(old.id).catch(()=>{});if(path==="estilo.img")P.estilo.ia="";save();renderPanel();break}
+   case"dzrm":{const path=el.closest("[data-dz]").dataset.dz,old=getp(path);setp(path,null);if(old&&!old.tmp&&caps.assets&&caps.assets.delete)caps.assets.delete(old.id).catch(()=>{});if(path==="estilo.img"){P.estilo.ia="";f1Err=""}save();renderPanel();break}
    case"analizar":analizarFotograma(el);break;
    case"gen":genAsset(el,kind,i);break;
    case"descr":describir(el,kind,i);break;
