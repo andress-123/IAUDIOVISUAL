@@ -87,4 +87,12 @@ Todo el estado vive en `proyectos/<nombre>/project.json` (estilo Shotdeck, perso
 
 ### Versión visual: `Claqueta`
 
-`herramienta/claqueta.html` es la misma idea como aplicación web (artifact de Claude): una tira con las 6 fases y su progreso, formularios para estilo/assets/guion, línea de tiempo con avisos, prompts por bloque con contador de 10.000 caracteres, botones para pedir a Claude que amplíe o corrija un prompt, y generador de prompt de música. Los proyectos se guardan en la base de datos del artifact.
+`herramienta/claqueta.html` es la misma idea como aplicación web (artifact de Claude), con diseño minimal y tarjetas plegables:
+
+- **Preproducción:** pegas la captura de Shotdeck y Claude rellena cámara, lente, película, emoción, notas y colores hex.
+- **Assets:** subes una imagen por entorno, personaje o prop; Claude la describe y redacta el prompt de Midjourney, ChatGPT o prop sheet con el look del fotograma.
+- **Guion:** empieza vacío. "Generar ejemplo de guion" crea la historia a partir de tus assets e imágenes (o de tu idea, si la escribes) y luego lo editas plano a plano.
+- **Mega-prompt y generación:** Claude redacta cada bloque con todas las imágenes adjuntas y reescribe el prompt a partir de lo que anotes que falló.
+- **Postproducción:** prompt de música y lista de efectos de sonido.
+
+Los proyectos e imágenes se guardan en el propio artifact.
