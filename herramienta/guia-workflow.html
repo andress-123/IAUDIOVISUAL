@@ -1,0 +1,331 @@
+<title>Workflow Vídeo IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: mapa horizontal de 6 fases arriba y una tarjeta por fase con herramientas, pasos, trucos y un texto listo para copiar. */
+:root{
+  --bg:#fafafa; --surface:#ffffff; --line:#ececee; --line-2:#dcdce0; --fg:#0f0f11; --muted:#6e6e78; --faint:#a3a3ad;
+  --ink:#0f0f11; --ink-fg:#ffffff; --accent:#5645f0; --accent-soft:#f0eeff;
+  --hack:#94620a; --hack-soft:#fcf2dc; --ok:#14774a; --ok-soft:#e7f6ee;
+  --f-body:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'Geist Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b0b0d; --surface:#131316; --line:#222227; --line-2:#2f2f36; --fg:#f4f4f6; --muted:#9a9aa6; --faint:#6b6b76;
+  --ink:#f4f4f6; --ink-fg:#0b0b0d; --accent:#a79bff; --accent-soft:#1c1938;
+  --hack:#e3b04d; --hack-soft:#2e2410; --ok:#6cc48a; --ok-soft:#14291d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0b0d; --surface:#131316; --line:#222227; --line-2:#2f2f36; --fg:#f4f4f6; --muted:#9a9aa6; --faint:#6b6b76;
+  --ink:#f4f4f6; --ink-fg:#0b0b0d; --accent:#a79bff; --accent-soft:#1c1938;
+  --hack:#e3b04d; --hack-soft:#2e2410; --ok:#6cc48a; --ok-soft:#14291d; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--f-body);padding-inline:16px;padding-block:0 72px;letter-spacing:-.006em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-top:36px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.05;letter-spacing:-.035em;font-weight:650;margin:0;text-wrap:balance}
+h2{font-size:22px;line-height:1.15;letter-spacing:-.025em;font-weight:650;margin:0}
+h3{font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 8px;letter-spacing:.01em}
+p{margin:0}
+.lead{color:var(--muted);max-width:62ch;font-size:16px}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+
+/* mapa */
+.map{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.node{display:flex;flex-direction:column;gap:6px;padding:16px 14px 16px;text-decoration:none;color:inherit;border-right:1px solid var(--line);position:relative;min-width:0}
+.node:last-child{border-right:0}
+.node:hover{background:var(--accent-soft)}
+.node .n{font:500 11px var(--f-mono);color:var(--faint)}
+.node .t{font-weight:650;font-size:14.5px;line-height:1.2;letter-spacing:-.015em}
+.node .w{font-size:12px;color:var(--muted);line-height:1.35}
+.node::after{content:"";position:absolute;right:-6px;top:50%;width:11px;height:11px;border-top:1.5px solid var(--line-2);border-right:1.5px solid var(--line-2);background:var(--surface);transform:translateY(-50%) rotate(45deg);z-index:1}
+.node:last-child::after{display:none}
+@media (max-width:760px){
+  .map{grid-template-columns:minmax(0,1fr)}
+  .node{border-right:0;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+  .node:last-child{border-bottom:0}
+  .node::after{display:none}
+  .node .w{flex-basis:100%}
+}
+
+/* reglas de oro */
+.rules{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.rule strong{font-size:14px;letter-spacing:-.01em;line-height:1.25}
+.rule span{font-size:13px;color:var(--muted);line-height:1.45}
+
+/* fases */
+.phase{background:var(--surface);border:1px solid var(--line);border-radius:16px;scroll-margin-top:16px;overflow:hidden}
+.ph-head{display:flex;gap:16px;align-items:flex-start;padding:22px 22px 16px}
+.badge-n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--ink-fg);display:grid;place-items:center;font:600 14px var(--f-mono)}
+.ph-head .tt{display:flex;flex-direction:column;gap:8px;min-width:0}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+.tool{font:500 12px var(--f-mono);padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.ph-body{padding:4px 22px 22px;display:flex;flex-direction:column;gap:18px}
+.cols{display:grid;gap:18px 26px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.col{min-width:0}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start}
+ol.steps li::before{content:counter(s);width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;font:500 11px var(--f-mono);color:var(--muted);margin-top:1px}
+ol.steps b{font-weight:600}
+.hack{background:var(--hack-soft);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.hack .k{font:600 11px var(--f-mono);color:var(--hack);letter-spacing:.02em;text-transform:uppercase}
+.hack p{font-size:14px}
+.out{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+.out b{color:var(--ok);background:var(--ok-soft);font:600 11px var(--f-mono);padding:2px 9px;border-radius:999px;white-space:nowrap}
+
+/* texto copiable */
+.snip{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.snip .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.snip .lbl{font-size:12.5px;font-weight:500;color:var(--muted)}
+.snip pre{margin:0;font:12.5px/1.6 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
+.cp{border:1px solid var(--line-2);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:12.5px;font-weight:500;cursor:pointer;flex:none}
+.cp:hover{border-color:var(--fg)}
+
+/* checklist final */
+.check{display:grid;gap:2px 28px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:7px 4px;cursor:pointer;font-size:14px}
+.check input{width:16px;height:16px;margin-top:3px;accent-color:var(--ink);flex:none}
+.check input:checked+span{color:var(--faint);text-decoration:line-through}
+.check h3{grid-column:1/-1;margin:10px 0 2px}
+.foot{color:var(--faint);font-size:13px}
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:12px">
+    <div class="mono" style="color:var(--faint)">Guía rápida · 6 fases</div>
+    <h1>De un fotograma de cine a una pieza de vídeo con IA</h1>
+    <p class="lead">El proceso completo en orden. Cada fase dice qué herramienta usar, qué pasos seguir, qué truco evita problemas y qué debes tener antes de pasar a la siguiente.</p>
+  </header>
+
+  <nav class="map" aria-label="Fases">
+    <a class="node" href="#f1"><span class="n">FASE 1</span><span class="t">Preproducción</span><span class="w">Shotdeck</span></a>
+    <a class="node" href="#f2"><span class="n">FASE 2</span><span class="t">Assets</span><span class="w">Midjourney, ChatGPT, Photoshop</span></a>
+    <a class="node" href="#f3"><span class="n">FASE 3</span><span class="t">Guion técnico</span><span class="w">Google Docs</span></a>
+    <a class="node" href="#f4"><span class="n">FASE 4</span><span class="t">Mega-prompt</span><span class="w">Claude</span></a>
+    <a class="node" href="#f5"><span class="n">FASE 5</span><span class="t">Generación</span><span class="w">Artcraft / Seedance 2.5</span></a>
+    <a class="node" href="#f6"><span class="n">FASE 6</span><span class="t">Postproducción</span><span class="w">Premiere, Artlist, Udio / Suno</span></a>
+  </nav>
+
+  <section aria-label="Reglas de oro">
+    <h3>Las 5 reglas que sostienen todo</h3>
+    <div class="rules">
+      <div class="rule"><strong>Un look para todo</strong><span>Los datos del fotograma de Shotdeck van al inicio de cada prompt.</span></div>
+      <div class="rule"><strong>Bloques continuos</strong><span>Prompts de 30 s seguidos. Así nadie cambia de sitio entre cortes.</span></div>
+      <div class="rule"><strong>Nombre genérico</strong><span>Sin texto ni marcas en los objetos, o la IA bloquea la generación.</span></div>
+      <div class="rule"><strong>Microexpresiones</strong><span>Es lo que diferencia una actuación convincente de una plana.</span></div>
+      <div class="rule"><strong>La misma voz</strong><span>Un audio de referencia por personaje, subido como vídeo negro.</span></div>
+    </div>
+  </section>
+
+  <article class="phase" id="f1">
+    <div class="ph-head"><span class="badge-n">1</span><div class="tt"><h2>Preproducción y dirección de arte</h2><div class="tools"><span class="tool">Shotdeck</span></div></div></div>
+    <div class="ph-body">
+      <div class="cols">
+        <div class="col"><h3>Pasos</h3>
+          <ol class="steps">
+            <li><span><b>Busca el fotograma</b> que transmita la emoción de tu vídeo. No busques solo una imagen bonita.</span></li>
+            <li><span><b>Anota sus datos técnicos:</b> cámara (p. ej. Arri Alexa 35), tipo de lente (p. ej. Signature Prime), película y los códigos hex de color.</span></li>
+            <li><span><b>Captura de pantalla</b> del fotograma junto con todo el panel de datos.</span></li>
+          </ol>
+        </div>
+        <div class="col"><h3>Para qué sirve</h3>
+          <p>Obliga a la IA a mantener la misma profundidad de campo, iluminación y look en todas las escenas. Es lo que da esa continuidad de serie de plataforma.</p>
+        </div>
+      </div>
+      <div class="out"><b>Entregable</b><span>Una captura con fotograma y metadatos.</span></div>
+    </div>
+  </article>
+
+  <article class="phase" id="f2">
+    <div class="ph-head"><span class="badge-n">2</span><div class="tt"><h2>Creación de assets: entornos, personajes y utilería</h2><div class="tools"><span class="tool">Midjourney</span><span class="tool">Claude</span><span class="tool">ChatGPT / DALL·E 3</span><span class="tool">Photoshop</span></div></div></div>
+    <div class="ph-body">
+      <div class="cols">
+        <div class="col"><h3>Entornos (Midjourney + Claude)</h3>
+          <ol class="steps">
+            <li><span>Sube a Claude la captura de Shotdeck con sus metadatos y pídele un <b>prompt de Midjourney</b> que replique esa lente y cámara.</span></li>
+            <li><span>En Midjourney usa la imagen original como <b>Style Reference</b> y como <b>Image Prompt</b>.</span></li>
+            <li><span>Para más variaciones del entorno, sube la rareza (<b>--w</b>) y la variedad en los ajustes.</span></li>
+            <li><span>Con <b>Edit</b> (inpainting) borra personajes no deseados del fondo o añade elementos en primer plano, como un arbusto desenfocado.</span></li>
+          </ol>
+        </div>
+        <div class="col"><h3>Personajes (ChatGPT / DALL·E 3)</h3>
+          <ol class="steps">
+            <li><span>Sube una foto de tu rostro o del actor.</span></li>
+            <li><span>Genera una <b>hoja de personaje fotorrealista</b> con la ropa específica que quieres.</span></li>
+          </ol>
+          <h3 style="margin-top:18px">Utilería</h3>
+          <ol class="steps">
+            <li><span>Crea imágenes de los objetos clave, por ejemplo un Tamagotchi.</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="hack"><span class="k">Truco anti-copyright</span><p>Si el objeto tiene derechos de autor, la IA de vídeo (Seedance) bloqueará la generación. Borra cualquier texto del objeto en Photoshop y usa un nombre genérico en el prompt: "Pixel Pal" en lugar de "Tamagotchi".</p></div>
+      <div class="snip"><div class="row"><span class="lbl">Texto para Claude, con la captura adjunta</span><button class="cp" type="button">Copiar</button></div>
+        <pre>Te paso un fotograma de cine con sus datos técnicos (cámara, lente, película y colores hex). Escribe un prompt de Midjourney para generar [describe el entorno], replicando esa cámara, esa lente, la iluminación y la paleta. Sin personas en el encuadre.</pre></div>
+      <div class="out"><b>Entregable</b><span>Imágenes de entorno, hojas de personaje y hojas de utilería.</span></div>
+    </div>
+  </article>
+
+  <article class="phase" id="f3">
+    <div class="ph-head"><span class="badge-n">3</span><div class="tt"><h2>Guionización técnica, nivel director</h2><div class="tools"><span class="tool">Google Docs</span></div></div></div>
+    <div class="ph-body">
+      <p>El guion no es solo diálogo: describe la escena segundo a segundo. Cada plano lleva estas cinco cosas.</p>
+      <div class="cols">
+        <div class="col"><h3>Qué escribir en cada plano</h3>
+          <ol class="steps">
+            <li><span><b>Cámara y tiempo:</b> "Plano aéreo picado durante 2 segundos".</span></li>
+            <li><span><b>Posición espacial:</b> dónde está sentado cada personaje en relación con el entorno.</span></li>
+            <li><span><b>Microexpresiones:</b> "se muerde el labio", "levanta la ceja izquierda", "los hombros caen por decepción", "mira rápido aguantando la risa".</span></li>
+            <li><span><b>Física y sonido:</b> si lanzas un teléfono, di que cae en el césped, para que la IA asocie un golpe sordo y no uno de concreto.</span></li>
+            <li><span><b>Voz:</b> dale un origen y un acento, por ejemplo "mi amigo australiano del sureste asiático", para que su personalidad vocal sea coherente.</span></li>
+          </ol>
+        </div>
+        <div class="col"><h3>Ejemplo de un plano</h3>
+          <div class="snip"><pre>[0:02–0:05] Plano medio, fijo.
+Marta, sentada a la izquierda en el banco; Daniel, a la derecha, junto a la planta.
+Daniel responde sin girar la cabeza.
+Microexpresiones: media sonrisa que no llega a los ojos; aprieta la mandíbula.
+Sonido: el sobre de papel roza el pantalón, seco.
+Voz de Daniel: seca, monocorde, acento del noreste de EE. UU.</pre></div>
+        </div>
+      </div>
+      <div class="out"><b>Entregable</b><span>Guion con cámara, tiempo, posiciones, gestos, sonido y voces.</span></div>
+    </div>
+  </article>
+
+  <article class="phase" id="f4">
+    <div class="ph-head"><span class="badge-n">4</span><div class="tt"><h2>El mega-prompt</h2><div class="tools"><span class="tool">Claude</span></div></div></div>
+    <div class="ph-body">
+      <div class="cols">
+        <div class="col"><h3>Pasos</h3>
+          <ol class="steps">
+            <li><span><b>Sube a Claude</b> todas las imágenes (entorno, personajes, objetos) y el guion técnico completo.</span></li>
+            <li><span>Pídele un prompt para <b>Seedance 2.5</b> de hasta <b>10.000 caracteres</b>, el límite de la herramienta, para maximizar el detalle de las actuaciones.</span></li>
+            <li><span><b>Divide el tiempo:</b> si el vídeo dura un minuto, pide dos prompts de 30 segundos.</span></li>
+            <li><span>Asegúrate de que Claude pone los <b>metadatos de cámara de Shotdeck al principio</b> de cada prompt, para unificar el color.</span></li>
+          </ol>
+        </div>
+        <div class="col"><h3>Por qué bloques de 30 s</h3>
+          <p>Generar bloques continuos de 30 segundos evita que los personajes cambien de lugar de forma misteriosa entre cortes.</p>
+        </div>
+      </div>
+      <div class="snip"><div class="row"><span class="lbl">Texto para Claude, con imágenes y guion adjuntos</span><button class="cp" type="button">Copiar</button></div>
+        <pre>Con las imágenes y el guion adjuntos, escribe un prompt para Seedance 2.5 de hasta 10.000 caracteres para los segundos 0 a 30. Empieza con estos metadatos de cámara: [cámara, lente, película, colores hex]. Describe segundo a segundo la actuación, con microexpresiones, física y sonido. Usa el Video 1 como referencia de audio para el Personaje A. No uses marcas ni nombres con copyright.</pre></div>
+      <div class="out"><b>Entregable</b><span>Un prompt por bloque de 30 segundos.</span></div>
+    </div>
+  </article>
+
+  <article class="phase" id="f5">
+    <div class="ph-head"><span class="badge-n">5</span><div class="tt"><h2>Generación y clonación de voz</h2><div class="tools"><span class="tool">Artcraft</span><span class="tool">Seedance 2.5</span><span class="tool">Claude</span></div></div></div>
+    <div class="ph-body">
+      <div class="cols">
+        <div class="col"><h3>Configuración</h3>
+          <ol class="steps">
+            <li><span>Sube a Artcraft las hojas de personaje, las de utilería y las referencias de las locaciones. Artcraft es la versión china de Seedance y tiene menos filtros de censura.</span></li>
+          </ol>
+          <h3 style="margin-top:18px">Iteración rápida</h3>
+          <ol class="steps">
+            <li><span>Genera los <b>primeros 30 segundos</b> y míralos.</span></li>
+            <li><span>Con <b>dictado por voz</b>, dile a Claude exactamente qué falló.</span></li>
+            <li><span>Genera un nuevo prompt y repite hasta que la toma convenza.</span></li>
+          </ol>
+        </div>
+        <div class="col"><h3>Voice lock: la misma voz en todas las generaciones</h3>
+          <ol class="steps">
+            <li><span>Graba con tu micrófono una frase con todos los fonemas.</span></li>
+            <li><span>Exporta el audio como <b>MP4 con la pantalla completamente en negro</b>.</span></li>
+            <li><span>Súbelo a Artcraft como <b>"Video 1"</b>.</span></li>
+            <li><span>En el prompt escribe: <b>"Usa el Video 1 como referencia de audio para el Personaje A"</b>.</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="snip"><div class="row"><span class="lbl">Frase para grabar</span><button class="cp" type="button">Copiar</button></div>
+        <pre>The quick beige fox jumped in the air over each thin dog.</pre></div>
+      <div class="snip"><div class="row"><span class="lbl">Ejemplo de corrección por voz a Claude</span><button class="cp" type="button">Copiar</button></div>
+        <pre>En el segundo 5 hay un silencio incómodo. Haz que empiece a reír en el segundo 4 y escribe el prompt completo de nuevo, sin cambiar nada más.</pre></div>
+      <div class="out"><b>Entregable</b><span>Cada bloque de 30 s generado y aprobado.</span></div>
+    </div>
+  </article>
+
+  <article class="phase" id="f6">
+    <div class="ph-head"><span class="badge-n">6</span><div class="tt"><h2>Minería y postproducción</h2><div class="tools"><span class="tool">Premiere Pro</span><span class="tool">Artlist</span><span class="tool">Udio / Suno</span><span class="tool">Claude</span></div></div></div>
+    <div class="ph-body">
+      <div class="cols">
+        <div class="col"><h3>Minería y ritmo (Premiere Pro)</h3>
+          <ol class="steps">
+            <li><span>Usa <b>Detección de edición de escena</b> (Scene Edit Detection) para cortar el clip de 30 s en cada cambio de cámara.</span></li>
+            <li><span><b>Mina</b> solo los 2 o 3 segundos perfectos de cada generación, incluso de las que fallaron, y únelos.</span></li>
+            <li><span>Elimina todos los <b>espacios muertos y silencios</b> donde no haya actuación clave, para retener la atención en redes.</span></li>
+          </ol>
+        </div>
+        <div class="col"><h3>Sonido (Artlist, Udio / Suno)</h3>
+          <ol class="steps">
+            <li><span><b>Diseño sonoro en Artlist:</b> hasta 3 o 4 canciones distintas en los primeros 15 segundos (transiciones, piano, risers) para marcar los cambios emocionales, más efectos puntuales como el golpe del teléfono y el viento.</span></li>
+            <li><span><b>Banda sonora propia:</b> pega a Claude los tiempos exactos de tu vídeo y pídele un prompt de música. Úsalo en Udio o Suno para que la música reaccione a tu montaje.</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="cols">
+        <div class="col"><h3>Color y cierre</h3>
+          <ol class="steps">
+            <li><span>Aplica una capa de <b>Lumetri Color</b> con un ligero ajuste de saturación y exposición y cópiala en todos los clips: unifica el brillo y destaca en pantallas de móvil.</span></li>
+            <li><span>Añade los <b>subtítulos</b>.</span></li>
+          </ol>
+        </div>
+        <div class="col"><div class="snip"><div class="row"><span class="lbl">Ejemplo de prompt de música</span><button class="cp" type="button">Copiar</button></div>
+          <pre>Piano lento, 62 BPM, Do menor. Duración total 60 segundos. Impacto en el segundo 12. Cambios de plano en 0:00, 0:04, 0:08, 0:12. Instrumental, sin voz.</pre></div></div>
+      </div>
+      <div class="out"><b>Entregable</b><span>Vídeo final montado, con sonido, color unificado y subtítulos.</span></div>
+    </div>
+  </article>
+
+  <section aria-label="Checklist">
+    <h2 style="margin-bottom:10px">Checklist rápido</h2>
+    <div class="check" id="check">
+      <h3>Antes de generar</h3>
+      <label><input type="checkbox"><span>Fotograma de Shotdeck con metadatos capturado</span></label>
+      <label><input type="checkbox"><span>Entorno generado y limpiado con Edit</span></label>
+      <label><input type="checkbox"><span>Hojas de personaje listas</span></label>
+      <label><input type="checkbox"><span>Objetos sin texto y con nombre genérico</span></label>
+      <label><input type="checkbox"><span>Guion con cámara, tiempos, gestos, sonido y voces</span></label>
+      <label><input type="checkbox"><span>Prompts de 30 s con la cámara al inicio, menos de 10.000 caracteres</span></label>
+      <label><input type="checkbox"><span>Voz grabada, exportada como MP4 negro y subida como Video 1</span></label>
+      <h3>Después de generar</h3>
+      <label><input type="checkbox"><span>Primer bloque generado y corregido por voz hasta convencer</span></label>
+      <label><input type="checkbox"><span>Scene Edit Detection aplicada y mejores 2-3 s minados</span></label>
+      <label><input type="checkbox"><span>Silencios y espacios muertos eliminados</span></label>
+      <label><input type="checkbox"><span>Capas de sonido y efectos en Artlist</span></label>
+      <label><input type="checkbox"><span>Banda sonora generada con los tiempos del montaje</span></label>
+      <label><input type="checkbox"><span>Lumetri copiada a todos los clips</span></label>
+      <label><input type="checkbox"><span>Subtítulos añadidos</span></label>
+    </div>
+  </section>
+  <p class="foot">Las casillas se guardan solo en este navegador.</p>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll(".cp").forEach(function(b){
+    b.addEventListener("click",function(){
+      var pre=b.closest(".snip").querySelector("pre"),t=pre.textContent;
+      var ok=function(){b.textContent="Copiado";setTimeout(function(){b.textContent="Copiar"},1600)};
+      var fail=function(){
+        var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);
+        b.textContent="Selecciona y copia";setTimeout(function(){b.textContent="Copiar"},2200);
+      };
+      try{navigator.clipboard.writeText(t).then(ok,fail)}catch(e){fail()}
+    });
+  });
+  var KEY="workflow-video-ia:check",boxes=document.querySelectorAll("#check input"),saved=[];
+  try{saved=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){}
+  boxes.forEach(function(c,i){
+    c.checked=!!saved[i];
+    c.addEventListener("change",function(){
+      var a=[];boxes.forEach(function(x){a.push(x.checked)});
+      try{localStorage.setItem(KEY,JSON.stringify(a))}catch(e){}
+    });
+  });
+})();
+</script>
