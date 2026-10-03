@@ -191,7 +191,7 @@ const FASES=[
 ];
 
 /* ---------- estado ---------- */
-let P=null, list=[], db=null, tab="f1", saveT=null, hoverPath=null, pickPath=null, f1Msg="", f1Err="";
+let dirty=false, P=null, list=[], db=null, tab="f1", saveT=null, hoverPath=null, pickPath=null, f1Msg="", f1Err="";
 const caps={sample:null,assets:null,img:false,max:5};
 const openMap=new Map();
 const blobs=new Map(), urls=new Map();
@@ -240,7 +240,16 @@ async function init(){
     db.collection("projects").onSnapshot(s=>{
       list=s.docs.map(d=>d.data()).filter(Boolean).sort((a,b)=>(b.updated||0)-(a.updated||0));
       const cambio=first||!P||!list.some(x=>x.id===P.id);first=false;
-      if(cambio){P=list[0]?hydrate(list[0]):null;renderAll()}else renderHeader();
+      if(cambio){P=list[0]?hydrate(list[0]):null;renderAll()}
+      else{
+        renderHeader();
+        const d=list.find(x=>x.id===P.id);
+        if(d&&d.estilo&&(d.updated||0)>(P.updated||0)&&!dirty){
+          const ae=document.activeElement;
+          if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return;
+          P=hydrate(d);renderAll();$("#saved").textContent="Actualizado desde Claude";
+        }
+      }
     },local);
   }else local();
 }
@@ -251,7 +260,7 @@ async function initCaps(){
 }
 function save(){
   if(!P)return;
-  P.updated=Date.now();$("#saved").textContent="Guardando…";
+  P.updated=Date.now();dirty=true;$("#saved").textContent="Guardando…";
   clearTimeout(saveT);
   saveT=setTimeout(flush,500);
 }
@@ -260,7 +269,7 @@ async function flush(){
   try{
     if(db)await db.collection("projects").doc(P.id).set(plain(P));
     else{const a=lsRead().filter(x=>x.id!==P.id);a.unshift(plain(P));lsWrite(a)}
-    $("#saved").textContent=db?"Guardado":"Guardado en este navegador";
+    dirty=false;$("#saved").textContent=db?"Guardado":"Guardado en este navegador";
   }catch(e){$("#saved").textContent="No se pudo guardar";toast("No se pudo guardar: "+((e&&e.message)||"error de almacenamiento"))}
   syncList();
 }
