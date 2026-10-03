@@ -96,3 +96,19 @@ Todo el estado vive en `proyectos/<nombre>/project.json` (estilo Shotdeck, perso
 - **Postproducción:** prompt de música y lista de efectos de sonido.
 
 Los proyectos e imágenes se guardan en el propio artifact.
+
+### Comandos de Claude Code (sin API)
+
+Las funciones de Claude con imágenes no están disponibles dentro de los artifacts en todas las cuentas. Por eso el trabajo de IA se hace en el chat de Claude Code, que sí lee imágenes y entra en tu suscripción, y Claqueta guarda y muestra el resultado. Los comandos están en `.claude/skills/`:
+
+| Comando | Qué hace |
+|---|---|
+| `/claqueta` | Estado del proyecto y siguiente paso |
+| `/fotograma` | Lee la captura de Shotdeck y rellena la Fase 1 (cámara, lente, película, emoción, notas, hex) |
+| `/assets` | Describe tus imágenes de entornos, personajes y props y redacta sus prompts |
+| `/guion` | Escribe el guion plano a plano desde tus assets o una idea |
+| `/bloques` | Redacta los mega-prompts por bloque (hasta 10.000 caracteres) |
+| `/iterar` | Corrige un bloque con lo que dictes que falló |
+| `/musica` | Prompt de música para Udio o Suno |
+
+Los comandos leen y escriben el proyecto en la base de datos de Claqueta; recarga la página para ver los cambios.

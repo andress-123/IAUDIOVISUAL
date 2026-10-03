@@ -385,7 +385,7 @@ async function sinVision(blob){
   let hex=[];try{hex=await colorsFromBlob(blob)}catch(e){}
   if(hex.length)P.estilo.hex=hex;
   P.estilo.ia="";f1Msg="";
-  f1Err="Esta vista no puede enviar imágenes a Claude, así que he calculado los colores de la imagen. Para el resto, copia el texto del panel de Shotdeck y pégalo en el recuadro de abajo.";
+  f1Err="Esta vista no puede enviar imágenes a Claude, así que he calculado los colores de la imagen. Para el resto, escribe /fotograma en el chat de Claude Code y pega la captura, o pega el texto del panel en el recuadro de abajo.";
   save();renderPanel();
 }
 async function analizarFotograma(btn){
@@ -525,7 +525,8 @@ f1:()=>
  card("f1.foto","Fotograma de referencia",
   dz("estilo.img",{label:"Pega o sube el fotograma de Shotdeck",hint:"Incluye el panel con los datos técnicos. Arrastra, pega con Ctrl+V o haz clic.",big:true})+
   `<div class="row sp"><div class="status" id="f1status">${f1Status()}</div>${P.estilo.img?aiBtn("analizar","Analizar con Claude"):""}</div>
-   <div class="col">${fld("Datos del panel de Shotdeck, como texto (alternativa si no se puede enviar la imagen)","estilo.panel",{rows:3,ph:"Copia y pega aquí cámara, lente, película, colores…"})}<div>${aiBtn("texto","Rellenar desde el texto")}</div></div>`)+
+   <p class="note">Lo más fácil: en el chat de Claude Code escribe <span class="mono">/fotograma</span> y pega la captura. Claude rellena esta ficha y solo tienes que recargar.</p>
+   <div class="col">${fld("Datos del panel de Shotdeck, como texto (alternativa)","estilo.panel",{rows:3,ph:"Copia y pega aquí cámara, lente, película, colores…"})}<div>${aiBtn("texto","Rellenar desde el texto")}</div></div>`)+
  card("f1.datos","Datos técnicos",
   `<div class="grid">${fld("Cámara","estilo.camara",{ph:"Arri Alexa 35"})}${fld("Lente","estilo.lente",{ph:"Signature Prime"})}${fld("Película","estilo.pelicula",{ph:"Kodak Vision3 500T"})}</div>
    ${fld("Emoción que transmite","estilo.emocion",{ph:"p. ej. vergüenza cómplice"})}
@@ -572,7 +573,7 @@ f3:()=>{
    {meta:`<span data-html="shotmeta:${i}"></span>`,open:P.guion.length<=3})).join("");
  const gen=card("f3.idea",vacio?"Empezar con un ejemplo":"Guion con Claude",
   vacio?`<div class="hero"><p>El guion está vacío. Claude puede escribir un ejemplo completo de ${fmt(P.duracion)} usando como referencia tu look, tus entornos, personajes y props, y las imágenes que hayas subido. Lo editas después plano a plano.</p>
-     ${aiBtn("borrador",P.idea.trim()?"Crear guion con mi idea":"Generar ejemplo de guion")}<p class="hint" data-out="asset"></p></div>
+     ${aiBtn("borrador",P.idea.trim()?"Crear guion con mi idea":"Generar ejemplo de guion")}<p class="hint" data-out="asset"></p><p class="hint">También puedes escribir <span class="mono">/guion</span> en el chat de Claude Code.</p></div>
      ${fld("Tu idea (opcional)","idea",{rows:3,ph:"Si la dejas vacía, Claude inventa la historia a partir de los assets"})}`
    :`<p class="hint" data-out="asset"></p>${fld("Idea o indicaciones","idea",{rows:3,ph:"qué debe pasar en los segundos que faltan"})}<div class="row">${aiBtn("borrador","Continuar guion con Claude")}</div>`,
   {open:vacio});
