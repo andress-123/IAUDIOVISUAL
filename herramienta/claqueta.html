@@ -498,7 +498,8 @@ const card=(k,title,body,{meta="",open=true}={})=>`<details class="card" data-k=
 const fld=(l,p,o={})=>{const v=getp(p);return `<label class="f ${o.cls||""}"><span>${l}</span>${o.rows?`<textarea data-b="${p}" rows="${o.rows}" placeholder="${esc(o.ph||"")}">${esc(v)}</textarea>`:`<input type="${o.type||"text"}" data-b="${p}" value="${esc(v)}" placeholder="${esc(o.ph||"")}"${o.step?` step="${o.step}"`:""}${o.list?` list="${o.list}"`:""}>`}</label>`};
 const copyBtn=k=>`<button class="btn sm" data-a="copy" data-k="${k}">Copiar</button>`;
 const outBox=(k,rows)=>`<textarea class="out" readonly rows="${rows||5}" data-out="${k}" aria-label="Texto generado"></textarea>`;
-const aiBtn=(a,label,attrs="")=>`<button class="btn sm ai" data-a="${a}" ${attrs}>✦ ${label}</button>`;
+const CMD={analizar:"/fotograma",texto:"/fotograma",gen:"/assets",descr:"/assets",borrador:"/guion",detalle:"/guion",expand:"/bloques",revise:"/iterar"};
+const aiBtn=(a,label,attrs="")=>`<button class="btn sm ai" data-a="cmd" data-cmd="${CMD[a]||"/claqueta"}" title="Copia el comando para pegarlo en el chat de Claude Code">✦ ${CMD[a]||"/claqueta"} en el chat</button>`;
 const rdy=path=>`<span data-html="rdy:${path}"></span>`;
 
 function renderAll(){renderHeader();renderStrip();renderPanel()}
@@ -526,7 +527,7 @@ f1:()=>
   dz("estilo.img",{label:"Pega o sube el fotograma de Shotdeck",hint:"Incluye el panel con los datos técnicos. Arrastra, pega con Ctrl+V o haz clic.",big:true})+
   `<div class="row sp"><div class="status" id="f1status">${f1Status()}</div>${P.estilo.img?aiBtn("analizar","Analizar con Claude"):""}</div>
    <p class="note">Lo más fácil: en el chat de Claude Code escribe <span class="mono">/fotograma</span> y pega la captura. Claude rellena esta ficha y solo tienes que recargar.</p>
-   <div class="col">${fld("Datos del panel de Shotdeck, como texto (alternativa)","estilo.panel",{rows:3,ph:"Copia y pega aquí cámara, lente, película, colores…"})}<div>${aiBtn("texto","Rellenar desde el texto")}</div></div>`)+
+   `)+
  card("f1.datos","Datos técnicos",
   `<div class="grid">${fld("Cámara","estilo.camara",{ph:"Arri Alexa 35"})}${fld("Lente","estilo.lente",{ph:"Signature Prime"})}${fld("Película","estilo.pelicula",{ph:"Kodak Vision3 500T"})}</div>
    ${fld("Emoción que transmite","estilo.emocion",{ph:"p. ej. vergüenza cómplice"})}
@@ -572,8 +573,8 @@ f3:()=>{
    <div class="row">${aiBtn("detalle","Detallar con Claude",`data-i="${i}"`)}<button class="btn sm" data-a="dupshot" data-i="${i}">Duplicar</button><button class="btn sm ghost danger" data-a="rmshot" data-i="${i}">Quitar</button></div></div></div>`,
    {meta:`<span data-html="shotmeta:${i}"></span>`,open:P.guion.length<=3})).join("");
  const gen=card("f3.idea",vacio?"Empezar con un ejemplo":"Guion con Claude",
-  vacio?`<div class="hero"><p>El guion está vacío. Claude puede escribir un ejemplo completo de ${fmt(P.duracion)} usando como referencia tu look, tus entornos, personajes y props, y las imágenes que hayas subido. Lo editas después plano a plano.</p>
-     ${aiBtn("borrador",P.idea.trim()?"Crear guion con mi idea":"Generar ejemplo de guion")}<p class="hint" data-out="asset"></p><p class="hint">También puedes escribir <span class="mono">/guion</span> en el chat de Claude Code.</p></div>
+  vacio?`<div class="hero"><p>El guion está vacío. Escribe /guion en el chat de Claude Code y Claude escribe un ejemplo completo de ${fmt(P.duracion)} usando como referencia tu look, tus entornos, personajes y props, y las imágenes que hayas subido. Recarga la página y lo editas plano a plano.</p>
+     ${aiBtn("borrador",P.idea.trim()?"Crear guion con mi idea":"Generar ejemplo de guion")}<p class="hint" data-out="asset"></p></div>
      ${fld("Tu idea (opcional)","idea",{rows:3,ph:"Si la dejas vacía, Claude inventa la historia a partir de los assets"})}`
    :`<p class="hint" data-out="asset"></p>${fld("Idea o indicaciones","idea",{rows:3,ph:"qué debe pasar en los segundos que faltan"})}<div class="row">${aiBtn("borrador","Continuar guion con Claude")}</div>`,
   {open:vacio});
@@ -759,7 +760,11 @@ async function redactar(btn,n,modo){
 async function handleFile(path,file){
   if(!file||!file.type.startsWith("image/")){toast("Sube una imagen (JPG, PNG o WebP)");return}
   try{await setImage(path,file)}catch(e){toast("No se pudo leer la imagen");return}
-  if(path==="estilo.img"){P.estilo.ia="";f1Err="";renderPanel();analizarFotograma($('[data-a="analizar"]'))}else renderPanel();
+  if(path==="estilo.img"){
+    P.estilo.ia="";f1Err="";
+    try{const b=await blobOf(P.estilo.img);if(b){const h=await colorsFromBlob(b);if(h.length)P.estilo.hex=h}}catch(e){}
+    save();renderPanel();toast("Imagen guardada. Escribe /fotograma en el chat de Claude Code para rellenar los datos.");
+  }else{renderPanel();toast("Imagen guardada")}
 }
 $("#file").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(f&&pickPath&&P)handleFile(pickPath,f)});
 document.addEventListener("dragover",e=>{const d=e.target.closest&&e.target.closest("[data-dz]");if(d){e.preventDefault();d.classList.add("over")}});
@@ -829,14 +834,7 @@ document.addEventListener("click",async e=>{
    case"foldall":document.querySelectorAll("#main details.card").forEach(d=>{d.open=el.dataset.v==="1";openMap.set(d.dataset.k,d.open)});break;
    case"dzpick":pickPath=el.closest("[data-dz]").dataset.dz;$("#file").click();break;
    case"dzrm":{const path=el.closest("[data-dz]").dataset.dz,old=getp(path);setp(path,null);if(old&&!old.tmp&&caps.assets&&caps.assets.delete)caps.assets.delete(old.id).catch(()=>{});if(path==="estilo.img"){P.estilo.ia="";f1Err=""}save();renderPanel();break}
-   case"analizar":analizarFotograma(el);break;
-   case"texto":desdeTexto(el);break;
-   case"gen":genAsset(el,kind,i);break;
-   case"descr":describir(el,kind,i);break;
-   case"borrador":borrador(el);break;
-   case"detalle":detallar(el,i);break;
-   case"expand":redactar(el,n,"expand");break;
-   case"revise":redactar(el,n,"revise");break;
+   case"cmd":copyText(el.dataset.cmd);toast("Copiado "+el.dataset.cmd+". Pégalo en el chat de Claude Code");break;
    case"copy":{const k=el.dataset.k;copyText(k==="frase"?P.frase:outVal(k));break}
    case"copyall":copyText(blocks().map((b,j)=>`===== BLOQUE ${j+1} =====\n${blockText(j)}`).join("\n\n"));break;
    case"dl":{
