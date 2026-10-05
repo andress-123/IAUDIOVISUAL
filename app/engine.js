@@ -337,8 +337,29 @@ const ramp = (fams, t) => {
     const R = o.R, img = o.image || demoFigure(W, H, o.seed);
     const src = document.createElement('canvas'); src.width = W; src.height = H;
     const sx = src.getContext('2d', { willReadFrequently: true });
-    const k = Math.max(W / img.width, H / img.height), iw = img.width * k, ih = img.height * k;
-    sx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+    // MARGEN para que las partículas tengan sitio: solo en los lados donde el borde de la foto es fondo limpio.
+    // Donde la figura sale del encuadre (cuerpo, hombro) la imagen se queda a ras, sin extender nada.
+    const mg = o.margen === undefined ? 0.1 : +o.margen;
+    const tmp = document.createElement('canvas'); tmp.width = img.width; tmp.height = img.height;
+    const tx = tmp.getContext('2d', { willReadFrequently: true }); tx.drawImage(img, 0, 0);
+    const id = tx.getImageData(0, 0, img.width, img.height).data, iw1 = img.width, ih1 = img.height;
+    const at = (x, y) => { const i = (y * iw1 + x) * 4; return [id[i], id[i + 1], id[i + 2]]; };
+    const ref = [0, 0, 0]; for (let i = 0; i < 40; i++) { const c = at(Math.floor((i + 0.5) / 40 * iw1), 0); ref[0] += c[0] / 40; ref[1] += c[1] / 40; ref[2] += c[2] / 40; }
+    const clean = (f) => { let ok = 0; for (let i = 0; i < 60; i++) { const t = (i + 0.5) / 60, c = f(t); if (Math.hypot(c[0] - ref[0], c[1] - ref[1], c[2] - ref[2]) < 70) ok++; } return ok / 60 > 0.93; };
+    const mT = clean((t) => at(Math.floor(t * iw1), 0)) ? mg : 0, mB = clean((t) => at(Math.floor(t * iw1), ih1 - 1)) ? mg : 0;
+    const mL = clean((t) => at(0, Math.floor(t * ih1))) ? mg : 0, mR = clean((t) => at(iw1 - 1, Math.floor(t * ih1))) ? mg : 0;
+    const k = Math.max(W * (1 - mL - mR) / iw1, H * (1 - mT - mB) / ih1), iw = iw1 * k, ih = ih1 * k;
+    const ix = Math.round(mL > 0 && mR === 0 ? W * mL : mR > 0 && mL === 0 ? W * (1 - mR) - iw : (W - iw) / 2), iy = Math.round(mT > 0 && mB === 0 ? H * mT : mB > 0 && mT === 0 ? H * (1 - mB) - ih : (H - ih) / 2);   // margen en el lado limpio; en el lado opuesto se recorta
+    const iw2 = Math.round(iw), ih2 = Math.round(ih);
+    if (ix > 0) sx.drawImage(img, 0, 0, 1, ih1, 0, iy, ix, ih2);                              // relleno de margen: se repite el borde de la foto
+    if (ix + iw2 < W) sx.drawImage(img, iw1 - 1, 0, 1, ih1, ix + iw2, iy, W - ix - iw2, ih2);
+    if (iy > 0) sx.drawImage(img, 0, 0, iw1, 1, ix, 0, iw2, iy);
+    if (iy + ih2 < H) sx.drawImage(img, 0, ih1 - 1, iw1, 1, ix, iy + ih2, iw2, H - iy - ih2);
+    if (ix > 0 && iy > 0) sx.drawImage(img, 0, 0, 1, 1, 0, 0, ix, iy);
+    if (ix + iw2 < W && iy > 0) sx.drawImage(img, iw1 - 1, 0, 1, 1, ix + iw2, 0, W - ix - iw2, iy);
+    if (ix > 0 && iy + ih2 < H) sx.drawImage(img, 0, ih1 - 1, 1, 1, 0, iy + ih2, ix, H - iy - ih2);
+    if (ix + iw2 < W && iy + ih2 < H) sx.drawImage(img, iw1 - 1, ih1 - 1, 1, 1, ix + iw2, iy + ih2, W - ix - iw2, H - iy - ih2);
+    sx.drawImage(img, ix, iy, iw2, ih2);
     const px = sx.getImageData(0, 0, W, H).data;
     const modoPre = o.degradado || ['diagonal', 'mapa', 'mixto'][(o.seed - 1) % 3];
     const cols = o.cols || ({ diagonal: 60, mapa: 84, mixto: 72, vertical: 56 }[modoPre]), cell = W / cols, rows = Math.ceil(H / cell);
@@ -393,6 +414,7 @@ const ramp = (fams, t) => {
     const q = (t) => Math.floor(clamp(refl(t + desp)) * steps * 0.9999) / (steps - 1);       // escalones como las tiras de la identidad
     const N = noise2(o.seed + 9);
     // 2) color de cada celda
+    const colMap = new Map();
     for (const [c, r, l] of sub) {
       const tl = clamp((l - lo) / (hi - lo));                                              // 0 = sombra, 1 = luz
       const td = 0.5 * c / cols + 0.5 * r / rows + (N(c / 9, r / 9) - 0.5) * 0.18;           // posición diagonal con algo de ruido
@@ -402,9 +424,36 @@ const ramp = (fams, t) => {
       else if (modo === 'diagonal') col = ramp(fams, q(0.7 * td + 0.3 * tl));                  // gradiente diagonal con la luz de la foto
       else if (modo === 'mapa') col = ramp(fams, q(tl));                                       // la luz de la foto recorre la rampa
       else col = ramp(fams, q(0.35 * td + 0.65 * tl));                                         // mixto
-      ctx.fillStyle = rgb(col);
+      const css = rgb(col); colMap.set(r * cols + c, css); ctx.fillStyle = css;
       const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
       ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
+    }
+    // ---- partículas de expansión: MISMO píxel y misma rejilla que la figura, solo en unas pocas áreas al azar ----
+    const dens = o.particulas === undefined ? 1 : +o.particulas;
+    if (dens > 0 && sub.length) {
+      const PR = rng((o.seed || 1) * 104729 + 7), nb = rows * cols;
+      const isSub = new Uint8Array(nb), dst = new Float32Array(nb).fill(1e9), src = new Int32Array(nb).fill(-1), qq = [];
+      sub.forEach(([c, r]) => { const i = r * cols + c; isSub[i] = 1; dst[i] = 0; src[i] = i; qq.push(i); });
+      for (let h = 0; h < qq.length; h++) {                         // distancia a la figura, solo por el fondo exterior
+        const i = qq[h], c = i % cols, r = (i / cols) | 0;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          const c2 = c + dc, r2 = r + dr; if ((!dr && !dc) || c2 < 0 || c2 >= cols || r2 < 0 || r2 >= rows) continue;
+          const j = r2 * cols + c2, nd = dst[i] + (dr && dc ? 1.41 : 1);
+          if (out[j] && nd < dst[j] && nd <= 14) { dst[j] = nd; src[j] = src[i]; qq.push(j); }
+        }
+      }
+      // áreas: unas pocas zonas aleatorias ancladas en el borde de la figura (no por todo el lienzo)
+      const edge = sub.filter(([c, r]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dc, dr]) => { const c2 = c + dc, r2 = r + dr; return c2 >= 0 && c2 < cols && r2 >= 0 && r2 < rows && out[r2 * cols + c2]; }));
+      const blobs = []; if (edge.length) for (let k = PR.int(3, 5); k > 0; k--) { const a = PR.pick(edge); blobs.push({ c: a[0], r: a[1], rad: PR.range(4, 8) }); }
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const i = r * cols + c;
+        if (isSub[i] || !out[i] || dst[i] > 14 || src[i] < 0) continue;
+        let w = 0; for (const b of blobs) w = Math.max(w, Math.exp(-((c - b.c) ** 2 + (r - b.r) ** 2) / (2 * (b.rad * 0.65) ** 2)));
+        if (PR() > dens * 0.85 * w * Math.exp(-dst[i] / 5)) continue;
+        ctx.fillStyle = colMap.get(src[i]);                          // mismo color que el píxel de la figura del que sale
+        const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
+        ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
+      }
     }
   }
 
@@ -696,7 +745,7 @@ const ramp = (fams, t) => {
 
   /* ---------- Partículas de expansión (efecto global): píxeles que salen de la forma hacia fuera ---------- */
   function particulas(layer, ctx, W, H, spec, seed) {
-    const dens = spec.particulas === undefined ? 1 : +spec.particulas;
+    const dens = +spec.particulasGlobal || 0;
     if (!dens) return;
     const R = rng(seed * 7919 + 13), N = noise2(seed + 331);
     const g = Math.max(5, Math.round(H / 72)), gw = Math.ceil(W / g), gh = Math.ceil(H / g);
