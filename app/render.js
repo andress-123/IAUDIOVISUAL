@@ -22,6 +22,8 @@ const jobs = [
 // Fotos propias: déjalas en app/fotos/ (jpg/png) y se generan versiones en modo figura
 const fotosDir = path.join(__dirname, 'fotos');
 if (fs.existsSync(fotosDir)) for (const f of fs.readdirSync(fotosDir).filter((n) => /\.(jpe?g|png|webp)$/i.test(n)))
+  for (const seed of [1, 2, 3, 4, 5, 6]) jobs.push([`silueta-${path.parse(f).name}-${seed}`, { comp: 'silueta', seed, foto: 'data:image/' + path.extname(f).slice(1).replace('jpg', 'jpeg') + ';base64,' + fs.readFileSync(path.join(fotosDir, f)).toString('base64') }]);
+if (fs.existsSync(fotosDir)) for (const f of fs.readdirSync(fotosDir).filter((n) => /\.(jpe?g|png|webp)$/i.test(n)))
   for (const seed of [1, 2, 3]) jobs.push([`figura-${path.parse(f).name}-${seed}`, { comp: 'figura', seed, foto: 'data:image/' + path.extname(f).slice(1).replace('jpg', 'jpeg') + ';base64,' + fs.readFileSync(path.join(fotosDir, f)).toString('base64') }]);
 (async () => {
   fs.mkdirSync(out, { recursive: true });

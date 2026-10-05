@@ -328,6 +328,55 @@ const ramp = (fams, t) => {
     }
   }
 
+
+  // Silueta pixelada (estilo "Portrait animate"): retrato -> píxeles gruesos de un solo tono con degradado
+  function pixelFigure(ctx, W, H, o) {
+    const R = o.R, img = o.image || demoFigure(W, H, o.seed);
+    const src = document.createElement('canvas'); src.width = W; src.height = H;
+    const sx = src.getContext('2d', { willReadFrequently: true });
+    const k = Math.max(W / img.width, H / img.height), iw = img.width * k, ih = img.height * k;
+    sx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+    const px = sx.getImageData(0, 0, W, H).data;
+    const cols = o.cols || R.pick([44, 52, 60]), cell = W / cols, rows = Math.ceil(H / cell);
+    const g = []; // color medio de cada celda
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      let rr = 0, gg = 0, bb = 0, n = 0;
+      for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+        const x = clamp(((c + (i + 0.5) / 4) * cell) | 0, 0, W - 1), y = clamp(((r + (j + 0.5) / 4) * cell) | 0, 0, H - 1), p = (y * W + x) * 4;
+        rr += px[p]; gg += px[p + 1]; bb += px[p + 2]; n++;
+      }
+      g.push([rr / n, gg / n, bb / n]);
+    }
+    const lum = g.map((c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]);
+    // fondo: se parte de la fila superior y se sigue hacia abajo cogiendo, de los dos bordes, la celda más parecida a la fila anterior
+    const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    const bgs = [];
+    { let a = [0, 0, 0]; for (let c = 0; c < cols; c++) { a[0] += g[c][0]; a[1] += g[c][1]; a[2] += g[c][2]; } bgs[0] = a.map((v) => v / cols); }
+    for (let r = 1; r < rows; r++) {
+      const cand = [g[r * cols], g[r * cols + cols - 1]].sort((p, q) => dist(p, bgs[r - 1]) - dist(q, bgs[r - 1]))[0];
+      bgs[r] = dist(cand, bgs[r - 1]) < 40 ? cand : bgs[r - 1];
+    }
+    const bgRow = (r) => bgs[r];
+    const local = (c, r, rad) => { let s2 = 0, n = 0; for (let j = -rad; j <= rad; j++) for (let i = -rad; i <= rad; i++) { const cc = c + i, r2 = r + j; if (cc >= 0 && cc < cols && r2 >= 0 && r2 < rows) { s2 += lum[r2 * cols + cc]; n++; } } return s2 / n; };
+    const T = o.umbral || 55, holeT = o.huecos || 18;
+    const fam = (o.fams && o.fams[0]) || ORDER[(o.seed - 1) % ORDER.length];   // una familia distinta por semilla
+    const multi = o.fams ? o.fams.length > 1 : o.seed % 2 === 0;
+    const fams = multi ? (o.fams || [fam, otherFam(R, fam), otherFam(R, fam)]) : [fam];
+    const base = hex(FAMILIES[fam].base), end = hex(FAMILIES[fam].end), white = [255, 255, 255];
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, rgb(mix(white, base, 0.16))); bg.addColorStop(1, rgb(mix(white, end, 0.5)));
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const i = r * cols + c, b = bgRow(r);
+      if (Math.hypot(g[i][0] - b[0], g[i][1] - b[1], g[i][2] - b[2]) < T) continue;       // fondo
+      if (lum[i] - local(c, r, 3) > holeT) continue;                                       // solo luces -> huecos (ojos, dientes), la cara se mantiene sólida
+      const t = clamp(0.1 + (r / rows) * 0.9);
+      ctx.fillStyle = rgb(multi ? ramp(fams, t) : grad(fam, t * 0.85));
+      const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
+      ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
+    }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -355,6 +404,7 @@ const ramp = (fams, t) => {
     campo: (ctx, W, H, o) => mosaic(ctx, W, H, o),
     mezcla: (ctx, W, H, o) => overprint(ctx, W, H, o),
     figura: (ctx, W, H, o) => figure(ctx, W, H, o),
+    silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 

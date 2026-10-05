@@ -1,3 +1,4 @@
 app/fotos/*
 !app/fotos/.gitkeep
 app/pruebas/figura-*
+app/pruebas/silueta-*
