@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>Pruebas de identidad</title>
+<style>body{margin:0;background:#fff;font:14px system-ui}canvas{display:block}</style>
+<canvas id="c" width="1600" height="1000"></canvas>
+<script src="engine.js"></script>
+<script>window.draw=(spec)=>Identidad.render(document.getElementById('c'),spec);
+window.png=()=>document.getElementById('c').toDataURL('image/png');</script>
