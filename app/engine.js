@@ -75,6 +75,8 @@ const ramp = (fams, t) => {
   const subset = (R, k) => { const a = ORDER.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, k); };
   // oscurece sin ensuciar: baja L en OKLab y refuerza algo el croma (el naranja oscuro no se vuelve barro)
   const shade = (c, k) => { const L = toLab(c), f = 1 + 0.35 * k; return fromLab([L[0] * (1 - k), L[1] * f, L[2] * f]); };
+  // rampas de 2-3 familias SEGURAS: avanzan por matices vecinos, así las transiciones no pasan por grises
+  const SAFE_RAMPS = [['blue', 'green', 'yellow'], ['blue', 'cyan', 'green'], ['cyan', 'green', 'lime'], ['green', 'lime', 'yellow'], ['lime', 'yellow', 'red'], ['green', 'yellow', 'red']];
   const otherFam = (R, f) => { let o; do { o = R.pick(ORDER); } while (o === f); return o; };
 
   /* ---------- Formas ---------- */
@@ -388,7 +390,7 @@ const ramp = (fams, t) => {
     const modo = o.degradado || ['diagonal', 'mapa', 'mixto'][(o.seed - 1) % 3];
     const fams = o.fams || (modo === 'vertical'
       ? [ORDER[(o.seed - 1) % ORDER.length]]
-      : [0, 2, 4].map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]));   // 3 familias vecinas en el ciclo de la paleta
+      : SAFE_RAMPS[(o.seed - 1) % SAFE_RAMPS.length]);   // combinaciones de familias ordenadas por matiz que se mezclan limpias (sin saltos tipo amarillo->azul, que dan gris)
     const holeT = o.huecos || 20;                                          // huecos en las luces (ojos, dientes) para que la figura se lea
     // 1) celdas de la figura: fondo = celdas parecidas al fondo CONECTADAS con el borde (flood fill);
     //    lo claro del interior (océano de un globo, un diente) sigue siendo parte del objeto
@@ -417,13 +419,22 @@ const ramp = (fams, t) => {
     const colMap = new Map();
     for (const [c, r, l] of sub) {
       const tl = clamp((l - lo) / (hi - lo));                                              // 0 = sombra, 1 = luz
-      const td = 0.5 * c / cols + 0.5 * r / rows + (N(c / 9, r / 9) - 0.5) * 0.18;           // posición diagonal con algo de ruido
+      const td = 0.5 * c / cols + 0.5 * r / rows + (N(c / 9, r / 9) - 0.5) * 0.12;           // posición diagonal con algo de ruido
+      // REGLA DE LEGIBILIDAD: el MATIZ (qué color) cambia despacio por la figura (espacial, en pocos escalones) y la FORMA
+      // la dibuja siempre la CLARIDAD (sombra -> luz) de forma monótona e igual para todos los colores.
+      // Así dos zonas contiguas nunca difieren a la vez en matiz y en claridad "al revés".
       let col;
-      // se combinan POSICIONES en la rampa (no colores): así no aparecen grises sucios al cruzar tonos
       if (modo === 'vertical') col = grad(fams[0], clamp(0.1 + (r / rows) * 0.9) * 0.85);
-      else if (modo === 'diagonal') col = ramp(fams, q(0.7 * td + 0.3 * tl));                  // gradiente diagonal con la luz de la foto
-      else if (modo === 'mapa') col = ramp(fams, q(tl));                                       // la luz de la foto recorre la rampa
-      else col = ramp(fams, q(0.35 * td + 0.65 * tl));                                         // mixto
+      else {
+        const hueSteps = modo === 'mapa' ? 4 : modo === 'mixto' ? 7 : 9;                        // mapa: menos cambios de color, más forma
+        const amp = (modo === 'mapa' ? 0.42 : modo === 'mixto' ? 0.36 : 0.32) * (fams.length < 3 ? 1.35 : 1);   // con solo 2 familias hay menos variedad de color: más contraste de claridad                     // cuánto contrasta la claridad
+        const ph = Math.floor(clamp(modo === 'mixto' ? 0.85 * td + 0.15 * tl : td) * hueSteps * 0.9999) / (hueSteps - 1);
+        const c0 = ramp(fams, ph), L = toLab(c0);
+        const tq = Math.floor(tl * 7 * 0.9999) / 6;                                                // 7 tonos escalonados
+        const dl = (tq - 0.5) * amp;
+        // claridad acotada (0.4-0.87): lo más claro no se confunde con el fondo blanco; en sombra se conserva el croma
+        col = fromLab([clamp(L[0] + dl, 0.4, 0.87), L[1] * (1 + (dl < 0 ? -dl * 0.6 : 0)), L[2] * (1 + (dl < 0 ? -dl * 0.6 : 0))]);
+      }
       const css = rgb(col); colMap.set(r * cols + c, css); ctx.fillStyle = css;
       const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
       ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
