@@ -85,7 +85,15 @@ const ramp = (fams, t) => {
     ['#D02E26', '#FF00B4', '#FF6A00', '#F4C00E', '#E6FF8A'],             // rojo -> rosa -> naranja -> amarillo (como las láminas)
     ['#0050FF', '#00E67A', '#99E371', '#F4C00E'],                         // azul -> verde menta -> lima -> amarillo
   ];
-  const pathColor = (stops, t) => { const n = stops.length - 1, x = clamp(t) * n, i = Math.min(n - 1, Math.floor(x)); return mix(hex(stops[i]), hex(stops[i + 1]), x - i); };
+  // mezcla en OKLCH: interpola luminosidad y croma y gira el matiz por el camino corto -> el degradado se mantiene saturado (azul->verde pasa por cian, no por gris)
+  const mixLch = (c1, c2, t) => {
+    const A = toLab(c1), B = toLab(c2), Ca = Math.hypot(A[1], A[2]), Cb = Math.hypot(B[1], B[2]);
+    const ha = Math.atan2(A[2], A[1]); let dh = Math.atan2(B[2], B[1]) - ha;
+    while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
+    const L = lerp(A[0], B[0], t), C = lerp(Ca, Cb, t), h = ha + dh * t;
+    return fromLab([L, C * Math.cos(h), C * Math.sin(h)]);
+  };
+  const pathColor = (stops, t) => { const n = stops.length - 1, x = clamp(t) * n, i = Math.min(n - 1, Math.floor(x)); return mixLch(hex(stops[i]), hex(stops[i + 1]), x - i); };
   // rampas de 2-3 familias SEGURAS: avanzan por matices vecinos, así las transiciones no pasan por grises
   const SAFE_RAMPS = [['blue', 'green', 'yellow'], ['blue', 'cyan', 'green'], ['cyan', 'green', 'lime'], ['green', 'lime', 'yellow'], ['lime', 'yellow', 'red'], ['green', 'yellow', 'red']];
   const otherFam = (R, f) => { let o; do { o = R.pick(ORDER); } while (o === f); return o; };
@@ -434,17 +442,31 @@ const ramp = (fams, t) => {
       info.set(r * cols + c, [tl, td]);
     }
     const PAL = o.camino || PATHS[(o.seed - 1) % PATHS.length];
-    // el tono manda (forma legible); una deriva diagonal suave lo desplaza para que el degradado recorra la figura
-    const colorOf = (tl, td) => { const t = clamp(tl + (td - 0.5) * 0.22); return rgb(hex(PAL[Math.min(PAL.length - 1, Math.floor(t * PAL.length))])); };   // color PURO de la paleta por bloque (como las láminas), sin mezclas intermedias
-    const paint = (c, r, sz, css) => {
-      const x0 = Math.round(c * cell), y0 = Math.round(r * cell), x1 = Math.round((c + sz) * cell), y1 = Math.round((r + sz) * cell);
-      ctx.fillStyle = css; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-      for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) colMap.set((r + dr) * cols + c + dc, css);
+    const GR = rng((o.seed || 1) * 7717 + 3), GN = noise2(o.seed + 555);                   // azar de huecos y orientaciones
+    const tOf = (tl, td) => clamp(tl + (td - 0.5) * 0.22);                                // el tono manda; deriva diagonal suave
+    const solidCss = (t) => rgb(pathColor(PAL, Math.floor(t * 10 * 0.9999) / 9));            // píxel suelto: color vivo, escalonado
+    const span = 1.5 / (PAL.length - 1);                                                    // tramo del recorrido que se ve dentro de un bloque
+    const gapOn = o.huecosBlancos === undefined ? 1 : +o.huecosBlancos;
+    // huecos en blanco: más probables en bloques grandes y en ciertas zonas (agrupados, no uniformes)
+    const gapP = (c, r, sz) => gapOn * { 8: 0.22, 4: 0.15, 2: 0.09, 1: 0.04 }[sz] * (0.2 + 1.6 * GN(c / 7, r / 7));
+    const paint = (c, r, sz, t) => {
+      const x0 = Math.round(c * cell), y0 = Math.round(r * cell), x1 = Math.round((c + sz) * cell), y1 = Math.round((r + sz) * cell), w = x1 - x0, h = y1 - y0;
+      const key = solidCss(t);
+      for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) colMap.set((r + dr) * cols + c + dc, key);   // las partículas heredan este color aunque el bloque sea un hueco
+      if (GR() < gapP(c, r, sz)) return;                                                   // hueco en blanco
+      if (sz < 4) { ctx.fillStyle = key; ctx.fillRect(x0, y0, w, h); return; }                 // píxeles pequeños y 2x2: color vivo liso; el degradado va en los bloques grandes
+      // DEGRADADO dentro del bloque: tiras que recorren un tramo del degradado de la paleta (como las barras de las láminas)
+      const k = sz >= 8 ? 6 : 4, vert = GR() < 0.85;                                           // pocas tiras anchas; casi siempre en el mismo sentido para que se encadenen
+      for (let i = 0; i < k; i++) {
+        ctx.fillStyle = rgb(pathColor(PAL, t + (i / (k - 1) - 0.5) * span));
+        if (vert) { const a = x0 + Math.round(w * i / k), b = x0 + Math.round(w * (i + 1) / k); ctx.fillRect(a, y0, b - a, h); }
+        else { const a = y0 + Math.round(h * i / k), b = y0 + Math.round(h * (i + 1) / k); ctx.fillRect(x0, a, w, b - a); }
+      }
     };
     // PÍXELES DE VARIOS TAMAÑOS: bloques grandes donde el tono es casi plano (cuerpo, pelo) y pequeños donde hay detalle (cara, bordes)
     const used = new Uint8Array(rows * cols), bigOn = o.bloques === undefined ? 1 : +o.bloques;
     if (bigOn > 0) for (const sz of [8, 4, 2]) {
-      const tol = { 8: 0.08, 4: 0.11, 2: 0.14 }[sz] * bigOn;
+      const tol = { 8: 0.10, 4: 0.13, 2: 0.15 }[sz] * bigOn;
       for (let r0 = 0; r0 + sz <= rows; r0 += sz) for (let c0 = 0; c0 + sz <= cols; c0 += sz) {
         let ok = true, mn = 1, mx = 0, st = 0, sd = 0;
         for (let dr = 0; dr < sz && ok; dr++) for (let dc = 0; dc < sz; dc++) {
@@ -453,11 +475,11 @@ const ramp = (fams, t) => {
           mn = Math.min(mn, v[0]); mx = Math.max(mx, v[0]); st += v[0]; sd += v[1];
         }
         if (!ok || mx - mn > tol) continue;
-        paint(c0, r0, sz, colorOf(st / (sz * sz), sd / (sz * sz)));
+        paint(c0, r0, sz, tOf(st / (sz * sz), sd / (sz * sz)));
         for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) used[(r0 + dr) * cols + c0 + dc] = 1;
       }
     }
-    for (const [c, r] of sub) { const i = r * cols + c; if (used[i]) continue; const v = info.get(i); paint(c, r, 1, colorOf(v[0], v[1])); }
+    for (const [c, r] of sub) { const i = r * cols + c; if (used[i]) continue; const v = info.get(i); paint(c, r, 1, tOf(v[0], v[1])); }
     // ---- partículas de expansión: MISMO píxel y misma rejilla que la figura, solo en unas pocas áreas al azar ----
     const dens = o.particulas === undefined ? 1 : +o.particulas;
     if (dens > 0 && sub.length) {
