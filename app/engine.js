@@ -96,17 +96,18 @@ const ramp = (fams, t) => {
   // Cruz "+": barra horizontal + barra vertical, cada una con su familia y degradado
   function plus(ctx, cx, cy, s, o) {
     const R = o.R, fa = o.famH, fb = o.famV;
-    const L1 = s * R.range(0.55, 1), L2 = s * R.range(0.55, 1);
-    const T1 = s * R.range(0.12, 0.34), T2 = s * R.range(0.14, 0.34);
-    const U1 = s * R.range(0.55, 1), U2 = s * R.range(0.55, 1);
+    const L1 = s * (o.L1 ?? R.range(0.55, 1)), L2 = s * (o.L2 ?? R.range(0.55, 1));
+    const T1 = s * (o.T1 ?? R.range(0.12, 0.34)), T2 = s * (o.T2 ?? R.range(0.14, 0.34));
+    const U1 = s * (o.U1 ?? R.range(0.55, 1)), U2 = s * (o.U2 ?? R.range(0.55, 1));
+    const rH = o.revH ?? (R() < 0.5), rV = o.revV ?? (R() < 0.5);
     const n = o.steps || R.int(5, 9);
     ctx.save();
     ctx.translate(cx, cy);
     if (o.rot) ctx.rotate(o.rot);
     if (o.skew) ctx.transform(1, 0, o.skew, 1, 0, 0);
-    strips(ctx, fa, -L1, -T1 / 2, L1 + L2, T1, n, true, R() < 0.5, o.jitter || 0, R);
+    strips(ctx, fa, -L1, -T1 / 2, L1 + L2, T1, n, true, rH, o.jitter || 0, R);
     ctx.globalCompositeOperation = 'hard-light'; // modo de fusión de la identidad (Illustrator: Luz fuerte)
-    strips(ctx, fb, -T2 / 2, -U1, T2, U1 + U2, Math.max(4, n - 1), false, R() < 0.5, o.jitter || 0, R);
+    strips(ctx, fb, -T2 / 2, -U1, T2, U1 + U2, Math.max(o.steps ? 2 : 4, n - 1), false, rV, o.jitter || 0, R);
     ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
   }
@@ -406,6 +407,86 @@ const ramp = (fams, t) => {
     }
   }
 
+
+  /* ---------- Conceptos: forma = idea (todo parte de la cruz con tiras) ---------- */
+  const ease = (t) => t * t * (3 - 2 * t);
+
+  // OPTIMISMO: cruces que ascienden y crecen hacia delante; el brazo vertical se estira hacia arriba y se aclara
+  function optimismo(ctx, W, H, o) {
+    const R = o.R, n = 6, seqH = ['yellow', 'lime', 'green', 'cyan', 'blue'], seqV = ['red', 'yellow', 'lime', 'cyan', 'yellow'];
+    const off = R.range(-0.03, 0.03);
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1), k = Math.min(seqH.length - 1, Math.floor(t * seqH.length));
+      plus(ctx, W * (0.12 + 0.68 * t), H * (0.8 - 0.4 * Math.pow(t, 0.9) + off * Math.sin(i * 1.7)), H * (0.07 + 0.14 * t),
+        { R, famH: seqH[k], famV: seqV[k], L1: 1, L2: 1, U1: 1.5, U2: 0.45, T1: 0.4, T2: 0.4, rot: 0.04 + 0.14 * t, steps: 7, revH: false, revV: true });
+    }
+  }
+
+  // CABEZONERÍA: el flujo choca contra una cruz maciza e inamovible; los bloques se comprimen y se calientan
+  function cabezoneria(ctx, W, H, o) {
+    const R = o.R, cx = W * R.range(0.6, 0.68), cy = H * 0.5, s = H * 0.36, T = 0.44;
+    const rows = 13, rh = H / rows, x0 = W * 0.04, m = 9;
+    for (let k = 0; k < rows; k++) {
+      const y = (k + 0.5) * rh;
+      const hit = Math.abs(y - cy) <= s, face = !hit ? W * 0.97 : (Math.abs(y - cy) <= T * s / 2 ? cx - s : cx - T * s / 2);
+      const L = face - x0;
+      for (let j = 0; j < m; j++) {
+        const a = x0 + L * (1 - Math.pow(1 - j / m, 1.8)), b = x0 + L * (1 - Math.pow(1 - (j + 1) / m, 1.8));
+        const heat = hit ? (j + 1) / m : 0.15 + 0.2 * (j / m);
+        ctx.fillStyle = rgb(ramp(['yellow', 'red'], heat));
+        const dy = hit ? R.range(-1, 1) * rh * 0.1 * heat : 0;
+        ctx.fillRect(a, y - rh * 0.38 + dy, b - a - (hit ? 1 : 0.5), rh * 0.76);
+      }
+    }
+    plus(ctx, cx, cy, s, { R, famH: 'red', famV: 'red', L1: 1, L2: 1, U1: 1, U2: 1, T1: T, T2: T, steps: 3, revH: false, revV: false });
+  }
+
+  // TRABAJO DURO: cruces apiladas como ladrillos en una pirámide; la última fila sigue a medio hacer
+  function trabajo(ctx, W, H, o) {
+    const R = o.R, rowsN = 6, cs = H * 0.09, pitch = cs * 2, seq = ['red', 'yellow', 'lime', 'green', 'cyan', 'blue'];
+    const vs = R.pick([0, 2, 4]);
+    for (let r = 0; r < rowsN; r++) {
+      const count = 8 - r, y = H * 0.88 - r * cs * 1.4, x0 = W / 2 - ((count - 1) / 2) * pitch;
+      for (let c = 0; c < count; c++) {
+        const half = r === rowsN - 1 && c >= count - 2;                         // fila de arriba sin terminar
+        plus(ctx, x0 + c * pitch, y, cs, { R, famH: seq[r], famV: seq[(r + 1 + vs) % 6], L1: 1, L2: 1, U1: half ? 0.2 : 1, U2: half ? 0.2 : 1,
+          T1: 0.5, T2: 0.5, steps: 4, revH: r % 2 === 0, revV: false });
+      }
+    }
+  }
+
+  // CALMA: pocas cruces, alineadas en el horizonte, brazos largos y horizontales, muchos pasos suaves y mucho aire
+  function calma(ctx, W, H, o) {
+    const R = o.R, cool = ['blue', 'cyan', 'green', 'lime'], n = 3, y = H * 0.5;
+    const picks = [R.pick(cool), R.pick(cool), R.pick(cool)];
+    for (let i = 0; i < n; i++) {
+      plus(ctx, W * (0.2 + 0.3 * i), y, H * 0.2, { R, famH: picks[i], famV: cool[(cool.indexOf(picks[i]) + 1) % 4], L1: 1.25, L2: 1.25, U1: 0.6, U2: 0.6, T1: 0.34, T2: 0.1, steps: 14, revH: false, revV: false });
+    }
+    strips(ctx, 'cyan', W * 0.08, H * 0.8, W * 0.84, H * 0.03, 28, true, false, 0, R);   // línea de horizonte
+  }
+
+  // CAOS: muchas cruces de todos los tamaños, giradas y solapadas en Luz fuerte
+  function caos(ctx, W, H, o) {
+    const R = o.R;
+    ctx.globalCompositeOperation = 'hard-light';
+    for (let i = 0; i < 42; i++) {
+      const fa = R.pick(ORDER), fb = otherFam(R, fa);
+      plus(ctx, R.range(0, W), R.range(0, H), H * R.range(0.04, 0.2), { R, famH: fa, famV: fb, rot: R.range(-1.4, 1.4), skew: R.range(-0.5, 0.5), jitter: H * 0.01, steps: R.int(4, 9) });
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // UNIÓN: un anillo de cruces cuyos brazos se solapan con los vecinos y mezclan sus colores
+  function union(ctx, W, H, o) {
+    const R = o.R, n = R.pick([6, 7, 8]), rad = H * 0.3, cx = W / 2, cy = H / 2, chord = 2 * rad * Math.sin(Math.PI / n);
+    const st = R.int(0, 5);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      plus(ctx, cx + rad * Math.cos(a), cy + rad * Math.sin(a), chord * 0.62,
+        { R, famH: ORDER[(st + i) % 6], famV: ORDER[(st + i + 3) % 6], rot: a + Math.PI / 2, L1: 1, L2: 1, U1: 0.55, U2: 0.55, T1: 0.34, T2: 0.28, steps: 7, revH: false, revV: false });
+    }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -434,11 +515,13 @@ const ramp = (fams, t) => {
     mezcla: (ctx, W, H, o) => overprint(ctx, W, H, o),
     figura: (ctx, W, H, o) => figure(ctx, W, H, o),
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
+    optimismo, cabezoneria, trabajo, calma, caos, union,
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 
   // Conceptos -> composición (modo abstracto "que genera conceptos")
   const CONCEPTOS = {
+    optimismo: 'optimismo', cabezonería: 'cabezoneria', 'trabajo duro': 'trabajo', calma: 'calma', caos: 'caos', unión: 'union',
     expandir: 'flujo', crecer: 'molinillo', sumar: 'mas', unir: 'cruz',
     diversidad: 'campo', mezclar: 'mezcla', conectar: 'bandas', transformar: 'disolver',
   };
