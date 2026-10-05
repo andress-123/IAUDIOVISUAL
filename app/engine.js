@@ -867,6 +867,6 @@ const ramp = (fams, t) => {
     return comp;
   }
 
-  const api = { FAMILIES, ORDER, COMPS, CONCEPTOS, render, rng, ramp, mix };
+  const api = { FAMILIES, ORDER, COMPS, CONCEPTOS, render, rng, ramp, mix, grad, hex, shade, rgb, clamp };
   if (typeof module !== 'undefined') module.exports = api; else root.Identidad = api;
 })(typeof window !== 'undefined' ? window : globalThis);
