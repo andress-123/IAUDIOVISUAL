@@ -370,14 +370,24 @@ const ramp = (fams, t) => {
     const bg = ctx.createLinearGradient(0, 0, W, H);                      // fondo con degradado diagonal entre las familias
     bg.addColorStop(0, rgb(tint(fams[0], 0.14))); bg.addColorStop(1, rgb(tint(fams[fams.length - 1], 0.5)));
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-    // 1) celdas de la figura
-    const sub = [];
+    // 1) celdas de la figura: fondo = celdas parecidas al fondo CONECTADAS con el borde (flood fill);
+    //    lo claro del interior (océano de un globo, un diente) sigue siendo parte del objeto
+    const bgLike = g.map((cc, i) => dist(cc, bgs[(i / cols) | 0]) < T);
+    const out = new Uint8Array(rows * cols), stack = [];
+    const push = (c, r) => { const i = r * cols + c; if (c >= 0 && c < cols && r >= 0 && r < rows && bgLike[i] && !out[i]) { out[i] = 1; stack.push(i); } };
+    for (let c = 0; c < cols; c++) { push(c, 0); push(c, rows - 1); }
+    for (let r = 0; r < rows; r++) { push(0, r); push(cols - 1, r); }
+    while (stack.length) { const i = stack.pop(), c = i % cols, r = (i / cols) | 0; push(c + 1, r); push(c - 1, r); push(c, r + 1); push(c, r - 1); }
+    const cand = []; let eligibles = 0;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      const i = r * cols + c, b = bgRow(r);
-      if (dist(g[i], b) < T) continue;                                                      // fondo
-      if (lum[i] - local(c, r, 3) > holeT) continue;                                        // luces -> huecos
-      sub.push([c, r, lum[i]]);
+      const i = r * cols + c;
+      if (out[i]) continue;
+      const hole = lum[i] - local(c, r, 3) > holeT; if (hole) eligibles++;
+      cand.push([c, r, lum[i], hole]);
     }
+    // si "huecos" serían una parte grande de la figura (objeto con zonas claras, no un retrato), se desactivan solos
+    const useHoles = eligibles / Math.max(1, cand.length) < 0.1;
+    const sub = cand.filter((p) => !(p[3] && useHoles));
     const ls = sub.map((p) => p[2]).sort((p, q) => p - q), lo = ls[Math.floor(ls.length * 0.04)] || 0, hi = ls[Math.floor(ls.length * 0.96)] || 255;
     const steps = o.pasos || 9, q = (t) => Math.floor(clamp(t) * steps) / (steps - 1);       // escalones como las tiras de la identidad
     const N = noise2(o.seed + 9);
