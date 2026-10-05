@@ -73,6 +73,8 @@ const ramp = (fams, t) => {
     return f > 0.8 ? mix(A, B, (f - 0.8) / 0.2 * 0.6) : A;
   };
   const subset = (R, k) => { const a = ORDER.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, k); };
+  // oscurece sin ensuciar: baja L en OKLab y refuerza algo el croma (el naranja oscuro no se vuelve barro)
+  const shade = (c, k) => { const L = toLab(c), f = 1 + 0.35 * k; return fromLab([L[0] * (1 - k), L[1] * f, L[2] * f]); };
   const otherFam = (R, f) => { let o; do { o = R.pick(ORDER); } while (o === f); return o; };
 
   /* ---------- Formas ---------- */
@@ -562,6 +564,66 @@ const ramp = (fams, t) => {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+
+  /* ---------- Símbolo en 3D de bloques: glifo -> rejilla de píxeles -> extrusión con degradado escalonado ---------- */
+  function glyph3d(ctx, W, H, o) {
+    const R = o.R, ch = o.glifo || '€', N = o.cols || 40, D = o.prof || 18;
+    // 1) máscara del glifo
+    const S = 480, m = document.createElement('canvas'); m.width = m.height = S;
+    const mx = m.getContext('2d', { willReadFrequently: true });
+    mx.fillStyle = '#000'; mx.textAlign = 'center'; mx.textBaseline = 'middle';
+    if (ch === '€') { // geometría clásica del euro (no depende de la tipografía): arco abierto a la derecha + 2 barras que cruzan el lado izquierdo
+      const cx = S * 0.56, cy = S * 0.5, r = S * 0.32;
+      mx.strokeStyle = '#000'; mx.lineWidth = S * 0.15; mx.lineCap = 'butt';
+      mx.beginPath(); mx.arc(cx, cy, r, 0.72, Math.PI * 2 - 0.72, false); mx.stroke();
+      mx.fillRect(cx - r - S * 0.09, cy - S * 0.115, r + S * 0.09 + S * 0.1, S * 0.075);
+      mx.fillRect(cx - r - S * 0.09, cy + S * 0.04, r + S * 0.09 + S * 0.1, S * 0.075);
+    } else {
+      mx.font = `900 ${S * 0.8}px "Arial Black","Liberation Sans","DejaVu Sans",Arial,sans-serif`; mx.fillText(ch, S / 2, S / 2 + S * 0.05);
+    }
+    const px = mx.getImageData(0, 0, S, S).data;
+    let x0 = S, x1 = 0, y0 = S, y1 = 0;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (px[(y * S + x) * 4 + 3] > 128) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, cs = Math.max(bw, bh) / N, cols = Math.ceil(bw / cs), rows = Math.ceil(bh / cs);
+    const mask = [];
+    for (let r = 0; r < rows; r++) { mask.push([]); for (let c = 0; c < cols; c++) {
+      let a = 0, n = 0; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const x = Math.min(S - 1, (x0 + (c + (i + 0.5) / 4) * cs) | 0), y = Math.min(S - 1, (y0 + (r + (j + 0.5) / 4) * cs) | 0); a += px[(y * S + x) * 4 + 3] > 128 ? 1 : 0; n++; }
+      mask[r].push(a / n > 0.5);
+    } }
+    const on = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && mask[r][c];
+    // 2) colores: 3 familias vecinas, escalones como las tiras de la identidad
+    const fams = o.fams || [0, 2, 4].map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]);
+    const steps = o.pasos || 8, q = (t) => Math.floor(clamp(t) * steps * 0.9999) / (steps - 1);
+    const dirx = o.dirx ?? (R() < 0.5 ? 1 : -1), diry = o.diry ?? 1;
+    const cell = Math.min((W * 0.5) / cols, (H * 0.6) / rows), sx = cell * 0.3 * dirx, sy = -cell * 0.3 * diry;
+    const ox = W / 2 - (cols * cell) / 2 - (D * sx) / 2, oy = H / 2 - (rows * cell) / 2 - (D * sy) / 2;
+    const base = (r, c) => ramp(fams, q(0.55 * (dirx > 0 ? c : cols - c) / cols + 0.45 * r / rows));
+    // 3) sombra suave en el suelo (mismo desplazamiento hacia abajo)
+    ctx.fillStyle = rgb(mix([255, 255, 255], hex(FAMILIES[fams[0]].end), 0.14));
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (mask[r][c]) ctx.fillRect(ox + c * cell - dirx * cell * 2.2, oy + r * cell + cell * 2.6, cell + 0.5, cell + 0.5);
+    // 4) extrusión: capas de atrás hacia delante; el color avanza por la rampa y se oscurece con la profundidad
+    for (let k = D; k >= 1; k--) {
+      const f = k / D;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        if (!mask[r][c]) continue;
+        const t = (dirx > 0 ? c : cols - c) / cols * 0.55 + r / rows * 0.45 + 0.28 * f;
+        ctx.fillStyle = rgb(shade(ramp(fams, q(t)), 0.4 * f));
+        ctx.fillRect(ox + c * cell + k * sx, oy + r * cell + k * sy, cell + 0.5, cell + 0.5);
+      }
+    }
+    // 5) cara frontal con bisel (luz arriba/izquierda, sombra abajo/derecha)
+    const bev = Math.max(2, cell * 0.12);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      if (!mask[r][c]) continue;
+      const col = base(r, c), x = ox + c * cell, y = oy + r * cell;
+      ctx.fillStyle = rgb(col); ctx.fillRect(x, y, cell + 0.5, cell + 0.5);
+      if (!on(r - 1, c)) { ctx.fillStyle = rgb(mix(col, [255, 255, 255], 0.4)); ctx.fillRect(x, y, cell + 0.5, bev); }
+      if (!on(r, c - 1)) { ctx.fillStyle = rgb(mix(col, [255, 255, 255], 0.28)); ctx.fillRect(x, y, bev, cell + 0.5); }
+      if (!on(r + 1, c)) { ctx.fillStyle = rgb(shade(col, 0.22)); ctx.fillRect(x, y + cell - bev, cell + 0.5, bev); }
+      if (!on(r, c + 1)) { ctx.fillStyle = rgb(shade(col, 0.16)); ctx.fillRect(x + cell - bev, y, bev, cell + 0.5); }
+    }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -591,6 +653,7 @@ const ramp = (fams, t) => {
     figura: (ctx, W, H, o) => figure(ctx, W, H, o),
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
     optimismo, cabezoneria, trabajo, calma, caos, union, planta,
+    euro3d: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€' }),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 
