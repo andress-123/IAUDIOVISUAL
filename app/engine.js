@@ -337,7 +337,8 @@ const ramp = (fams, t) => {
     const k = Math.max(W / img.width, H / img.height), iw = img.width * k, ih = img.height * k;
     sx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
     const px = sx.getImageData(0, 0, W, H).data;
-    const cols = o.cols || R.pick([44, 52, 60]), cell = W / cols, rows = Math.ceil(H / cell);
+    const modoPre = o.degradado || ['diagonal', 'mapa', 'mixto'][(o.seed - 1) % 3];
+    const cols = o.cols || ({ diagonal: 60, mapa: 84, mixto: 72, vertical: 56 }[modoPre]), cell = W / cols, rows = Math.ceil(H / cell);
     const g = []; // color medio de cada celda
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       let rr = 0, gg = 0, bb = 0, n = 0;
@@ -358,20 +359,39 @@ const ramp = (fams, t) => {
     }
     const bgRow = (r) => bgs[r];
     const local = (c, r, rad) => { let s2 = 0, n = 0; for (let j = -rad; j <= rad; j++) for (let i = -rad; i <= rad; i++) { const cc = c + i, r2 = r + j; if (cc >= 0 && cc < cols && r2 >= 0 && r2 < rows) { s2 += lum[r2 * cols + cc]; n++; } } return s2 / n; };
-    const T = o.umbral || 55, holeT = o.huecos || 18;
-    const fam = (o.fams && o.fams[0]) || ORDER[(o.seed - 1) % ORDER.length];   // una familia distinta por semilla
-    const multi = o.fams ? o.fams.length > 1 : o.seed % 2 === 0;
-    const fams = multi ? (o.fams || [fam, otherFam(R, fam), otherFam(R, fam)]) : [fam];
-    const base = hex(FAMILIES[fam].base), end = hex(FAMILIES[fam].end), white = [255, 255, 255];
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, rgb(mix(white, base, 0.16))); bg.addColorStop(1, rgb(mix(white, end, 0.5)));
+    const T = o.umbral || 55;
+    // Degradados: 'vertical' (un tono), 'diagonal' (rampa escalonada), 'mapa' (la luz de la foto recorre la rampa), 'mixto'
+    const modo = o.degradado || ['diagonal', 'mapa', 'mixto'][(o.seed - 1) % 3];
+    const fams = o.fams || (modo === 'vertical'
+      ? [ORDER[(o.seed - 1) % ORDER.length]]
+      : [0, 2, 4].map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]));   // 3 familias vecinas en el ciclo de la paleta
+    const holeT = o.huecos || 20;                                          // huecos en las luces (ojos, dientes) para que la figura se lea
+    const white = [255, 255, 255], tint = (f, k) => mix(white, hex(FAMILIES[f].end), k);
+    const bg = ctx.createLinearGradient(0, 0, W, H);                      // fondo con degradado diagonal entre las familias
+    bg.addColorStop(0, rgb(tint(fams[0], 0.14))); bg.addColorStop(1, rgb(tint(fams[fams.length - 1], 0.5)));
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    // 1) celdas de la figura
+    const sub = [];
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const i = r * cols + c, b = bgRow(r);
-      if (Math.hypot(g[i][0] - b[0], g[i][1] - b[1], g[i][2] - b[2]) < T) continue;       // fondo
-      if (lum[i] - local(c, r, 3) > holeT) continue;                                       // solo luces -> huecos (ojos, dientes), la cara se mantiene sólida
-      const t = clamp(0.1 + (r / rows) * 0.9);
-      ctx.fillStyle = rgb(multi ? ramp(fams, t) : grad(fam, t * 0.85));
+      if (dist(g[i], b) < T) continue;                                                      // fondo
+      if (lum[i] - local(c, r, 3) > holeT) continue;                                        // luces -> huecos
+      sub.push([c, r, lum[i]]);
+    }
+    const ls = sub.map((p) => p[2]).sort((p, q) => p - q), lo = ls[Math.floor(ls.length * 0.04)] || 0, hi = ls[Math.floor(ls.length * 0.96)] || 255;
+    const steps = o.pasos || 9, q = (t) => Math.floor(clamp(t) * steps) / (steps - 1);       // escalones como las tiras de la identidad
+    const N = noise2(o.seed + 9);
+    // 2) color de cada celda
+    for (const [c, r, l] of sub) {
+      const tl = clamp((l - lo) / (hi - lo));                                              // 0 = sombra, 1 = luz
+      const td = 0.5 * c / cols + 0.5 * r / rows + (N(c / 9, r / 9) - 0.5) * 0.18;           // posición diagonal con algo de ruido
+      let col;
+      // se combinan POSICIONES en la rampa (no colores): así no aparecen grises sucios al cruzar tonos
+      if (modo === 'vertical') col = grad(fams[0], clamp(0.1 + (r / rows) * 0.9) * 0.85);
+      else if (modo === 'diagonal') col = ramp(fams, q(0.7 * td + 0.3 * tl));                  // gradiente diagonal con la luz de la foto
+      else if (modo === 'mapa') col = ramp(fams, q(tl));                                       // la luz de la foto recorre la rampa
+      else col = ramp(fams, q(0.35 * td + 0.65 * tl));                                         // mixto
+      ctx.fillStyle = rgb(col);
       const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
       ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
     }

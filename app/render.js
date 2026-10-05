@@ -25,6 +25,8 @@ if (fs.existsSync(fotosDir)) for (const f of fs.readdirSync(fotosDir).filter((n)
   for (const seed of [1, 2, 3, 4, 5, 6]) jobs.push([`silueta-${path.parse(f).name}-${seed}`, { comp: 'silueta', seed, foto: 'data:image/' + path.extname(f).slice(1).replace('jpg', 'jpeg') + ';base64,' + fs.readFileSync(path.join(fotosDir, f)).toString('base64') }]);
 if (fs.existsSync(fotosDir)) for (const f of fs.readdirSync(fotosDir).filter((n) => /\.(jpe?g|png|webp)$/i.test(n)))
   for (const seed of [1, 2, 3]) jobs.push([`figura-${path.parse(f).name}-${seed}`, { comp: 'figura', seed, foto: 'data:image/' + path.extname(f).slice(1).replace('jpg', 'jpeg') + ';base64,' + fs.readFileSync(path.join(fotosDir, f)).toString('base64') }]);
+const only = process.argv[2];
+if (only) for (let i = jobs.length - 1; i >= 0; i--) if (!jobs[i][0].includes(only)) jobs.splice(i, 1);
 (async () => {
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch({ executablePath: process.env.CHROME || undefined });
