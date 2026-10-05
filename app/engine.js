@@ -369,7 +369,6 @@ const ramp = (fams, t) => {
       ? [ORDER[(o.seed - 1) % ORDER.length]]
       : [0, 2, 4].map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]));   // 3 familias vecinas en el ciclo de la paleta
     const holeT = o.huecos || 20;                                          // huecos en las luces (ojos, dientes) para que la figura se lea
-        ctx.fillStyle = o.fondo || '#ffffff'; ctx.fillRect(0, 0, W, H);        // fondo blanco siempre (identidad)
     // 1) celdas de la figura: fondo = celdas parecidas al fondo CONECTADAS con el borde (flood fill);
     //    lo claro del interior (océano de un globo, un diente) sigue siendo parte del objeto
     const bgLike = g.map((cc, i) => dist(cc, bgs[(i / cols) | 0]) < T);
@@ -694,6 +693,58 @@ const ramp = (fams, t) => {
     diversidad: 'campo', mezclar: 'mezcla', conectar: 'bandas', transformar: 'disolver',
   };
 
+
+  /* ---------- Partículas de expansión (efecto global): píxeles que salen de la forma hacia fuera ---------- */
+  function particulas(layer, ctx, W, H, spec, seed) {
+    const dens = spec.particulas === undefined ? 1 : +spec.particulas;
+    if (!dens) return;
+    const R = rng(seed * 7919 + 13), N = noise2(seed + 331);
+    const g = Math.max(5, Math.round(H / 72)), gw = Math.ceil(W / g), gh = Math.ceil(H / g);
+    const px = layer.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+    const idx = (c, r) => r * gw + c;
+    const solid = new Uint8Array(gw * gh), col = new Array(gw * gh);
+    let n = 0, sx = 0, sy = 0;
+    for (let r = 0; r < gh; r++) for (let c = 0; c < gw; c++) {
+      const x = Math.min(W - 1, c * g + (g >> 1)), y = Math.min(H - 1, r * g + (g >> 1)), p = (y * W + x) * 4;
+      if (px[p + 3] > 110) { solid[idx(c, r)] = 1; col[idx(c, r)] = [px[p], px[p + 1], px[p + 2]]; n++; sx += c; sy += r; }
+    }
+    if (!n || n > gw * gh * 0.72) return;                    // lienzo vacío o ya ocupado (foto/flujo a sangre): sin partículas
+    const cx = sx / n, cy = sy / n;
+    // distancia (en celdas) a la forma + qué celda de la forma es la más cercana (para heredar su color)
+    const dist = new Float32Array(gw * gh).fill(1e9), src = new Int32Array(gw * gh).fill(-1), q = [];
+    for (let i = 0; i < solid.length; i++) if (solid[i]) { dist[i] = 0; src[i] = i; q.push(i); }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], c = i % gw, r = (i / gw) | 0;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const c2 = c + dc, r2 = r + dr; if (c2 < 0 || c2 >= gw || r2 < 0 || r2 >= gh || (!dr && !dc)) continue;
+        const j = idx(c2, r2), nd = dist[i] + (dr && dc ? 1.41 : 1);
+        if (nd < dist[j] && nd <= 15) { dist[j] = nd; src[j] = src[i]; q.push(j); }
+      }
+    }
+    const fams = spec.fams || ORDER;
+    for (let r = 0; r < gh; r++) for (let c = 0; c < gw; c++) {
+      const i = idx(c, r), d = dist[i];
+      if (solid[i] || d > 15 || src[i] < 0) continue;
+      const sc = src[i] % gw, sr = (src[i] / gw) | 0;
+      const vx = c - cx, vy = r - cy, vl = Math.hypot(vx, vy) || 1, ox = c - sc, oy = r - sr, ol = Math.hypot(ox, oy) || 1;
+      const out = (vx * ox + vy * oy) / (vl * ol);                 // 1 = la partícula va hacia fuera respecto al centro
+      let p = dens * 0.5 * Math.exp(-d / 3.4) * (0.55 + 0.45 * Math.max(0, out)) * (0.45 + 1.1 * N(c / 5, r / 5));
+      if (d < 1) p *= 0.5;
+      if (R() > p) continue;
+      const base = col[src[i]], useSpark = R() < 0.28, cc = useSpark ? grad(R.pick(fams), R()) : base;
+      ctx.fillStyle = rgb(cc);
+      if (d > 3 && R() < 0.12) {                                   // estela: elonga en la dirección de expansión
+        const horiz = Math.abs(vx) > Math.abs(vy), len = g * R.int(2, 4), th = Math.max(2, g * 0.45);
+        const sgn = (horiz ? vx : vy) >= 0 ? 1 : -1;
+        const x0 = c * g, y0 = r * g;
+        if (horiz) ctx.fillRect(sgn > 0 ? x0 : x0 - len + g, y0 + (g - th) / 2, len, th); else ctx.fillRect(x0 + (g - th) / 2, sgn > 0 ? y0 : y0 - len + g, th, len);
+      } else {                                                      // píxel suelto de tamaño variable, alineado a la rejilla
+        const k = R.pick([1, 1, 1, 0.5, 0.5, 0.34]), sz = Math.max(2, Math.round(g * k)), j = g - sz;
+        ctx.fillRect(c * g + (R() * j | 0), r * g + (R() * j | 0), sz, sz);
+      }
+    }
+  }
+
   function render(canvas, spec) {
     const W = canvas.width, H = canvas.height, ctx = canvas.getContext('2d');
     const comp = COMPS[spec.comp] ? spec.comp : CONCEPTOS[spec.concepto] || 'mas';
@@ -706,6 +757,7 @@ const ramp = (fams, t) => {
     ctx.fillStyle = spec.bg || '#ffffff';
     ctx.fillRect(0, 0, W, H);
     ctx.drawImage(layer, 0, 0);
+    particulas(layer, ctx, W, H, spec, seed);                // partículas de expansión alrededor de la forma (spec.particulas: 0 las quita)
     return comp;
   }
 
