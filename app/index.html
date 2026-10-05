@@ -2,5 +2,6 @@
 <style>body{margin:0;background:#fff;font:14px system-ui}canvas{display:block}</style>
 <canvas id="c" width="1600" height="1000"></canvas>
 <script src="engine.js"></script>
-<script>window.draw=(spec)=>Identidad.render(document.getElementById('c'),spec);
+<script>const load=(u)=>new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=u;});
+window.draw=async(spec)=>{if(spec.foto)spec.image=await load(spec.foto);return Identidad.render(document.getElementById('c'),spec);};
 window.png=()=>document.getElementById('c').toDataURL('image/png');</script>

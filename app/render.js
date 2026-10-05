@@ -15,7 +15,14 @@ const jobs = [
   ['10-mezclar-superposicion-b',{ comp: 'mezcla', seed: 26 }],
   ['11-diversidad-mosaico',    { comp: 'campo', seed: 21 }],
   ['12-diversidad-mosaico-b',  { comp: 'campo', seed: 64 }],
+  ['13-figura-demo-a',         { comp: 'figura', seed: 2 }],
+  ['14-figura-demo-b',         { comp: 'figura', seed: 6 }],
+  ['15-figura-demo-c',         { comp: 'figura', seed: 11 }],
 ];
+// Fotos propias: déjalas en app/fotos/ (jpg/png) y se generan versiones en modo figura
+const fotosDir = path.join(__dirname, 'fotos');
+if (fs.existsSync(fotosDir)) for (const f of fs.readdirSync(fotosDir).filter((n) => /\.(jpe?g|png|webp)$/i.test(n)))
+  for (const seed of [1, 2, 3]) jobs.push([`figura-${path.parse(f).name}-${seed}`, { comp: 'figura', seed, foto: 'data:image/' + path.extname(f).slice(1).replace('jpg', 'jpeg') + ';base64,' + fs.readFileSync(path.join(fotosDir, f)).toString('base64') }]);
 (async () => {
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch({ executablePath: process.env.CHROME || undefined });

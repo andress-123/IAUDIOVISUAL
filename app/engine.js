@@ -261,6 +261,72 @@ const ramp = (fams, t) => {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+
+  // Figura de relleno para probar el modo figurativo sin foto (NO es una foto real)
+  function demoFigure(W, H, seed) {
+    const R = rng(seed), c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#e6e8ec'); bg.addColorStop(1, '#c8cbd1');
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    const cx = W / 2, top = H * 0.08, hh = H * 0.84, u = hh / 8; // 8 cabezas de alto
+    const skin = R.pick(['#c68a63', '#a96d4b', '#e0ac88', '#8a5a3c']), cloth = R.pick(['#1d2433', '#2b2b2b', '#3a2a4a']), pants = R.pick(['#2d4a3a', '#1f2a44', '#4a3328']);
+    x.fillStyle = 'rgba(0,0,0,.12)'; x.beginPath(); x.ellipse(cx, top + hh, u * 2.3, u * 0.28, 0, 0, 7); x.fill();
+    const rr = (a, b, w, h, r, col) => { x.fillStyle = col; x.beginPath(); x.roundRect(a, b, w, h, r); x.fill(); };
+    rr(cx - u * 0.95, top + u * 4.6, u * 0.85, u * 3.3, u * 0.3, pants); rr(cx + u * 0.1, top + u * 4.6, u * 0.85, u * 3.3, u * 0.3, pants);   // piernas
+    rr(cx - u * 1.1, top + u * 7.75, u * 1.1, u * 0.25, u * 0.12, '#111'); rr(cx, top + u * 7.75, u * 1.1, u * 0.25, u * 0.12, '#111');       // zapatos
+    rr(cx - u * 1.35, top + u * 1.75, u * 2.7, u * 3.1, u * 0.7, cloth);                                                                        // torso
+    rr(cx - u * 1.95, top + u * 1.9, u * 0.65, u * 2.7, u * 0.3, cloth); rr(cx + u * 1.3, top + u * 1.9, u * 0.65, u * 2.7, u * 0.3, cloth);   // brazos
+    x.fillStyle = skin; x.beginPath(); x.ellipse(cx - u * 1.62, top + u * 4.75, u * 0.28, u * 0.32, 0, 0, 7); x.ellipse(cx + u * 1.62, top + u * 4.75, u * 0.28, u * 0.32, 0, 0, 7); x.fill(); // manos
+    rr(cx - u * 0.28, top + u * 1.45, u * 0.56, u * 0.5, u * 0.15, skin);                                                                       // cuello
+    x.beginPath(); x.ellipse(cx, top + u * 0.9, u * 0.62, u * 0.82, 0, 0, 7); x.fill();                                                        // cabeza
+    x.fillStyle = '#1a1411'; x.beginPath(); x.ellipse(cx, top + u * 0.42, u * 0.66, u * 0.42, 0, Math.PI, 0); x.fill();                         // pelo
+    x.globalCompositeOperation = 'destination-over'; x.fillStyle = bg; x.fillRect(0, 0, W, H); x.globalCompositeOperation = 'source-over';
+    return c;
+  }
+
+  // Modo figurativo: la figura se desintegra en bloques de la paleta (mosaico -> color -> aire)
+  function figure(ctx, W, H, o) {
+    const R = o.R, N = noise2(o.seed + 5);
+    let img = o.image || demoFigure(W, H, o.seed);
+    const src = document.createElement('canvas'); src.width = W; src.height = H;
+    const sx = src.getContext('2d', { willReadFrequently: true });
+    const k = Math.max(W / img.width, H / img.height), iw = img.width * k, ih = img.height * k;
+    sx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+    const px = sx.getImageData(0, 0, W, H).data;
+    const at = (x, y) => { const i = (clamp(y | 0, 0, H - 1) * W + clamp(x | 0, 0, W - 1)) * 4; return [px[i], px[i + 1], px[i + 2]]; };
+    const avg = (x, y, s) => { let r = 0, g = 0, b = 0, n = 0; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const c = at(x + (i + 0.5) * s / 4, y + (j + 0.5) * s / 4); r += c[0]; g += c[1]; b += c[2]; n++; } return [r / n, g / n, b / n]; };
+    const bgc = avg(4, 4, 8);
+    const fams = o.fams || subset(R, 4);
+    const ang = R.pick([0, Math.PI, -Math.PI / 4, Math.PI / 4]) + R.range(-0.3, 0.3), ax = Math.cos(ang), ay = Math.sin(ang);
+    const cell = Math.round(H / 34);
+    ctx.drawImage(src, 0, 0); // base fotográfica
+    for (let gy = 0; gy < H; gy += cell) for (let gx = 0; gx < W; gx += cell) {
+      const px0 = (gx - W / 2) / W, py0 = (gy - H / 2) / H;
+      const t = clamp((px0 * ax + py0 * ay) * 1.3 + 0.5 + (N(gx / 140, gy / 140) - 0.5) * 0.5); // 0..1 a lo largo del eje de disolución
+      const p = clamp((t - 0.4) / 0.6);
+      if (p < 0.04) continue;
+      const rnd = R();
+      const c = avg(gx, gy, cell), isBg = Math.hypot(c[0] - bgc[0], c[1] - bgc[1], c[2] - bgc[2]) < 38;
+      const sz = rnd < 0.25 ? cell / 2 : cell;
+      if (p < 0.38) { ctx.fillStyle = rgb(c); ctx.fillRect(gx, gy, cell, cell); continue; }       // 1) mosaico de la foto
+      const bgRow = avg(4, gy, 8); ctx.fillStyle = rgb(bgRow); ctx.fillRect(gx, gy, cell, cell);       // limpio la celda con el fondo de su fila
+      if (isBg && R() < 0.9) continue;                                                              // el fondo desaparece
+      if (R() > 1.15 - p) continue;                                                                 // 2) cada vez menos bloques
+      ctx.fillStyle = rgb(c); ctx.fillRect(gx, gy, cell, cell);
+      ctx.globalCompositeOperation = 'hard-light';                                                  // 3) tinte de paleta en Luz fuerte
+      ctx.fillStyle = rgb(ramp(fams, t + (R() - 0.5) * 0.2)); ctx.fillRect(gx + (cell - sz) * R(), gy + (cell - sz) * R(), sz, sz);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    // cruces de la identidad fundidas sobre la figura
+    const nc = R.int(1, 2);
+    for (let i = 0; i < nc; i++) {
+      const fa = fams[i % fams.length], fb = fams[(i + 1) % fams.length];
+      ctx.globalCompositeOperation = 'hard-light';
+      plus(ctx, W * R.range(0.4, 0.6) + (R() < 0.5 ? -1 : 1) * W * 0.08, H * R.range(0.3, 0.6), H * 0.2, { R, famH: fa, famV: fb, steps: 8 });
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -287,6 +353,7 @@ const ramp = (fams, t) => {
     bandas: (ctx, W, H, o) => bands(ctx, W, H, o),
     campo: (ctx, W, H, o) => mosaic(ctx, W, H, o),
     mezcla: (ctx, W, H, o) => overprint(ctx, W, H, o),
+    figura: (ctx, W, H, o) => figure(ctx, W, H, o),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 
@@ -303,7 +370,7 @@ const ramp = (fams, t) => {
     const R = rng(seed);
     const layer = document.createElement('canvas');
     layer.width = W; layer.height = H;
-    COMPS[comp](layer.getContext('2d'), W, H, { R, seed, fams: spec.fams });
+    COMPS[comp](layer.getContext('2d'), W, H, { R, seed, fams: spec.fams, image: spec.image });
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = spec.bg || '#ffffff';
     ctx.fillRect(0, 0, W, H);
