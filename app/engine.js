@@ -592,12 +592,41 @@ const ramp = (fams, t) => {
     } }
     const on = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && mask[r][c];
     // 2) colores: 3 familias vecinas, escalones como las tiras de la identidad
-    const fams = o.fams || [0, 2, 4].map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]);
+    const fams = o.fams || (o.plano ? [0, 1, 2] : [0, 2, 4]).map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]);   // plano: familias consecutivas (se mezclan limpias)
     const steps = o.pasos || 8, q = (t) => Math.floor(clamp(t) * steps * 0.9999) / (steps - 1);
     const dirx = o.dirx ?? (R() < 0.5 ? 1 : -1), diry = o.diry ?? 1;
-    const cell = Math.min((W * 0.5) / cols, (H * 0.6) / rows), sx = cell * 0.3 * dirx, sy = -cell * 0.3 * diry;
-    const ox = W / 2 - (cols * cell) / 2 - (D * sx) / 2, oy = H / 2 - (rows * cell) / 2 - (D * sy) / 2;
+    const cell = Math.min((W * (o.plano ? 0.66 : 0.5)) / cols, (H * (o.plano ? 0.72 : 0.6)) / rows), sx = cell * 0.3 * dirx, sy = -cell * 0.3 * diry;
+    const flatMode = !!o.plano, ox = W / 2 - (cols * cell) / 2 - (flatMode ? 0 : (D * sx) / 2), oy = H / 2 - (rows * cell) / 2 - (flatMode ? 0 : (D * sy) / 2);
     const base = (r, c) => ramp(fams, q(0.55 * (dirx > 0 ? c : cols - c) / cols + 0.45 * r / rows));
+
+    // ---- versión plana: sin extrusión, bisel ni sombra; el volumen se lee solo por el cambio de tono del degradado ----
+    if (o.plano) {
+      const INF = 1e9, d = mask.map((row) => row.map((v) => (v ? INF : 0)));
+      const g2 = (r, c) => (r < 0 || r >= rows || c < 0 || c >= cols ? 0 : d[r][c]);
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (d[r][c]) d[r][c] = Math.min(d[r][c], g2(r - 1, c) + 1, g2(r, c - 1) + 1, g2(r - 1, c - 1) + 1.41, g2(r - 1, c + 1) + 1.41);
+      for (let r = rows - 1; r >= 0; r--) for (let c = cols - 1; c >= 0; c--) if (d[r][c]) d[r][c] = Math.min(d[r][c], g2(r + 1, c) + 1, g2(r, c + 1) + 1, g2(r + 1, c + 1) + 1.41, g2(r + 1, c - 1) + 1.41);
+      let dm = 0; d.forEach((row) => row.forEach((v) => { if (v < INF) dm = Math.max(dm, v); }));
+      const h = (r, c) => Math.min(1, g2(r, c) / Math.max(1, dm));                       // altura de "tubo": 0 en el borde, 1 en el centro del trazo
+      const lx = o.luzx ?? -1, ly = o.luzy ?? -1, ln = Math.hypot(lx, ly);               // la luz viene de esta esquina
+      const stepsT = o.pasos || 9, stepsF = 6, cellW = cell, ph = Math.max(2, cell * 0.0);
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        if (!mask[r][c]) continue;
+        const gx = (h(r, c + 1) - h(r, c - 1)) / 2, gy = (h(r + 1, c) - h(r - 1, c)) / 2;     // pendiente de la superficie
+        const lit = -(gx * lx + gy * ly) / ln * 2.6;                                           // >0 mira a la luz, <0 está en sombra
+        let tone = clamp(0.5 + 0.5 * clamp(lit, -1, 1) + 0.25 * (h(r, c) - 0.5));
+        tone = Math.floor(tone * stepsT * 0.9999) / (stepsT - 1);                              // escalones de tono
+        // la familia cambia a lo largo del símbolo (también en escalones)
+        const p = Math.floor(clamp(0.55 * ((lx < 0 ? c : cols - c) / cols) + 0.45 * (r / rows)) * stepsF * 0.9999) / (stepsF - 1);
+        const fp = p * (fams.length - 1), i = Math.min(fams.length - 2, Math.floor(fp));
+        const f0 = fams[i], f1 = fams[i + 1], k = fp - i;
+        const col = (f) => mix(grad(f, 1), grad(f, 0), tone);                                  // sombra -> extremo del degradado, luz -> base
+        let cc = mix(col(f0), col(f1), k);
+        const L = toLab(cc); cc = fromLab([L[0] * (0.86 + 0.22 * tone), L[1] * 1.14, L[2] * 1.14]);  // orden de claridad sin apagar el color
+        ctx.fillStyle = rgb(cc);
+        ctx.fillRect(ox + c * cell, oy + r * cell, cell + 0.6, cell + 0.6);
+      }
+      return;
+    }
     // 3) sombra suave en el suelo (mismo desplazamiento hacia abajo)
     ctx.fillStyle = rgb(mix([255, 255, 255], hex(FAMILIES[fams[0]].end), 0.14));
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (mask[r][c]) ctx.fillRect(ox + c * cell - dirx * cell * 2.2, oy + r * cell + cell * 2.6, cell + 0.5, cell + 0.5);
@@ -654,6 +683,7 @@ const ramp = (fams, t) => {
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
     optimismo, cabezoneria, trabajo, calma, caos, union, planta,
     euro3d: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€' }),
+    euro: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€', plano: true }),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 
