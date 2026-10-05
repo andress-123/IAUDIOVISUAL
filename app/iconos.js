@@ -150,7 +150,24 @@
   function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
   window.iconos = {
     ICONS,
-    single(canvas, i) { const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawIcon(ctx, ICONS[i], canvas.width / 2, canvas.height / 2, canvas.width * 0.62, i + 1); },
+    single(canvas, i, f) { const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); drawIcon(ctx, ICONS[i], canvas.width / 2, canvas.height / 2, canvas.width * (f || 0.62), i + 1); },
+    // versión PIXEL: el icono 3D (formas y tonos de cada cara) pasa por el pixelado adaptativo de la identidad
+    pixel(canvas, i, cols) {
+      const src = document.createElement('canvas'); src.width = src.height = canvas.width; this.single(src, i, 0.78);          // el icono ocupa más lienzo: más celdas, mejor lectura
+      I.render(canvas, { comp: 'pixelicono', image: src, seed: i + 1, cols: cols || 64, particulas: 0.7 });
+    },
+    sheetPixel(canvas) {
+      const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, cw = 520, ch = 520, gx = 40, gy = 40;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      const x0 = (W - (3 * cw + 2 * gx)) / 2, y0 = (H - (2 * ch + gy)) / 2;
+      ICONS.forEach((ic, i) => {
+        const x = x0 + (i % 3) * (cw + gx), y = y0 + ((i / 3) | 0) * (ch + gy);
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#e6e6e1'; ctx.lineWidth = 2; roundRect(ctx, x, y, cw, ch, 30); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#222'; ctx.font = '20px "Liberation Serif","Times New Roman",serif'; ctx.fillText(`(0${i + 1}) ${ic.nombre}`, x + 28, y + 42);
+        const t = document.createElement('canvas'); t.width = t.height = 440; this.pixel(t, i, 55);          // tamaño final y celda de 8 px enteros: píxeles nítidos
+        ctx.imageSmoothingEnabled = false; ctx.drawImage(t, x + (cw - 440) / 2, y + 62);                 // dentro de la tarjeta, sin tapar su borde
+      });
+    },
     sheet(canvas) {
       const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, cw = 520, ch = 520, gx = 40, gy = 40;
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);

@@ -2,4 +2,6 @@
 <body style="margin:0;background:#fff"><canvas id="c" width="1800" height="1300"></canvas>
 <script src="engine.js"></script><script src="iconos.js"></script>
 <script>window.hoja=()=>{const c=document.getElementById('c');c.width=1800;c.height=1300;iconos.sheet(c);return c.toDataURL('image/png');};
+window.hojaPixel=()=>{const c=document.getElementById('c');c.width=1800;c.height=1300;iconos.sheetPixel(c);return c.toDataURL('image/png');};
+window.unoPixel=(i)=>{const c=document.getElementById('c');c.width=1000;c.height=1000;iconos.pixel(c,i,64);return c.toDataURL('image/png');};
 window.uno=(i)=>{const c=document.getElementById('c');c.width=1000;c.height=1000;iconos.single(c,i);return c.toDataURL('image/png');};</script>

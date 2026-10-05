@@ -758,6 +758,89 @@ const ramp = (fams, t) => {
     }
   }
 
+
+  /* ---------- Pixelado adaptativo de una imagen con colores propios (iconos): bloques grandes y pequeños + degradados + huecos + partículas ---------- */
+  function pixelImage(ctx, W, H, o) {
+    const img = o.image, cols = o.cols || 64, cell = W / cols, rows = Math.ceil(H / cell), n = rows * cols;
+    const src = document.createElement('canvas'); src.width = W; src.height = H;
+    const sx = src.getContext('2d', { willReadFrequently: true }); sx.fillStyle = '#fff'; sx.fillRect(0, 0, W, H);
+    const k = Math.min(W / img.width, H / img.height), iw = img.width * k, ih = img.height * k; sx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
+    const px = sx.getImageData(0, 0, W, H).data;
+    // 1) rejilla fina: color medio de cada celda y si pertenece al objeto (no es blanco)
+    const mean = new Array(n), subj = new Uint8Array(n);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      let cnt = 0, rr = 0, gg = 0, bb = 0;
+      for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) {
+        const x = Math.min(W - 1, ((c + (i + 0.5) / 6) * cell) | 0), y = Math.min(H - 1, ((r + (j + 0.5) / 6) * cell) | 0), p = (y * W + x) * 4;
+        if (765 - px[p] - px[p + 1] - px[p + 2] > 40) { cnt++; rr += px[p]; gg += px[p + 1]; bb += px[p + 2]; }
+      }
+      if (cnt > 18) { subj[r * cols + c] = 1; mean[r * cols + c] = [rr / cnt, gg / cnt, bb / cnt]; }
+    }
+    const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    const tonal = (c, d) => (d >= 0 ? mix(c, [255, 255, 255], d) : shade(c, -d));          // d>0 aclara, d<0 oscurece (sin ensuciar)
+    const GR = rng((o.seed || 1) * 7717 + 3), GN = noise2(o.seed + 555), PR = rng((o.seed || 1) * 104729 + 7);
+    const colMap = new Map(), used = new Uint8Array(n);
+    const gapOn = o.huecosBlancos === undefined ? 1 : +o.huecosBlancos, bigOn = o.bloques === undefined ? 1 : +o.bloques;
+    const gapP = (c, r, sz) => gapOn * { 8: 0.2, 4: 0.11, 2: 0, 1: 0 }[sz] * (0.2 + 1.6 * GN(c / 7, r / 7));   // huecos solo en bloques grandes: no parten las piezas finas
+    const css = (c) => rgb(c);
+    const paint = (c, r, sz, avgCols) => {
+      const x0 = Math.round(c * cell), y0 = Math.round(r * cell), x1 = Math.round((c + sz) * cell), y1 = Math.round((r + sz) * cell), w = x1 - x0, h = y1 - y0;
+      let m = [0, 0, 0], cnt = 0;
+      for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) { const v = mean[(r + dr) * cols + c + dc]; if (v) { m = [m[0] + v[0], m[1] + v[1], m[2] + v[2]]; cnt++; } }
+      m = m.map((v) => v / Math.max(1, cnt));
+      for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) colMap.set((r + dr) * cols + c + dc, css(mean[(r + dr) * cols + c + dc] || m));
+      if (GR() < gapP(c, r, sz)) return;                                                   // hueco en blanco
+      if (sz < 4) { ctx.fillStyle = css(m); ctx.fillRect(x0, y0, w, h); return; }
+      // degradado dentro del bloque: tiras con el color real de cada franja + un cambio de tono (más claro hacia la luz, arriba/izquierda)
+      const kk = sz >= 8 ? 6 : 4, vert = GR() < 0.85;
+      for (let i = 0; i < kk; i++) {
+        let sc = [0, 0, 0], sn = 0;
+        for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) { const t = (vert ? dc : dr) / sz; if (Math.floor(t * kk) !== i) continue; const v = mean[(r + dr) * cols + c + dc]; if (v) { sc = [sc[0] + v[0], sc[1] + v[1], sc[2] + v[2]]; sn++; } }
+        const base = sn ? sc.map((v) => v / sn) : m;
+        ctx.fillStyle = css(tonal(base, (0.5 - i / (kk - 1)) * 0.2));
+        if (vert) { const a = x0 + Math.round(w * i / kk), b = x0 + Math.round(w * (i + 1) / kk); ctx.fillRect(a, y0, b - a, h); }
+        else { const a = y0 + Math.round(h * i / kk), b = y0 + Math.round(h * (i + 1) / kk); ctx.fillRect(x0, a, w, b - a); }
+      }
+    };
+    // 2) bloques grandes donde el color es plano, finos en los cambios de tono y bordes
+    if (bigOn > 0) for (const sz of [8, 4, 2]) {
+      const tol = { 8: 20, 4: 28, 2: 36 }[sz] * bigOn;
+      for (let r0 = 0; r0 + sz <= rows; r0 += sz) for (let c0 = 0; c0 + sz <= cols; c0 += sz) {
+        let ok = true, m = [0, 0, 0];
+        for (let dr = 0; dr < sz && ok; dr++) for (let dc = 0; dc < sz; dc++) { const i = (r0 + dr) * cols + c0 + dc; if (!subj[i] || used[i]) { ok = false; break; } m = [m[0] + mean[i][0], m[1] + mean[i][1], m[2] + mean[i][2]]; }
+        if (!ok) continue; m = m.map((v) => v / (sz * sz));
+        for (let dr = 0; dr < sz && ok; dr++) for (let dc = 0; dc < sz; dc++) if (dist(mean[(r0 + dr) * cols + c0 + dc], m) > tol) { ok = false; break; }
+        if (!ok) continue;
+        paint(c0, r0, sz); for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) used[(r0 + dr) * cols + c0 + dc] = 1;
+      }
+    }
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const i = r * cols + c; if (subj[i] && !used[i]) paint(c, r, 1); }
+    // 3) partículas: mismo píxel y rejilla, solo en unas pocas zonas aleatorias pegadas al objeto
+    const dens = o.particulas === undefined ? 1 : +o.particulas;
+    if (dens > 0) {
+      const out = new Uint8Array(n), st = [];                       // fondo exterior (conectado con el borde)
+      const push = (c, r) => { const i = r * cols + c; if (c >= 0 && c < cols && r >= 0 && r < rows && !subj[i] && !out[i]) { out[i] = 1; st.push(i); } };
+      for (let c = 0; c < cols; c++) { push(c, 0); push(c, rows - 1); } for (let r = 0; r < rows; r++) { push(0, r); push(cols - 1, r); }
+      while (st.length) { const i = st.pop(), c = i % cols, r = (i / cols) | 0; push(c + 1, r); push(c - 1, r); push(c, r + 1); push(c, r - 1); }
+      const dst = new Float32Array(n).fill(1e9), sr = new Int32Array(n).fill(-1), qq = [], pUsed = new Uint8Array(n);
+      for (let i = 0; i < n; i++) if (subj[i]) { dst[i] = 0; sr[i] = i; qq.push(i); }
+      for (let h = 0; h < qq.length; h++) { const i = qq[h], c = i % cols, r = (i / cols) | 0;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const c2 = c + dc, r2 = r + dr; if ((!dr && !dc) || c2 < 0 || c2 >= cols || r2 < 0 || r2 >= rows) continue;
+          const j = r2 * cols + c2, nd = dst[i] + (dr && dc ? 1.41 : 1); if (out[j] && nd < dst[j] && nd <= 12) { dst[j] = nd; sr[j] = sr[i]; qq.push(j); } } }
+      const edge = []; for (let i = 0; i < n; i++) if (subj[i]) { const c = i % cols, r = (i / cols) | 0; if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dc, dr]) => { const c2 = c + dc, r2 = r + dr; return c2 >= 0 && c2 < cols && r2 >= 0 && r2 < rows && out[r2 * cols + c2]; })) edge.push([c, r]); }
+      const blobs = []; if (edge.length) for (let q2 = PR.int(3, 5); q2 > 0; q2--) { const a = PR.pick(edge); blobs.push({ c: a[0], r: a[1], rad: PR.range(3.5, 7) }); }
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const i = r * cols + c; if (!out[i] || dst[i] > 12 || sr[i] < 0 || pUsed[i]) continue;
+        let w = 0; for (const b of blobs) w = Math.max(w, Math.exp(-((c - b.c) ** 2 + (r - b.r) ** 2) / (2 * (b.rad * 0.65) ** 2)));
+        if (PR() > dens * 0.85 * w * Math.exp(-dst[i] / 5)) continue;
+        const free = (j) => out[j] && !subj[j] && !pUsed[j], two = PR() < 0.28 && c + 1 < cols && r + 1 < rows && free(i) && free(i + 1) && free(i + cols) && free(i + cols + 1), z = two ? 2 : 1;
+        for (let dr = 0; dr < z; dr++) for (let dc = 0; dc < z; dc++) pUsed[i + dr * cols + dc] = 1;
+        const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
+        ctx.fillStyle = colMap.get(sr[i]) || '#009EDE'; ctx.fillRect(x0, y0, Math.round((c + z) * cell) - x0, Math.round((r + z) * cell) - y0);
+      }
+    }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -786,6 +869,7 @@ const ramp = (fams, t) => {
     mezcla: (ctx, W, H, o) => overprint(ctx, W, H, o),
     figura: (ctx, W, H, o) => figure(ctx, W, H, o),
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
+    pixelicono: (ctx, W, H, o) => pixelImage(ctx, W, H, o),
     optimismo, cabezoneria, trabajo, calma, caos, union, planta,
     euro3d: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€' }),
     euro: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€', plano: true }),

@@ -11,5 +11,7 @@ const fs = require('fs'), path = require('path');
   save('hoja.png', await p.evaluate(() => window.hoja())); console.log('ok hoja');
   const ids = await p.evaluate(() => window.iconos.ICONS.map((i) => i.id));
   for (let i = 0; i < ids.length; i++) { save(`0${i + 1}-${ids[i]}.png`, await p.evaluate((k) => window.uno(k), i)); console.log('ok', ids[i]); }
+  save('pixel-hoja.png', await p.evaluate(() => window.hojaPixel())); console.log('ok pixel-hoja');
+  for (let i = 0; i < ids.length; i++) { save(`pixel-0${i + 1}-${ids[i]}.png`, await p.evaluate((k) => window.unoPixel(k), i)); console.log('ok pixel', ids[i]); }
   await b.close();
 })();
