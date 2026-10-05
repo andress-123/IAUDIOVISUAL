@@ -297,13 +297,14 @@ const ramp = (fams, t) => {
     const avg = (x, y, s) => { let r = 0, g = 0, b = 0, n = 0; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) { const c = at(x + (i + 0.5) * s / 4, y + (j + 0.5) * s / 4); r += c[0]; g += c[1]; b += c[2]; n++; } return [r / n, g / n, b / n]; };
     const bgc = avg(4, 4, 8);
     const fams = o.fams || subset(R, 4);
-    const ang = R.pick([0, Math.PI, -Math.PI / 4, Math.PI / 4]) + R.range(-0.3, 0.3), ax = Math.cos(ang), ay = Math.sin(ang);
+    // el eje de disolución apunta hacia abajo/los lados: la parte alta (cara) se conserva
+    const ang = R.pick([Math.PI / 2, Math.PI / 3, 2 * Math.PI / 3, Math.PI / 4, 3 * Math.PI / 4]) + R.range(-0.15, 0.15), ax = Math.cos(ang), ay = Math.sin(ang);
     const cell = Math.round(H / 34);
     ctx.drawImage(src, 0, 0); // base fotográfica
     for (let gy = 0; gy < H; gy += cell) for (let gx = 0; gx < W; gx += cell) {
       const px0 = (gx - W / 2) / W, py0 = (gy - H / 2) / H;
-      const t = clamp((px0 * ax + py0 * ay) * 1.3 + 0.5 + (N(gx / 140, gy / 140) - 0.5) * 0.5); // 0..1 a lo largo del eje de disolución
-      const p = clamp((t - 0.4) / 0.6);
+      const t = clamp((px0 * ax + py0 * ay) * 1.3 + 0.5 + (N(gx / 140, gy / 140) - 0.5) * 0.3); // 0..1 a lo largo del eje de disolución
+      const p = clamp((t - 0.5) / 0.5);
       if (p < 0.04) continue;
       const rnd = R();
       const c = avg(gx, gy, cell), isBg = Math.hypot(c[0] - bgc[0], c[1] - bgc[1], c[2] - bgc[2]) < 38;
@@ -322,7 +323,7 @@ const ramp = (fams, t) => {
     for (let i = 0; i < nc; i++) {
       const fa = fams[i % fams.length], fb = fams[(i + 1) % fams.length];
       ctx.globalCompositeOperation = 'hard-light';
-      plus(ctx, W * R.range(0.4, 0.6) + (R() < 0.5 ? -1 : 1) * W * 0.08, H * R.range(0.3, 0.6), H * 0.2, { R, famH: fa, famV: fb, steps: 8 });
+      plus(ctx, W * R.range(0.3, 0.7), H * R.range(0.58, 0.82), H * 0.2, { R, famH: fa, famV: fb, steps: 8 });
       ctx.globalCompositeOperation = 'source-over';
     }
   }

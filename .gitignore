@@ -1,0 +1,3 @@
+app/fotos/*
+!app/fotos/.gitkeep
+app/pruebas/figura-*
