@@ -105,11 +105,9 @@ const ramp = (fams, t) => {
     if (o.rot) ctx.rotate(o.rot);
     if (o.skew) ctx.transform(1, 0, o.skew, 1, 0, 0);
     strips(ctx, fa, -L1, -T1 / 2, L1 + L2, T1, n, true, R() < 0.5, o.jitter || 0, R);
+    ctx.globalCompositeOperation = 'hard-light'; // modo de fusión de la identidad (Illustrator: Luz fuerte)
     strips(ctx, fb, -T2 / 2, -U1, T2, U1 + U2, Math.max(4, n - 1), false, R() < 0.5, o.jitter || 0, R);
-    // nodo central = mezcla de ambas familias
-    const cc = mix(grad(fa, 0.55), grad(fb, 0.55), 0.5);
-    ctx.fillStyle = rgb(cc);
-    ctx.fillRect(-T2 / 2, -T1 / 2, T2, T1);
+    ctx.globalCompositeOperation = 'source-over';
     ctx.restore();
   }
 
@@ -158,6 +156,7 @@ const ramp = (fams, t) => {
     const q = (v) => Math.round(v / grid) * grid;
     // las corrientes lejanas se pintan primero; las centrales por encima
     const idx = fams.map((_, i) => i).sort((a, b) => Math.abs(b - (n - 1) / 2) - Math.abs(a - (n - 1) / 2));
+    ctx.globalCompositeOperation = 'hard-light';
     for (const i of idx) {
       const fam = fams[i], nb = fams[clamp(i + (i < (n - 1) / 2 ? 1 : -1), 0, n - 1)];
       const y0 = m + (i + 0.5) * ((H - 2 * m) / n);
@@ -167,13 +166,14 @@ const ramp = (fams, t) => {
         const bw = lerp(W * 0.02, W * 0.07, R()) * lerp(1, 1.2, p);
         const bh = q(lerp(rowH, rowH * R.range(0.55, 1.1), e));
         const y = q(lerp(y0, yc, Math.pow(e, 0.8)) + R.range(-grid, grid) * p);
-        const c = mix(grad(fam, p * 1.1), grad(nb, clamp(p * 1.3)), clamp(p * 1.4 - 0.3));
+        const c = mix(grad(fam, p * 1.1), grad(nb, clamp(p * 1.3)), clamp(p * 1.4 - 0.3) * 0.5);
         ctx.fillStyle = rgb(c);
         ctx.fillRect(x, y - bh / 2, bw + 1, bh);
         x += bw * R.range(0.7, 1);
         if (x > x1) break;
       }
     }
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   // Bandas dentadas apiladas (franjas de la lámina 10)
@@ -246,32 +246,19 @@ const ramp = (fams, t) => {
     for (let y = 0; y < H; y += base) for (let x = 0; x < W; x += base) cell(x, y, base);
   }
 
-  // Mezcla: barras de degradado superpuestas; donde se cruzan, los colores se mezclan en OKLab
-  // (azul+amarillo = verde vivo, rojo+azul = violeta) en vez de oscurecerse
+  // Mezcla: barras de degradado superpuestas en Luz fuerte (como en Illustrator)
   function overprint(ctx, W, H, o) {
-    const R = o.R, g = Math.round(H / 12), sub = 4, u = g / sub;
+    const R = o.R, g = Math.round(H / 12);
     const q = (v) => Math.round(v / g) * g;
-    const n = R.int(5, 8), bars = [];
+    const n = R.int(6, 9);
+    ctx.globalCompositeOperation = 'hard-light';
     for (let i = 0; i < n; i++) {
-      const vertical = R() < 0.5;
+      const fam = R.pick(ORDER), vertical = R() < 0.5;
       const len = q(R.range(W * 0.35, W * 0.8)), th = q(R.range(H * 0.12, H * 0.34));
-      bars.push({
-        fam: R.pick(ORDER), vertical, rev: R() < 0.5, k: R.int(6, 12),
-        x: q(R.range(-W * 0.05, W * 0.75)), y: q(R.range(0, H * 0.8)),
-        w: vertical ? th : len, h: vertical ? len : th,
-      });
+      const x = q(R.range(-W * 0.05, W * 0.75)), y = q(R.range(0, H * 0.8));
+      strips(ctx, fam, x, y, vertical ? th : len, vertical ? len : th, R.int(6, 12), !vertical, R() < 0.5, 0, R);
     }
-    for (let y = 0; y < H; y += u) for (let x = 0; x < W; x += u) {
-      let acc = null, cnt = 0;
-      for (const b of bars) {
-        if (x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) continue;
-        const p = b.vertical ? (y - b.y) / b.h : (x - b.x) / b.w;
-        const st = Math.floor(clamp(p) * b.k) / (b.k - 1);
-        const c = grad(b.fam, b.rev ? 1 - st : st);
-        acc = acc ? mix(acc, c, 1 / (cnt + 1)) : c; cnt++;
-      }
-      if (acc) { ctx.fillStyle = rgb(acc); ctx.fillRect(x, y, u + 0.5, u + 0.5); }
-    }
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   /* ---------- Composiciones ---------- */
@@ -314,9 +301,13 @@ const ramp = (fams, t) => {
     const comp = COMPS[spec.comp] ? spec.comp : CONCEPTOS[spec.concepto] || 'mas';
     const seed = spec.seed || 1;
     const R = rng(seed);
+    const layer = document.createElement('canvas');
+    layer.width = W; layer.height = H;
+    COMPS[comp](layer.getContext('2d'), W, H, { R, seed, fams: spec.fams });
+    ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = spec.bg || '#ffffff';
     ctx.fillRect(0, 0, W, H);
-    COMPS[comp](ctx, W, H, { R, seed, fams: spec.fams });
+    ctx.drawImage(layer, 0, 0);
     return comp;
   }
 
