@@ -75,6 +75,17 @@ const ramp = (fams, t) => {
   const subset = (R, k) => { const a = ORDER.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, k); };
   // oscurece sin ensuciar: baja L en OKLab y refuerza algo el croma (el naranja oscuro no se vuelve barro)
   const shade = (c, k) => { const L = toLab(c), f = 1 + 0.35 * k; return fromLab([L[0] * (1 - k), L[1] * f, L[2] * f]); };
+  // Recorridos de la paleta ordenados de OSCURO a CLARO: el tono de la foto avanza por el degradado (vivo, sin sombras sucias)
+  // y la forma se lee porque la claridad crece siempre en el mismo sentido.
+  const PATHS = [
+    ['#0050FF', '#009EDE', '#5AB32A', '#99E371', '#F4C00E'],             // azul -> azul claro -> verde -> lima -> amarillo
+    ['#0050FF', '#009EDE', '#5CD0FF', '#99E371', '#E6FF8A'],             // azul -> cian -> lima
+    ['#D02E26', '#FF6A00', '#F4C00E', '#99E371'],                         // rojo -> naranja -> amarillo -> lima
+    ['#0050FF', '#009EDE', '#5AB32A', '#00E67A', '#E6FF8A'],             // azul -> verde -> verde claro
+    ['#D02E26', '#FF00B4', '#FF6A00', '#F4C00E', '#E6FF8A'],             // rojo -> rosa -> naranja -> amarillo (como las láminas)
+    ['#0050FF', '#00E67A', '#99E371', '#F4C00E'],                         // azul -> verde menta -> lima -> amarillo
+  ];
+  const pathColor = (stops, t) => { const n = stops.length - 1, x = clamp(t) * n, i = Math.min(n - 1, Math.floor(x)); return mix(hex(stops[i]), hex(stops[i + 1]), x - i); };
   // rampas de 2-3 familias SEGURAS: avanzan por matices vecinos, así las transiciones no pasan por grises
   const SAFE_RAMPS = [['blue', 'green', 'yellow'], ['blue', 'cyan', 'green'], ['cyan', 'green', 'lime'], ['green', 'lime', 'yellow'], ['lime', 'yellow', 'red'], ['green', 'yellow', 'red']];
   const otherFam = (R, f) => { let o; do { o = R.pick(ORDER); } while (o === f); return o; };
@@ -416,34 +427,42 @@ const ramp = (fams, t) => {
     const q = (t) => Math.floor(clamp(refl(t + desp)) * steps * 0.9999) / (steps - 1);       // escalones como las tiras de la identidad
     const N = noise2(o.seed + 9);
     // 2) color de cada celda
-    const colMap = new Map();
+    const colMap = new Map(), info = new Map();
     for (const [c, r, l] of sub) {
       const tl = clamp((l - lo) / (hi - lo));                                              // 0 = sombra, 1 = luz
       const td = 0.5 * c / cols + 0.5 * r / rows + (N(c / 9, r / 9) - 0.5) * 0.12;           // posición diagonal con algo de ruido
-      // REGLA DE LEGIBILIDAD: el MATIZ (qué color) cambia despacio por la figura (espacial, en pocos escalones) y la FORMA
-      // la dibuja siempre la CLARIDAD (sombra -> luz) de forma monótona e igual para todos los colores.
-      // Así dos zonas contiguas nunca difieren a la vez en matiz y en claridad "al revés".
-      let col;
-      if (modo === 'vertical') col = grad(fams[0], clamp(0.1 + (r / rows) * 0.9) * 0.85);
-      else {
-        const hueSteps = modo === 'mapa' ? 4 : modo === 'mixto' ? 7 : 9;                        // mapa: menos cambios de color, más forma
-        const amp = (modo === 'mapa' ? 0.42 : modo === 'mixto' ? 0.36 : 0.32) * (fams.length < 3 ? 1.35 : 1);   // con solo 2 familias hay menos variedad de color: más contraste de claridad                     // cuánto contrasta la claridad
-        const ph = Math.floor(clamp(modo === 'mixto' ? 0.85 * td + 0.15 * tl : td) * hueSteps * 0.9999) / (hueSteps - 1);
-        const c0 = ramp(fams, ph), L = toLab(c0);
-        const tq = Math.floor(tl * 7 * 0.9999) / 6;                                                // 7 tonos escalonados
-        const dl = (tq - 0.5) * amp;
-        // claridad acotada (0.4-0.87): lo más claro no se confunde con el fondo blanco; en sombra se conserva el croma
-        col = fromLab([clamp(L[0] + dl, 0.4, 0.87), L[1] * (1 + (dl < 0 ? -dl * 0.6 : 0)), L[2] * (1 + (dl < 0 ? -dl * 0.6 : 0))]);
-      }
-      const css = rgb(col); colMap.set(r * cols + c, css); ctx.fillStyle = css;
-      const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
-      ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
+      info.set(r * cols + c, [tl, td]);
     }
+    const PAL = o.camino || PATHS[(o.seed - 1) % PATHS.length];
+    // el tono manda (forma legible); una deriva diagonal suave lo desplaza para que el degradado recorra la figura
+    const colorOf = (tl, td) => { const t = clamp(tl + (td - 0.5) * 0.22); return rgb(hex(PAL[Math.min(PAL.length - 1, Math.floor(t * PAL.length))])); };   // color PURO de la paleta por bloque (como las láminas), sin mezclas intermedias
+    const paint = (c, r, sz, css) => {
+      const x0 = Math.round(c * cell), y0 = Math.round(r * cell), x1 = Math.round((c + sz) * cell), y1 = Math.round((r + sz) * cell);
+      ctx.fillStyle = css; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) colMap.set((r + dr) * cols + c + dc, css);
+    };
+    // PÍXELES DE VARIOS TAMAÑOS: bloques grandes donde el tono es casi plano (cuerpo, pelo) y pequeños donde hay detalle (cara, bordes)
+    const used = new Uint8Array(rows * cols), bigOn = o.bloques === undefined ? 1 : +o.bloques;
+    if (bigOn > 0) for (const sz of [8, 4, 2]) {
+      const tol = { 8: 0.08, 4: 0.11, 2: 0.14 }[sz] * bigOn;
+      for (let r0 = 0; r0 + sz <= rows; r0 += sz) for (let c0 = 0; c0 + sz <= cols; c0 += sz) {
+        let ok = true, mn = 1, mx = 0, st = 0, sd = 0;
+        for (let dr = 0; dr < sz && ok; dr++) for (let dc = 0; dc < sz; dc++) {
+          const i = (r0 + dr) * cols + c0 + dc, v = info.get(i);
+          if (!v || used[i]) { ok = false; break; }
+          mn = Math.min(mn, v[0]); mx = Math.max(mx, v[0]); st += v[0]; sd += v[1];
+        }
+        if (!ok || mx - mn > tol) continue;
+        paint(c0, r0, sz, colorOf(st / (sz * sz), sd / (sz * sz)));
+        for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) used[(r0 + dr) * cols + c0 + dc] = 1;
+      }
+    }
+    for (const [c, r] of sub) { const i = r * cols + c; if (used[i]) continue; const v = info.get(i); paint(c, r, 1, colorOf(v[0], v[1])); }
     // ---- partículas de expansión: MISMO píxel y misma rejilla que la figura, solo en unas pocas áreas al azar ----
     const dens = o.particulas === undefined ? 1 : +o.particulas;
     if (dens > 0 && sub.length) {
       const PR = rng((o.seed || 1) * 104729 + 7), nb = rows * cols;
-      const isSub = new Uint8Array(nb), dst = new Float32Array(nb).fill(1e9), src = new Int32Array(nb).fill(-1), qq = [];
+      const pUsed = new Uint8Array(nb), isSub = new Uint8Array(nb), dst = new Float32Array(nb).fill(1e9), src = new Int32Array(nb).fill(-1), qq = [];
       sub.forEach(([c, r]) => { const i = r * cols + c; isSub[i] = 1; dst[i] = 0; src[i] = i; qq.push(i); });
       for (let h = 0; h < qq.length; h++) {                         // distancia a la figura, solo por el fondo exterior
         const i = qq[h], c = i % cols, r = (i / cols) | 0;
@@ -461,9 +480,14 @@ const ramp = (fams, t) => {
         if (isSub[i] || !out[i] || dst[i] > 14 || src[i] < 0) continue;
         let w = 0; for (const b of blobs) w = Math.max(w, Math.exp(-((c - b.c) ** 2 + (r - b.r) ** 2) / (2 * (b.rad * 0.65) ** 2)));
         if (PR() > dens * 0.85 * w * Math.exp(-dst[i] / 5)) continue;
-        ctx.fillStyle = colMap.get(src[i]);                          // mismo color que el píxel de la figura del que sale
+        if (pUsed[i]) continue;
+        const css = colMap.get(src[i]);                              // mismo color que el píxel de la figura del que sale
+        const free = (j) => out[j] && !isSub[j] && !pUsed[j];
+        const two = PR() < 0.28 && c + 1 < cols && r + 1 < rows && free(i) && free(i + 1) && free(i + cols) && free(i + cols + 1);
+        const szp = two ? 2 : 1;                                     // algunas partículas más grandes (2x2), el resto del tamaño fino
+        for (let dr = 0; dr < szp; dr++) for (let dc = 0; dc < szp; dc++) pUsed[i + dr * cols + dc] = 1;
         const x0 = Math.round(c * cell), y0 = Math.round(r * cell);
-        ctx.fillRect(x0, y0, Math.round((c + 1) * cell) - x0, Math.round((r + 1) * cell) - y0);
+        ctx.fillStyle = css; ctx.fillRect(x0, y0, Math.round((c + szp) * cell) - x0, Math.round((r + szp) * cell) - y0);
       }
     }
   }
