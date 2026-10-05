@@ -841,6 +841,72 @@ const ramp = (fams, t) => {
     }
   }
 
+
+  /* ---------- Formas de las láminas, recreadas con fidelidad ---------- */
+  // Barra escalonada que "va a más": n tiras con altura creciente, alineadas a un borde (escalera); el degradado avanza con el crecimiento
+  function stepBar(ctx, cx, cy, len, th, n, fam, o) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(o.rot || 0);
+    const sw = len / n, mn = o.min === undefined ? 0.3 : o.min;
+    for (let i = 0; i < n; i++) {
+      const f = i / (n - 1), g = o.grow < 0 ? 1 - f : f, hh = th * (mn + (1 - mn) * Math.pow(g, o.p || 1.15));
+      const y = o.align === 't' ? -th / 2 : o.align === 'c' ? -hh / 2 : th / 2 - hh;
+      ctx.fillStyle = rgb(grad(fam, g)); ctx.fillRect(-len / 2 + i * sw, y, sw + 0.6, hh);
+    }
+    ctx.restore();
+  }
+  // "Un signo más que va a más": dos barras escalonadas que giran distinto y se mezclan en Luz fuerte (efecto hélice)
+  function signoMas(ctx, cx, cy, S, o) {
+    const R = o.R, n = R.int(5, 8), th = S * R.range(0.34, 0.5);
+    const aligns = ['b', 't', 'c'];
+    stepBar(ctx, cx + R.range(-0.06, 0.06) * S, cy + R.range(-0.04, 0.04) * S, S * R.range(1.05, 1.35), th, n, o.famH, { rot: R.range(-0.3, 0.3), grow: R() < 0.5 ? 1 : -1, align: R.pick(aligns), min: R.range(0.25, 0.45) });
+    ctx.globalCompositeOperation = 'hard-light';
+    stepBar(ctx, cx + R.range(-0.04, 0.04) * S, cy + R.range(-0.08, 0.08) * S, S * R.range(1.05, 1.35), th * R.range(0.8, 1), R.int(5, 8), o.famV, { rot: Math.PI / 2 + R.range(-0.32, 0.32), grow: R() < 0.5 ? 1 : -1, align: R.pick(aligns), min: R.range(0.25, 0.45) });
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  function signos(ctx, W, H, o) {
+    const R = o.R;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) { const fa = R.pick(ORDER), fb = otherFam(R, fa); signoMas(ctx, (c + 0.5) * W / 2, (r + 0.5) * H / 2, H * 0.3, { R, famH: fa, famV: fb }); }
+  }
+  function signoGrande(ctx, W, H, o) { const fa = o.R.pick(ORDER); signoMas(ctx, W / 2, H / 2, H * 0.52, { R: o.R, famH: fa, famV: otherFam(o.R, fa) }); }
+
+  // Cruz de rectángulos escalonados (lámina del baloncesto): brazos de rectángulos sueltos, desalineados, que SE SOLAPAN en el centro y se mezclan; algún brazo es un bloque plano grande
+  function escalera(ctx, W, H, o) {
+    const R = o.R, S = H * 0.4, cx = W * 0.5 + R.range(-0.05, 0.05) * W, cy = H * 0.5 + R.range(-0.03, 0.03) * H;
+    const st = R.int(0, 5), dir = R() < 0.5 ? 1 : -1, f = [0, 1, 2, 3].map((k) => ORDER[(((st + dir * k) % 6) + 6) % 6]), flat = R.int(0, 3);   // 4 familias CONSECUTIVAS: al solaparse se mezclan limpias; un brazo es un bloque plano grande
+    const m = R.int(5, 7), cw = S * R.range(0.15, 0.2);
+    // brazo izquierdo: columnas cuya altura crece hacia el centro (el degradado avanza hacia dentro); llega hasta pasado el centro
+    if (flat !== 0) for (let i = 0; i < m; i++) { const g = i / (m - 1), hh = S * (0.2 + 0.7 * Math.pow(g, 1.1)); ctx.fillStyle = rgb(grad(f[0], g)); ctx.fillRect(cx + S * 0.06 - (m - i) * cw, cy - hh / 2 + R.range(-0.03, 0.03) * S, cw + 0.6, hh); }
+    else { ctx.fillStyle = rgb(grad(f[0], 0.7)); ctx.fillRect(cx - S * 0.85, cy - S * 0.4, S * 0.95, S * 0.8); }
+    ctx.globalCompositeOperation = 'hard-light';
+    // brazo superior: pila de rectángulos de anchos distintos y desplazados, desde el centro hacia arriba
+    if (flat !== 1) { let y = cy + S * 0.0; const k = R.int(4, 6); for (let j = 0; j < k; j++) { const g = j / (k - 1), rh = S * R.range(0.12, 0.2), ww = S * R.range(0.22, 0.55), x = cx - ww / 2 + R.range(-0.12, 0.12) * S; y -= rh; ctx.fillStyle = rgb(grad(f[1], g)); ctx.fillRect(x, y, ww, rh + 0.6); } }
+    else { ctx.fillStyle = rgb(grad(f[1], 0.6)); ctx.fillRect(cx - S * 0.28, cy - S * 0.9, S * 0.56, S * 0.98); }
+    // brazo derecho
+    if (flat === 2) { ctx.fillStyle = rgb(grad(f[2], 0.8)); ctx.fillRect(cx - S * 0.06, cy - S * 0.5, S * 0.85, S * 0.75); }
+    else { const k = R.int(3, 5); let x = cx - S * 0.06; for (let j = 0; j < k; j++) { const g = j / (k - 1), cwj = S * R.range(0.14, 0.24), hh = S * R.range(0.25, 0.8); ctx.fillStyle = rgb(grad(f[2], g)); ctx.fillRect(x, cy - hh / 2 + R.range(-0.1, 0.1) * S, cwj + 0.6, hh); x += cwj; } }
+    // brazo inferior: bloque estrecho y largo que arranca antes del centro
+    ctx.fillStyle = rgb(grad(f[3], 0.55)); ctx.fillRect(cx - S * R.range(0.1, 0.2), cy - S * 0.02, S * R.range(0.24, 0.4), S * R.range(0.6, 0.85));
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // Bandas dentadas (lámina de las franjas): pocas franjas FINAS con borde en dientes de sierra, parcialmente solapadas (se mezclan), con blanco entre ellas; + bloques en escalón diagonal
+  function dentado(ctx, W, H, o) {
+    const R = o.R, N = noise2(o.seed + 9), cw = Math.round(W / 64), cols = Math.ceil(W / cw), nb = R.int(3, 4);
+    const fams = subset(R, nb);
+    ctx.globalCompositeOperation = 'hard-light';
+    for (let b = 0; b < nb; b++) {
+      const yc = H * (0.47 + 0.36 * b / (nb - 1)) + R.range(-0.03, 0.03) * H, T = H * R.range(0.1, 0.17), per = R.int(3, 6), amp = T * R.range(0.3, 0.55), slope = R.range(-0.1, 0.1), tTop = R() < 0.85, tBot = R() < 0.35;
+      for (let i = 0; i < cols; i++) {
+        const x = i * cw, tx = i / cols, thick = T * (0.8 + 0.4 * N(i / 14, b * 3 + 1)), saw = (i % per) / per, cyb = yc + slope * (x - W / 2);
+        const top = cyb - thick / 2 - (tTop ? amp * saw : 0), bot = cyb + thick / 2 + (tBot ? amp * (1 - saw) : 0);
+        ctx.fillStyle = rgb(grad(fams[b], Math.floor(clamp(tx + (N(i / 20, b) - 0.5) * 0.3) * 7.99) / 7)); ctx.fillRect(x, top, cw + 0.6, bot - top);
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    { const f = R.pick(['green', 'lime', 'cyan']), m = R.int(5, 7); let x = W * 0.04, y = H * 0.06;                  // escalón diagonal (esquina superior izquierda)
+      for (let j = 0; j < m; j++) { const g = j / (m - 1), w = W * (0.04 + 0.016 * j), h = H * (0.045 + 0.01 * j); ctx.fillStyle = rgb(grad(f, g)); ctx.fillRect(x, y, w, h); x += w * 0.8; y += h * 0.85; } }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -871,6 +937,7 @@ const ramp = (fams, t) => {
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
     pixelicono: (ctx, W, H, o) => pixelImage(ctx, W, H, o),
     optimismo, cabezoneria, trabajo, calma, caos, union, planta,
+    signos, signoGrande, escalera, dentado,
     euro3d: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€' }),
     euro: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€', plano: true }),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
