@@ -16,7 +16,27 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const rgb = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
-  const mix = (c1, c2, t) => c1.map((v, i) => lerp(v, c2[i], t));
+  // Mezcla en OKLab: evita grises sucios al cruzar tonos (rojo+cian, azul+amarillo...)
+  const toLin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const toSrgb = (v) => 255 * clamp(v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+  const toLab = ([r, g, b]) => {
+    r = toLin(r); g = toLin(g); b = toLin(b);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+  };
+  const fromLab = ([L, a, b]) => {
+    const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
+    const m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
+    const s = Math.pow(L - 0.0894841775 * a - 1.291485548 * b, 3);
+    return [toSrgb(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            toSrgb(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            toSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)];
+  };
+  const mix = (c1, c2, t) => { const A = toLab(c1), B = toLab(c2); return fromLab(A.map((v, i) => lerp(v, B[i], t))); };
   const grad = (fam, t) => mix(hex(FAMILIES[fam].base), hex(FAMILIES[fam].end), clamp(t));
 
   function rng(seed) { // mulberry32
@@ -46,6 +66,13 @@
     };
   }
 
+  // Rampa continua: recorre varias familias (cada una con su degradado) de forma suave
+const ramp = (fams, t) => {
+    const n = fams.length, x = clamp(t) * n * 0.999, i = Math.floor(x), f = x - i;
+    const A = grad(fams[i], f), B = grad(fams[Math.min(i + 1, n - 1)], 0);
+    return f > 0.8 ? mix(A, B, (f - 0.8) / 0.2 * 0.6) : A;
+  };
+  const subset = (R, k) => { const a = ORDER.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, k); };
   const otherFam = (R, f) => { let o; do { o = R.pick(ORDER); } while (o === f); return o; };
 
   /* ---------- Formas ---------- */
@@ -193,6 +220,60 @@
     }
   }
 
+  // Mosaico: quadtree de bloques cuyo color sale de un campo suave recorrido por la rampa
+  function mosaic(ctx, W, H, o) {
+    const R = o.R, N = noise2(o.seed + 41), M = noise2(o.seed + 77);
+    const fams = o.fams || subset(R, 3);
+    const base = Math.round(H / R.pick([5, 6, 8]));
+    const warp = (x, y) => N(x / 500 + M(x / 260, y / 260) * 1.6, y / 500 + M(y / 260, x / 260) * 1.6);
+    const thr = R.range(0.3, 0.45);
+    const cell = (x, y, s) => {
+      const v = warp(x + s / 2, y + s / 2);
+      const detail = M((x + s / 2) / 200, (y + s / 2) / 200);
+      if (s > base / 4 && R() < clamp(detail * 1.3 - 0.35) * (s / base < 0.6 ? 0.5 : 1)) {
+        const h = s / 2; cell(x, y, h); cell(x + h, y, h); cell(x, y + h, h); cell(x + h, y + h, h); return;
+      }
+      if (v < thr * 0.9 && R() < 0.9) return; // respiro blanco
+      const t = clamp((v - 0.15) / 0.7);
+      if (s >= base / 2 && R() < 0.45) { // alguna celda con tiras de degradado
+        const k = R.int(3, 5), vert = R() < 0.5;
+        for (let i = 0; i < k; i++) {
+          ctx.fillStyle = rgb(ramp(fams, t + (i / k - 0.5) * 0.18));
+          if (vert) ctx.fillRect(x + i * s / k, y, s / k + 0.5, s); else ctx.fillRect(x, y + i * s / k, s, s / k + 0.5);
+        }
+      } else { ctx.fillStyle = rgb(ramp(fams, t)); ctx.fillRect(x, y, s + 0.5, s + 0.5); }
+    };
+    for (let y = 0; y < H; y += base) for (let x = 0; x < W; x += base) cell(x, y, base);
+  }
+
+  // Mezcla: barras de degradado superpuestas; donde se cruzan, los colores se mezclan en OKLab
+  // (azul+amarillo = verde vivo, rojo+azul = violeta) en vez de oscurecerse
+  function overprint(ctx, W, H, o) {
+    const R = o.R, g = Math.round(H / 12), sub = 4, u = g / sub;
+    const q = (v) => Math.round(v / g) * g;
+    const n = R.int(5, 8), bars = [];
+    for (let i = 0; i < n; i++) {
+      const vertical = R() < 0.5;
+      const len = q(R.range(W * 0.35, W * 0.8)), th = q(R.range(H * 0.12, H * 0.34));
+      bars.push({
+        fam: R.pick(ORDER), vertical, rev: R() < 0.5, k: R.int(6, 12),
+        x: q(R.range(-W * 0.05, W * 0.75)), y: q(R.range(0, H * 0.8)),
+        w: vertical ? th : len, h: vertical ? len : th,
+      });
+    }
+    for (let y = 0; y < H; y += u) for (let x = 0; x < W; x += u) {
+      let acc = null, cnt = 0;
+      for (const b of bars) {
+        if (x < b.x || x >= b.x + b.w || y < b.y || y >= b.y + b.h) continue;
+        const p = b.vertical ? (y - b.y) / b.h : (x - b.x) / b.w;
+        const st = Math.floor(clamp(p) * b.k) / (b.k - 1);
+        const c = grad(b.fam, b.rev ? 1 - st : st);
+        acc = acc ? mix(acc, c, 1 / (cnt + 1)) : c; cnt++;
+      }
+      if (acc) { ctx.fillStyle = rgb(acc); ctx.fillRect(x, y, u + 0.5, u + 0.5); }
+    }
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -217,14 +298,15 @@
     },
     flujo: (ctx, W, H, o) => flow(ctx, W, H, o),
     bandas: (ctx, W, H, o) => bands(ctx, W, H, o),
-    campo: (ctx, W, H, o) => field(ctx, W, H, o),
+    campo: (ctx, W, H, o) => mosaic(ctx, W, H, o),
+    mezcla: (ctx, W, H, o) => overprint(ctx, W, H, o),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 
   // Conceptos -> composición (modo abstracto "que genera conceptos")
   const CONCEPTOS = {
     expandir: 'flujo', crecer: 'molinillo', sumar: 'mas', unir: 'cruz',
-    diversidad: 'campo', conectar: 'bandas', transformar: 'disolver',
+    diversidad: 'campo', mezclar: 'mezcla', conectar: 'bandas', transformar: 'disolver',
   };
 
   function render(canvas, spec) {
@@ -238,6 +320,6 @@
     return comp;
   }
 
-  const api = { FAMILIES, ORDER, COMPS, CONCEPTOS, render, rng };
+  const api = { FAMILIES, ORDER, COMPS, CONCEPTOS, render, rng, ramp, mix };
   if (typeof module !== 'undefined') module.exports = api; else root.Identidad = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -4,13 +4,17 @@ const fs = require('fs'), path = require('path');
 const out = path.join(__dirname, 'pruebas');
 const jobs = [
   ['01-expandir-flujo',        { comp: 'flujo', seed: 4 }],
-  ['02-sumar-cruces',          { comp: 'mas', seed: 12 }],
-  ['03-unir-cruz',             { comp: 'cruz', seed: 31 }],
-  ['04-crecer-molinillo',      { comp: 'molinillo', seed: 8 }],
-  ['05-transformar-disolver',  { comp: 'disolver', seed: 5 }],
-  ['06-conectar-bandas',       { comp: 'bandas', seed: 9 }],
-  ['07-diversidad-campo',      { comp: 'campo', seed: 21 }],
-  ['08-transformar-disolver-b',{ comp: 'disolver', seed: 77 }],
+  ['02-expandir-flujo-b',      { comp: 'flujo', seed: 19 }],
+  ['03-sumar-cruces',          { comp: 'mas', seed: 12 }],
+  ['04-unir-cruz',             { comp: 'cruz', seed: 31 }],
+  ['05-crecer-molinillo',      { comp: 'molinillo', seed: 8 }],
+  ['06-transformar-disolver',  { comp: 'disolver', seed: 5 }],
+  ['07-transformar-disolver-b',{ comp: 'disolver', seed: 77 }],
+  ['08-conectar-bandas',       { comp: 'bandas', seed: 9 }],
+  ['09-mezclar-superposicion', { comp: 'mezcla', seed: 3 }],
+  ['10-mezclar-superposicion-b',{ comp: 'mezcla', seed: 26 }],
+  ['11-diversidad-mosaico',    { comp: 'campo', seed: 21 }],
+  ['12-diversidad-mosaico-b',  { comp: 'campo', seed: 64 }],
 ];
 (async () => {
   fs.mkdirSync(out, { recursive: true });
