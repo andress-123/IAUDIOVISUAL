@@ -6,6 +6,6 @@
 window.draw=async(spec)=>{const c=document.getElementById('c');
 if(spec.foto)spec.image=await load(spec.foto);
 // con foto, el lienzo adopta su proporción (alto 1400); sin foto, 1600x1000
-if(spec.image){c.height=1400;c.width=Math.round(1400*spec.image.width/spec.image.height);}else{c.width=1600;c.height=1000;}
+if(spec.image){c.height=spec.alto||1400;c.width=Math.round(c.height*spec.image.width/spec.image.height);}else{c.width=1600;c.height=1000;}
 return Identidad.render(c,spec);};
 window.png=()=>document.getElementById('c').toDataURL('image/png');</script>

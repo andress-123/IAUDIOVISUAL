@@ -366,10 +366,7 @@ const ramp = (fams, t) => {
       ? [ORDER[(o.seed - 1) % ORDER.length]]
       : [0, 2, 4].map((k) => ORDER[(o.seed - 1 + k) % ORDER.length]));   // 3 familias vecinas en el ciclo de la paleta
     const holeT = o.huecos || 20;                                          // huecos en las luces (ojos, dientes) para que la figura se lea
-    const white = [255, 255, 255], tint = (f, k) => mix(white, hex(FAMILIES[f].end), k);
-    const bg = ctx.createLinearGradient(0, 0, W, H);                      // fondo con degradado diagonal entre las familias
-    bg.addColorStop(0, rgb(tint(fams[0], 0.14))); bg.addColorStop(1, rgb(tint(fams[fams.length - 1], 0.5)));
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = o.fondo || '#ffffff'; ctx.fillRect(0, 0, W, H);        // fondo blanco siempre (identidad)
     // 1) celdas de la figura: fondo = celdas parecidas al fondo CONECTADAS con el borde (flood fill);
     //    lo claro del interior (océano de un globo, un diente) sigue siendo parte del objeto
     const bgLike = g.map((cc, i) => dist(cc, bgs[(i / cols) | 0]) < T);
@@ -389,7 +386,9 @@ const ramp = (fams, t) => {
     const useHoles = eligibles / Math.max(1, cand.length) < 0.1;
     const sub = cand.filter((p) => !(p[3] && useHoles));
     const ls = sub.map((p) => p[2]).sort((p, q) => p - q), lo = ls[Math.floor(ls.length * 0.04)] || 0, hi = ls[Math.floor(ls.length * 0.96)] || 255;
-    const steps = o.pasos || 9, q = (t) => Math.floor(clamp(t) * steps) / (steps - 1);       // escalones como las tiras de la identidad
+    const steps = o.pasos || 9, desp = o.desp || 0;
+    const refl = (x) => { const m = ((x % 2) + 2) % 2; return m <= 1 ? m : 2 - m; };      // onda triangular: periodo 2, continua
+    const q = (t) => Math.floor(clamp(refl(t + desp)) * steps * 0.9999) / (steps - 1);       // escalones como las tiras de la identidad
     const N = noise2(o.seed + 9);
     // 2) color de cada celda
     for (const [c, r, l] of sub) {
@@ -451,7 +450,7 @@ const ramp = (fams, t) => {
     const R = rng(seed);
     const layer = document.createElement('canvas');
     layer.width = W; layer.height = H;
-    COMPS[comp](layer.getContext('2d'), W, H, { R, seed, fams: spec.fams, image: spec.image });
+    COMPS[comp](layer.getContext('2d'), W, H, { ...spec, R, seed });
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = spec.bg || '#ffffff';
     ctx.fillRect(0, 0, W, H);
