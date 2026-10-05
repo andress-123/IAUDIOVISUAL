@@ -487,6 +487,81 @@ const ramp = (fams, t) => {
     }
   }
 
+
+  /* ---------- Estilo "riso de puntos": trazo de cuentas + capas de color desalineadas + líneas verticales ---------- */
+  const bez = (a, b, c, d, t) => { const u = 1 - t; return [u * u * u * a[0] + 3 * u * u * t * b[0] + 3 * u * t * t * c[0] + t * t * t * d[0], u * u * u * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t * t * t * d[1]]; };
+
+  // trazo hecho de puntos solapados a lo largo de una curva; el radio varía con el recorrido
+  function beads(ctx, curve, color, rfn, dx, dy, gap) {
+    ctx.fillStyle = color; let last = null;
+    for (let i = 0; i <= 220; i++) {
+      const t = i / 220, p = curve(t), r = rfn(t);
+      if (r < 0.4) continue;
+      if (last && Math.hypot(p[0] - last[0], p[1] - last[1]) < r * (gap || 1.1)) continue;
+      ctx.beginPath(); ctx.arc(p[0] + dx, p[1] + dy, r, 0, 7); ctx.fill(); last = p;
+    }
+  }
+
+  // Planta en maceta (la forma es generada; el estilo es el de la referencia)
+  function planta(ctx, W, H, o) {
+    const R = o.R, fams = o.fams || subset(R, 4), u = H;
+    const inks = [[20, 20, 24], hex(FAMILIES.blue.end), [20, 20, 24], hex(FAMILIES.red.base)];
+    const ink = rgb(o.tinta ? hex(o.tinta) : inks[(o.seed - 1) % 4]);
+    const px = W * 0.5 + R.range(-0.04, 0.04) * W, top = u * R.range(0.62, 0.68);
+    // 1) maceta: forma base + bandas de color desplazadas (como la maceta de la referencia)
+    const wt = u * R.range(0.26, 0.32), wb = wt * R.range(0.62, 0.78), hp = u * R.range(0.16, 0.2);
+    const poly = [[px - wt / 2, top], [px + wt / 2, top], [px + wb / 2, top + hp], [px - wb / 2, top + hp]];
+    ctx.save(); ctx.beginPath(); poly.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.clip();
+    ctx.fillStyle = rgb(grad(fams[0], 0.1)); ctx.fillRect(px - wt, top, wt * 2, hp);
+    const bands = [fams[1], fams[2], fams[3], fams[0]];
+    let bx = px - wt / 2 + wt * R.range(0.5, 0.6);
+    bands.forEach((f, k) => {
+      const bw = wt * R.range(0.07, 0.12), dy = u * R.range(0, 0.05) * (k + 1);
+      ctx.fillStyle = rgb(grad(f, 0.15 + 0.2 * k)); ctx.fillRect(bx, top + dy, bw, hp); bx += bw * 0.92;
+    });
+    ctx.restore();
+    // tierra: triángulo de color encima, desplazado
+    ctx.fillStyle = rgb(grad(fams[2], 0.9));
+    ctx.beginPath(); ctx.moveTo(px - wt * 0.3, top - u * 0.01); ctx.lineTo(px + wt * 0.12, top - u * 0.01); ctx.lineTo(px - wt * 0.1, top + u * 0.07); ctx.closePath(); ctx.fill();
+    // 2) hojas
+    const nL = R.int(8, 12), leaves = [];
+    for (let i = 0; i < nL; i++) {
+      const a = Math.PI * (0.1 + 0.8 * ((i + R.range(-0.3, 0.3)) / (nL - 1))), L = u * R.range(0.2, 0.44) * (0.75 + 0.25 * Math.sin(a));
+      const base = [px + R.range(-0.035, 0.035) * W, top - u * 0.015], d = [Math.cos(a), -Math.sin(a)];
+      const isFill = i % 4 === 1, nrm = [-d[1], d[0]], bend = L * R.range(-0.18, 0.18);
+      const tip = [base[0] + d[0] * L, base[1] + d[1] * L + (!isFill && Math.abs(d[0]) > 0.5 ? L * R.range(0.1, 0.35) : 0)];
+      const c1 = isFill ? [base[0] + d[0] * L * 0.33 + nrm[0] * bend, base[1] + d[1] * L * 0.33 + nrm[1] * bend] : [base[0] + d[0] * L * 0.3, base[1] + d[1] * L * 0.5 - L * 0.15];
+      const c2 = isFill ? [base[0] + d[0] * L * 0.66 + nrm[0] * bend, base[1] + d[1] * L * 0.66 + nrm[1] * bend] : [tip[0] - d[0] * L * 0.2, tip[1] - L * R.range(0.15, 0.4)];
+      leaves.push({ curve: (t) => bez(base, c1, c2, tip, t), L, fill: isFill });
+    }
+    // hojas rellenas de color (lente) con copias desplazadas, como capas mal registradas
+    leaves.filter((l) => l.fill).slice(0, 2).forEach((l, k) => {
+      const wmax = l.L * R.range(0.22, 0.32);
+      [[fams[1], -u * 0.012, -u * 0.006, 0.7], [fams[3], u * 0.01, u * 0.008, 0.55], [fams[k % 2 ? 2 : 0], 0, 0, 0.3]].forEach(([f, dx, dy, tcol]) => {
+        ctx.fillStyle = rgb(grad(f, tcol)); ctx.beginPath();
+        const N = 40, up = [], dn = [];
+        for (let i = 0; i <= N; i++) { const t = i / N, p = l.curve(t), q = l.curve(Math.min(1, t + 0.01)), n = [-(q[1] - p[1]), q[0] - p[0]], nl = Math.hypot(n[0], n[1]) || 1, w = wmax * Math.pow(Math.sin(Math.PI * t), 0.8); up.push([p[0] + (n[0] / nl) * w + dx, p[1] + (n[1] / nl) * w + dy]); dn.push([p[0] - (n[0] / nl) * w + dx, p[1] - (n[1] / nl) * w + dy]); }
+        up.concat(dn.reverse()).forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fill();
+      });
+    });
+    // 3) flecos de color desalineados + 4) trazo de tinta con cuentas
+    const rf = (rmax) => (t) => rmax * (0.25 + 0.75 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.05)), 0.6));
+    leaves.forEach((l) => {
+      const rmax = u * R.range(0.012, 0.028) * (l.fill ? 0.5 : 1);
+      beads(ctx, l.curve, rgb(grad(fams[0], 0.6)), rf(rmax * 1.15), -u * 0.011, -u * 0.006);
+      beads(ctx, l.curve, rgb(grad(fams[3], 0.5)), rf(rmax * 1.1), u * 0.009, u * 0.008);
+      beads(ctx, l.curve, ink, rf(rmax), 0, 0);
+    });
+    // contorno de la maceta: cuentas en el borde derecho + trazo que cae debajo
+    const edge = (t) => [poly[1][0] + (poly[2][0] - poly[1][0]) * t, poly[1][1] + (poly[2][1] - poly[1][1]) * t];
+    beads(ctx, edge, ink, () => u * 0.009, u * 0.012, 0);
+    beads(ctx, (t) => [px + wb / 2 + u * 0.018, top + hp * 0.1 + hp * 0.9 * t], ink, () => u * 0.011, 0, 0);
+    // 5) líneas verticales finas sobre todo (efecto plotter/riso), recortando la capa
+    ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    const pitch = Math.max(3, Math.round(u / 280)); for (let x = 0; x < W; x += pitch) ctx.fillRect(x, 0, Math.max(1, pitch * 0.35), H);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
   /* ---------- Composiciones ---------- */
   const COMPS = {
     mas(ctx, W, H, o) { // retícula de cruces ("posibilidades infinitas")
@@ -515,7 +590,7 @@ const ramp = (fams, t) => {
     mezcla: (ctx, W, H, o) => overprint(ctx, W, H, o),
     figura: (ctx, W, H, o) => figure(ctx, W, H, o),
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
-    optimismo, cabezoneria, trabajo, calma, caos, union,
+    optimismo, cabezoneria, trabajo, calma, caos, union, planta,
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
   };
 
