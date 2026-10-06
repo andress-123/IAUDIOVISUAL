@@ -4,3 +4,4 @@ app/pruebas/figura-*
 app/pruebas/silueta-*
 app/pruebas/*.gif
 app/silueta-*.svg
+app/globo/globo-foto.*
