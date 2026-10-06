@@ -1,376 +1,391 @@
-<title>X9 Unplug</title>
+<title>X9 Cámara Sin Pantalla</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = { theme: { extend: {
-    colors: { paper:'#F1E3B8', ink:'#0A0A0A', cam:'#E66A28', sun:'#FFD23F', sky:'#9FD3E6', pink:'#F4A6C0' },
-    fontFamily: { display:['Caprasimo','Cooper Black','Georgia','serif'], mono:['"IBM Plex Mono"','Courier New','monospace'] }
+    colors: { bone:'#F5F3EE', ink:'#0F0F0E', clay:'#E66A28', deep:'#0F4A43', sun:'#F2B632' },
+    fontFamily: { display:['"Bricolage Grotesque"','Helvetica Neue','Arial','sans-serif'], body:['"Instrument Sans"','Helvetica Neue','Arial','sans-serif'], mono:['"DM Mono"','ui-monospace','monospace'] }
   } } }
 </script>
 <style>
-  :root { --paper:#F1E3B8; --ink:#0A0A0A; --cam:#E66A28; color-scheme: light; }
-  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
-  body { background: var(--paper); color: var(--ink); font-family: 'IBM Plex Mono','Courier New',monospace; -webkit-font-smoothing: antialiased; }
-  .paper {
-    background-color: var(--paper);
-    background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .1  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-      radial-gradient(rgba(10,10,10,.09) 1px, transparent 1.4px);
-    background-size: 180px 180px, 14px 14px;
-  }
-  .stripes { background-image: repeating-linear-gradient(45deg, rgba(10,10,10,.12) 0 10px, transparent 10px 20px); }
-  .halftone { background-image: radial-gradient(rgba(10,10,10,.85) 22%, transparent 24%); background-size: 10px 10px; }
-  @keyframes marquee { to { transform: translateX(-50%); } }
-  .marquee-track { display: flex; width: max-content; animation: marquee var(--dur, 28s) linear infinite; }
-  .marquee:hover .marquee-track { animation-play-state: paused; }
-  @keyframes wobble { 0%,100% { transform: rotate(-8deg) scale(1) } 50% { transform: rotate(-4deg) scale(1.06) } }
-  .wobble { animation: wobble 3.4s ease-in-out infinite; }
-  .btn-hard { transition: transform .12s, box-shadow .12s; }
-  .btn-hard:hover { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 0 #0A0A0A; }
-  .btn-hard:active { transform: translate(4px,4px); box-shadow: 0 0 0 0 #0A0A0A; }
-  :focus-visible { outline: 4px solid #0A0A0A; outline-offset: 3px; }
+  :root { --bone:#F5F3EE; --ink:#0F0F0E; --clay:#E66A28; --line:rgba(15,15,14,.16); color-scheme: light; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body { background: var(--bone); color: var(--ink); font-family: 'Instrument Sans','Helvetica Neue',Arial,sans-serif; -webkit-font-smoothing: antialiased; }
+  .display { font-family: 'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif; letter-spacing: -0.035em; line-height: .94; text-wrap: balance; }
+  .label { font-family: 'DM Mono',ui-monospace,monospace; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+  /* grano vivo encima de cada foto */
+  .grain::after { content:""; position:absolute; inset:0; pointer-events:none; mix-blend-mode: overlay; opacity:.35;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .photo img { transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+  .photo:hover img { transform: scale(1.04); }
+  .sprockets { height: 22px; background-color:#0F0F0E;
+    background-image: linear-gradient(90deg, transparent 0 6px, #F5F3EE 6px 18px, transparent 18px 28px);
+    background-size: 28px 100%; background-clip: content-box; }
+  .sprockets { background: #0F0F0E; position: relative; }
+  .sprockets::before { content:""; position:absolute; left:0; right:0; top:6px; height:10px;
+    background: repeating-linear-gradient(90deg, #F5F3EE 0 12px, transparent 12px 28px); border-radius:2px; opacity:.9; }
+  .link-u { background: linear-gradient(currentColor,currentColor) 0 100%/0 1.5px no-repeat; transition: background-size .3s; }
+  .link-u:hover { background-size: 100% 1.5px; }
+  .btn { transition: background .2s, color .2s, transform .2s; }
+  .btn:active { transform: scale(.98); }
+  :focus-visible { outline: 3px solid #E66A28; outline-offset: 3px; }
   summary::-webkit-details-marker { display: none; }
-  @media (prefers-reduced-motion: reduce) { .marquee-track, .wobble { animation: none !important; } html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } html { scroll-behavior: auto; } }
 </style>
 
 <div id="root"></div>
 
+<script>window.IMG = __IMGS__;</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 
 <script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect } = React;
+const IMG = window.IMG;
 
 /* ============ CONFIG: edita aquí ============ */
 const CONFIG = {
-  brand: 'X9',
-  price: 39.90,            // precio de ejemplo
-  oldPrice: 49.90,
-  currency: '€',
-  checkoutUrl: '',         // p. ej. 'https://tutienda.com/cart/123:1'  (vacío = aviso en pantalla)
+  price: 39.90, oldPrice: 49.90, currency: '€',
+  checkoutUrl: '',   // enlace de pago real (Shopify, Stripe, WhatsApp…). Vacío = aviso de ejemplo.
 };
-const IMG = { orange: '__IMG_O__', black: '__IMG_K__' };
 const money = n => n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency;
 
 /* ============ Primitivas ============ */
-const HARD = 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]';
-const HARD_L = 'shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]';
-
-function Btn({ children, href = '#comprar', onClick, className = '', big }) {
-  const cls = `btn-hard inline-flex items-center justify-center gap-3 border-4 border-ink bg-cam text-ink font-display uppercase tracking-wide shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] ${big ? 'px-8 py-5 text-2xl sm:text-4xl' : 'px-5 py-3 text-lg'} ${className}`;
-  return onClick
-    ? <button onClick={onClick} className={cls}>{children}</button>
-    : <a href={href} className={cls}>{children}</a>;
-}
-
-function Sticker({ children, className = '' }) {
-  return <div className={`border-4 border-ink font-display uppercase leading-none ${HARD} ${className}`}>{children}</div>;
-}
-
-function Tape({ className = '' }) {
-  return <span aria-hidden="true" className={`absolute h-7 w-24 bg-sun/80 border-2 border-ink/20 ${className}`} />;
-}
-
-function Placeholder({ label, bg = 'bg-sky', className = '' }) {
+function Photo({ src, alt, className = '', caption, pos = 'center', children }) {
   return (
-    <div className={`${bg} stripes relative grid place-items-center border-4 border-ink p-4 text-center ${className}`} role="img" aria-label={label}>
-      <span className="bg-paper border-2 border-ink px-3 py-1 text-xs sm:text-sm font-bold uppercase tracking-wider">{label}</span>
-    </div>
-  );
-}
-
-function Polaroid({ children, caption, className = '', rotate = '' }) {
-  return (
-    <figure className={`bg-white border-4 border-ink p-3 pb-2 ${HARD_L} transition-transform duration-300 hover:rotate-0 hover:z-30 ${rotate} ${className}`}>
+    <figure className={`photo grain relative overflow-hidden bg-ink ${className}`}>
+      <img src={src} alt={alt} className="h-full w-full object-cover" style={{ objectPosition: pos }} />
+      {caption && <figcaption className="label absolute bottom-3 left-3 z-10 text-white/90 mix-blend-difference">{caption}</figcaption>}
       {children}
-      {caption && <figcaption className="mt-2 text-center text-xs font-bold uppercase tracking-widest">{caption}</figcaption>}
     </figure>
   );
 }
 
-function Marquee({ text, className = '', dur = 28, sep = '✦' }) {
-  const unit = Array.from({ length: 8 }, (_, i) => (
-    <span key={i} className="flex items-center gap-6 px-3">{text}<span aria-hidden="true">{sep}</span></span>
-  ));
-  return (
-    <div className={`marquee overflow-hidden ${className}`} aria-hidden="true">
-      <div className="marquee-track" style={{ '--dur': dur + 's' }}>
-        <div className="flex shrink-0">{unit}</div>
-        <div className="flex shrink-0">{unit}</div>
-      </div>
-    </div>
-  );
+function Button({ children, href = '#comprar', onClick, dark, className = '' }) {
+  const base = `btn inline-flex min-h-[52px] items-center justify-center gap-3 px-7 text-[15px] font-semibold tracking-wide ${dark ? 'bg-ink text-bone hover:bg-clay' : 'bg-clay text-ink hover:bg-ink hover:text-bone'} ${className}`;
+  return onClick ? <button onClick={onClick} className={base}>{children}</button> : <a href={href} className={base}>{children}</a>;
 }
 
-/* ============ Secciones ============ */
-function TopBar() {
-  return <Marquee dur={34} className="bg-ink text-sun py-2 text-sm font-bold uppercase tracking-widest" text="Cero pantallas · Mucho flash · Envío gratis desde 40 €" />;
+/* ============ Cabecera ============ */
+function Announce() {
+  return <div className="label bg-ink px-4 py-2.5 text-center text-bone">Envío gratis desde 40 € · 30 días para probarla · 12 meses de garantía</div>;
 }
 
 function Nav() {
   return (
-    <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-      <a href="#top" className="flex items-center gap-2" aria-label="X9 inicio">
-        <Sticker className="bg-cam px-3 py-2 text-3xl -rotate-3">X9</Sticker>
-        <span className="hidden sm:block text-xs font-bold uppercase leading-tight tracking-widest">Cámara<br/>sin pantalla</span>
-      </a>
-      <nav className="hidden md:flex gap-6 text-sm font-bold uppercase tracking-widest" aria-label="Principal">
-        <a className="hover:underline decoration-4 underline-offset-4" href="#features">Qué hace</a>
-        <a className="hover:underline decoration-4 underline-offset-4" href="#specs">Bajo el capó</a>
-        <a className="hover:underline decoration-4 underline-offset-4" href="#faq">Dudas</a>
-      </nav>
-      <Btn className="!px-4 !py-2 !text-base">Comprar</Btn>
+    <header className="sticky top-0 z-40 border-b border-[color:var(--line)] bg-bone/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 md:px-8">
+        <a href="#top" className="display text-[28px] font-extrabold" aria-label="X9, inicio">X9<span className="text-clay">.</span></a>
+        <nav className="hidden gap-9 text-[15px] font-medium md:flex" aria-label="Principal">
+          {[['#comprar', 'Cámara'], ['#estilos', 'Estilos'], ['#detalles', 'Detalles'], ['#specs', 'Specs'], ['#faq', 'Preguntas']].map(([h, t]) => <a key={h} href={h} className="link-u">{t}</a>)}
+        </nav>
+        <Button dark className="!min-h-[42px] !px-5 !text-sm">Comprar · {money(CONFIG.price)}</Button>
+      </div>
     </header>
   );
 }
 
+/* ============ Hero ============ */
 function Hero() {
   return (
-    <section id="top" className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-6 lg:grid-cols-[1.1fr_1fr] lg:pt-12">
-      <div>
-        <Sticker className="mb-6 inline-block rotate-[-2deg] bg-sun px-3 py-2 text-base sm:text-xl">Unplug, Capture, Cherish</Sticker>
-        <h1 className="font-display text-[3.4rem] uppercase leading-[0.9] sm:text-[6rem] lg:text-[6.5rem]">
-          Cero<br/>pantallas.<br/>
-          <span className="relative inline-block bg-cam px-3 border-4 border-ink -rotate-1 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">Mucho flash.</span>
-        </h1>
-        <p className="mt-8 max-w-xl text-lg font-medium leading-relaxed sm:text-xl">
-          La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center gap-5">
-          <Btn big>Consigue la tuya →</Btn>
-          <p className="text-sm font-bold uppercase leading-tight tracking-wider">
-            <span className="text-3xl font-display normal-case tracking-normal">{money(CONFIG.price)}</span><br/>
-            <s className="opacity-60">{money(CONFIG.oldPrice)}</s> · envío gratis +40 €
-          </p>
+    <section id="top" className="mx-auto grid max-w-[1400px] gap-4 px-4 pb-6 pt-8 md:px-8 lg:grid-cols-12 lg:pt-12">
+      <div className="flex flex-col justify-between lg:col-span-5 lg:pr-6">
+        <div>
+          <p className="label mb-6 flex items-center gap-3"><span className="h-px w-8 bg-ink" />Unplug · Capture · Cherish</p>
+          <h1 className="display text-[3.3rem] font-extrabold sm:text-[4.6rem] xl:text-[5.3rem]">Mira el momento.<br /><span className="text-clay">No la pantalla.</span></h1>
+          <p className="mt-7 max-w-md text-lg leading-relaxed text-ink/80">La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día. Apuntas, disparas y descubres las fotos después.</p>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <Button>Comprar la X9</Button>
+            <p className="text-sm"><span className="display text-3xl font-bold">{money(CONFIG.price)}</span> <s className="ml-1 text-ink/50">{money(CONFIG.oldPrice)}</s></p>
+          </div>
         </div>
+        <dl className="mt-10 hidden grid-cols-3 border-t border-[color:var(--line)] pt-5 lg:grid">
+          {[['8 MP', 'Sensor CMOS'], ['95 g', 'Cabe en el bolsillo'], ['USB-C', 'Sin apps ni nube']].map(([a, b]) => (
+            <div key={a}><dt className="display text-2xl font-bold">{a}</dt><dd className="label mt-1 !normal-case !tracking-normal text-ink/60">{b}</dd></div>
+          ))}
+        </dl>
       </div>
 
-      <div className="relative mx-auto h-[420px] w-full max-w-[520px] sm:h-[540px]">
-        <Polaroid rotate="rotate-[5deg]" className="absolute right-0 top-0 w-[58%]" caption="Foto lifestyle">
-          <Placeholder label="Espacio para foto lifestyle con flash" bg="bg-pink" className="aspect-[4/5]" />
-        </Polaroid>
-        <Polaroid rotate="rotate-[-6deg]" className="absolute bottom-0 left-0 w-[72%]" caption="X9 · acabado cuero naranja">
-          <div className="grid aspect-[4/3] place-items-center border-4 border-ink bg-sky">
-            <img src={IMG.orange} alt="Cámara X9 naranja, vista frontal" className="w-[94%] drop-shadow-[4px_6px_0_rgba(0,0,0,.35)]" />
-          </div>
-        </Polaroid>
-        <Sticker className="wobble absolute -left-2 top-6 grid h-24 w-24 place-items-center rounded-full bg-sun text-center text-sm sm:h-28 sm:w-28 sm:text-base">8 MP<br/>95 g</Sticker>
-        <Sticker className="absolute right-2 top-[52%] rotate-6 bg-ink px-3 py-2 text-sm !text-sun sm:text-base">00168</Sticker>
+      <div className="grid h-[520px] grid-cols-2 grid-rows-2 gap-4 sm:h-[640px] lg:col-span-7 lg:h-[680px]">
+        <Photo src={IMG.road} alt="Carretera de desierto al atardecer con tonos rojos, foto analógica" className="row-span-2" caption="Ruta 12 · ISO 400" pos="50% 60%" />
+        <div className="relative grid place-items-center overflow-hidden bg-deep">
+          <img src={IMG.orange} alt="Cámara X9 naranja, vista frontal" className="w-[88%] drop-shadow-[0_18px_22px_rgba(0,0,0,.45)]" />
+          <span className="label absolute left-3 top-3 text-bone/80">Clay</span>
+          <span className="label absolute bottom-3 right-3 bg-ink px-2 py-1 text-sun">00168</span>
+        </div>
+        <Photo src={IMG.stage} alt="Concierto con luces cálidas desde el público, foto analógica" caption="Festival · flash off" pos="50% 40%" />
       </div>
     </section>
   );
 }
 
-function FeatureCard({ n, title, tag, children, className = '', bg }) {
+function Proof() {
+  const items = ['Sin pantalla de revisión', 'Flash LED 2×3 W', 'Tarjeta Micro SD hasta 128G', 'Batería 800 mAh · USB-C', 'Enfoque fijo 0,5 m → ∞'];
   return (
-    <article className={`relative border-4 border-ink p-6 ${HARD_L} transition-transform duration-300 hover:rotate-0 hover:z-20 ${bg} ${className}`}>
-      <Tape className="-top-4 left-6 -rotate-3" />
-      <p className="mb-3 inline-block border-2 border-ink bg-paper px-2 py-0.5 text-xs font-bold uppercase tracking-widest">{tag}</p>
-      <h3 className="font-display text-3xl uppercase leading-none sm:text-4xl">{title}</h3>
-      <div className="mt-3 text-base leading-relaxed">{children}</div>
-    </article>
+    <section aria-label="Resumen" className="border-y border-[color:var(--line)]">
+      <ul className="mx-auto flex max-w-[1400px] flex-wrap gap-x-10 gap-y-2 px-4 py-4 md:px-8">
+        {items.map(t => <li key={t} className="label flex items-center gap-3"><span className="h-1.5 w-1.5 bg-clay" />{t}</li>)}
+      </ul>
+    </section>
   );
 }
 
-function Features() {
+/* ============ Compra ============ */
+const COLORS = {
+  orange: { name: 'Naranja Clay', bg: 'bg-deep', swatch: 'bg-clay', img: 'orange' },
+  black: { name: 'Negro Carbón', bg: 'bg-clay', swatch: 'bg-ink', img: 'black' },
+};
+function Buy({ onNote, note }) {
+  const [color, setColor] = useState('orange');
+  const [view, setView] = useState('front');
+  const [qty, setQty] = useState(1);
+  const c = COLORS[color];
+  const total = qty === 2 ? CONFIG.price * 2 * 0.9 : CONFIG.price;
+  const shown = view === 'front' ? IMG[c.img] : view === 'back' ? IMG.back : IMG.sides;
+  const alts = { front: `X9 ${c.name}, vista frontal`, back: 'X9, trasera con mini OLED y contador', sides: 'X9, vistas superior, frontal e inferior' };
+  const buy = () => CONFIG.checkoutUrl ? window.open(CONFIG.checkoutUrl, '_blank')
+    : onNote(`Ejemplo: ${qty}× X9 ${c.name} · ${money(total)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
   return (
-    <section id="features" className="border-y-4 border-ink bg-sun/60 py-20">
-      <div className="mx-auto max-w-6xl px-4">
-        <h2 className="mb-14 max-w-3xl font-display text-5xl uppercase leading-[0.95] sm:text-7xl">
-          Tres cosas.<br/><span className="bg-ink px-3 text-sun">Ni una más.</span>
-        </h2>
-        <div className="grid gap-10 md:grid-cols-6 md:gap-y-14">
-          <FeatureCard bg="bg-white" tag="Feature 01" title="Easy To Use" className="md:col-span-3 md:-rotate-2">
-            Sin ajustes. Sin menús. Solo apuntar y disparar. Si sabes usar un botón, ya sabes usar la X9.
-          </FeatureCard>
-          <FeatureCard bg="bg-cam" tag="Feature 02" title="Screen-Free Design" className="md:col-span-3 md:mt-12 md:rotate-3">
-            Vive el momento, no la pantalla. Aquí nadie revisa cada foto: se revela cuando llegas a casa.
-          </FeatureCard>
-          <FeatureCard bg="bg-sky" tag="Feature 03" title="Digital Film Style" className="md:col-span-4 md:col-start-2 md:-rotate-1">
-            Filtros de película directamente en la cámara. Cambia de carrete sin cambiar de carrete.
-            <div className="mt-4 flex flex-wrap gap-3">
-              {['Retro', 'Classic', 'Mono'].map((t, i) => (
-                <span key={t} className={`border-4 border-ink bg-paper px-4 py-1 font-display text-xl uppercase ${HARD} ${['-rotate-3', 'rotate-2', '-rotate-1'][i]}`}>{t}</span>
+    <section id="comprar" className="mx-auto max-w-[1400px] px-4 py-16 md:px-8 lg:py-24">
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <div className={`relative grid aspect-[5/4] place-items-center overflow-hidden transition-colors duration-500 ${view === 'front' ? c.bg : 'bg-[#E9E5DB]'}`}>
+            <img src={shown} alt={alts[view]} className="max-h-[78%] w-[82%] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.35)]" />
+            <span className="label absolute left-4 top-4 text-bone mix-blend-difference">{c.name}</span>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            {[['front', 'Frontal'], ['back', 'Trasera'], ['sides', 'Vistas']].map(([k, t]) => (
+              <button key={k} onClick={() => setView(k)} aria-pressed={view === k}
+                className={`label border py-3 transition ${view === k ? 'border-ink bg-ink text-bone' : 'border-[color:var(--line)] hover:border-ink'}`}>{t}</button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col border border-[color:var(--line)] p-6 sm:p-9 lg:col-span-5">
+          <p className="label flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · sale en 24–48 h</p>
+          <h2 className="display mt-5 text-4xl font-bold sm:text-5xl">X9 Cámara retro sin pantalla</h2>
+          <p className="mt-5 flex items-baseline gap-3"><span className="display text-4xl font-bold">{money(total)}</span><s className="text-ink/50">{money(qty === 2 ? CONFIG.oldPrice * 2 : CONFIG.oldPrice)}</s></p>
+          <p className="mt-1 text-sm text-ink/60">IVA incluido. Cámara, manual y cable USB-C en la caja.</p>
+
+          <fieldset className="mt-8">
+            <legend className="label mb-3">Acabado — {c.name}</legend>
+            <div className="flex gap-3">
+              {Object.entries(COLORS).map(([k, v]) => (
+                <button key={k} onClick={() => { setColor(k); setView('front'); }} aria-pressed={color === k} aria-label={v.name}
+                  className={`h-12 w-12 rounded-full ${v.swatch} ring-offset-2 ring-offset-[#F5F3EE] transition ${color === k ? 'ring-2 ring-ink' : 'ring-1 ring-[color:var(--line)]'}`} />
               ))}
             </div>
-          </FeatureCard>
-        </div>
+          </fieldset>
 
-        <div className="mt-20 grid items-center gap-10 md:grid-cols-2">
-          <Polaroid rotate="rotate-[-3deg]" caption="Verano / ruta / festival">
-            <Placeholder label="Espacio para foto lifestyle con flash" bg="bg-pink" className="aspect-[4/3]" />
-          </Polaroid>
-          <div className={`relative rotate-1 border-4 border-ink bg-paper p-6 ${HARD_L}`}>
-            <Tape className="-top-4 right-8 rotate-3" />
-            <h3 className="font-display text-3xl uppercase leading-none sm:text-4xl">A prueba de peques</h3>
-            <p className="mt-3 leading-relaxed">La tarjeta Micro SD solo se saca con un destornillador. Nadie la pierde en el campamento. Un botón de disparo, un selector de flash y a correr.</p>
-          </div>
+          <fieldset className="mt-7">
+            <legend className="label mb-3">Cantidad</legend>
+            <div className="grid grid-cols-2 gap-3">
+              {[[1, '1 cámara'], [2, '2 cámaras · −10 %']].map(([q, t]) => (
+                <button key={q} onClick={() => setQty(q)} aria-pressed={qty === q}
+                  className={`border px-4 py-3.5 text-left text-sm font-medium transition ${qty === q ? 'border-ink bg-ink text-bone' : 'border-[color:var(--line)] hover:border-ink'}`}>{t}</button>
+              ))}
+            </div>
+          </fieldset>
+
+          <Button onClick={buy} className="mt-8 w-full !min-h-[60px] !text-base">Comprar ahora · {money(total)}</Button>
+          {note && <p role="status" className="mt-4 bg-sun/40 p-3 text-sm font-medium">{note}</p>}
+          <ul className="mt-6 grid gap-2 border-t border-[color:var(--line)] pt-5 text-sm">
+            <li>30 días para devolverla</li><li>12 meses de garantía</li><li>Pago seguro</li>
+          </ul>
+          <p className="mt-auto pt-5 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
         </div>
       </div>
     </section>
   );
 }
 
-function Spec({ k, v, hi }) {
+/* ============ Idea ============ */
+function Idea() {
   return (
-    <li className={`flex items-baseline gap-2 py-1.5 ${hi ? 'font-bold' : ''}`}>
-      <span className="shrink-0">{k}</span>
-      <span aria-hidden="true" className="min-w-4 flex-1 border-b-2 border-dotted border-ink/60" />
-      <span className="text-right">{v}</span>
-    </li>
+    <section className="mx-auto max-w-[1400px] px-4 pb-20 md:px-8 lg:pb-28">
+      <p className="label mb-6">La idea</p>
+      <h2 className="display max-w-5xl text-[2.6rem] font-extrabold sm:text-[4.6rem] lg:text-[5.6rem]">Hacemos mil fotos al año y no vivimos <span className="text-clay">ninguna</span>.</h2>
+      <div className="mt-12 grid items-end gap-4 md:grid-cols-12">
+        <Photo src={IMG.terrace} alt="Terraza con luces de fiesta y gente, foto analógica" className="aspect-[4/3] md:col-span-6" caption="Terraza · 21:40" />
+        <Photo src={IMG.toast} alt="Brindis con copas de vino, foto analógica" className="aspect-[3/4] md:col-span-3" caption="Brindis" />
+        <Photo src={IMG.powder} alt="Polvos de colores en un festival, foto analógica" className="aspect-square md:col-span-3" caption="Holi" />
+      </div>
+      <div className="mt-10 grid gap-8 md:grid-cols-12">
+        <p className="text-lg leading-relaxed text-ink/80 md:col-span-5 md:col-start-1">Sacas el móvil, encuadras, repites, miras si has salido bien… y el momento ya pasó. La X9 quita la pantalla del medio.</p>
+        <p className="text-lg leading-relaxed text-ink/80 md:col-span-5 md:col-start-7">Lo que ves es lo que está ocurriendo. Lo que captas es una sorpresa que te espera en la tarjeta: sin filtros eternos y sin segundas oportunidades.</p>
+      </div>
+    </section>
   );
 }
 
-function Specs() {
-  const big = [
-    ['A', 'Sensor', '8M', 'píxeles'],
-    ['B', 'Lente', '4.2mm', '5P + IR'],
-    ['C', 'Batería', '800mAh', 'Li-ion · USB-C'],
-    ['D', 'Tarjeta', '128G', 'Micro SD máx.'],
+/* ============ Cómo funciona ============ */
+function How() {
+  const steps = [
+    ['Apunta', 'Mira por el visor, como siempre. Enfoque fijo desde 0,5 m hasta el infinito: no hay nada que ajustar.'],
+    ['Dispara', 'Un botón y un selector de flash. El mini OLED trasero cuenta tus fotos y te dice qué estilo llevas.'],
+    ['Descubre', 'Conecta el USB-C al ordenador o al móvil y revela tus JPG. Sin apps, sin cuentas, sin nube.'],
   ];
   return (
-    <section id="specs" className="mx-auto max-w-6xl px-4 py-20">
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-        <h2 className="font-display text-5xl uppercase leading-[0.95] sm:text-7xl">Bajo el<br/>capó</h2>
-        <Sticker className="rotate-3 bg-cam px-3 py-2 text-lg">Léelo antes de usar</Sticker>
-      </div>
-
-      <div className={`relative border-4 border-ink bg-[#FBF5E1] ${HARD_L}`}>
-        <div className="flex items-center justify-between border-b-4 border-ink bg-ink px-4 py-2 text-xs font-bold uppercase tracking-widest text-sun sm:text-sm">
-          <span>Manual de usuario · Mod. X9</span><span>Pág. 04</span>
+    <section className="border-t border-[color:var(--line)]">
+      <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-16 md:px-8 lg:grid-cols-12 lg:py-24">
+        <Photo src={IMG.valley} alt="Valle con río y montañas al amanecer, foto analógica" className="aspect-[4/5] lg:col-span-5" caption="Valle · 06:10" pos="50% 70%" />
+        <div className="lg:col-span-6 lg:col-start-7">
+          <p className="label mb-6">Cómo funciona</p>
+          <h2 className="display mb-10 text-5xl font-extrabold sm:text-6xl">Tres pasos.<br />Ni uno más.</h2>
+          <ol className="divide-y divide-[color:var(--line)] border-y border-[color:var(--line)]">
+            {steps.map(([t, d], i) => (
+              <li key={t} className="grid grid-cols-[3rem_1fr] gap-4 py-7 sm:grid-cols-[4rem_10rem_1fr]">
+                <span className="label pt-2">0{i + 1}</span>
+                <h3 className="display text-3xl font-bold">{t}</h3>
+                <p className="col-span-2 text-ink/75 sm:col-span-1">{d}</p>
+              </li>
+            ))}
+          </ol>
         </div>
+      </div>
+    </section>
+  );
+}
 
-        <div className="grid grid-cols-2 border-b-4 border-ink lg:grid-cols-4">
-          {big.map(([l, k, v, s], i) => (
-            <div key={l} className={`p-5 ${i % 2 === 0 ? 'border-r-4' : 'lg:border-r-4'} ${i < 2 ? 'border-b-4 lg:border-b-0' : ''} ${i === 3 ? '!border-r-0' : ''} border-ink`}>
-              <p className="text-xs font-bold uppercase tracking-widest">Fig. {l} · {k}</p>
-              <p className="mt-2 font-display text-4xl leading-none text-cam [-webkit-text-stroke:1.5px_#0A0A0A] sm:text-5xl">{v}</p>
-              <p className="mt-2 text-sm">{s}</p>
-            </div>
+/* ============ Estilos de película ============ */
+function Styles() {
+  const f = [['retro', 'Retro', 'Cálido, velado y con fuga de luz. Como un álbum de verano.'], ['classic', 'Classic', 'Color saturado y contraste limpio. Como se veía.'], ['mono', 'Mono', 'Blanco y negro con grano. Todo parece cine.']];
+  return (
+    <section id="estilos" className="bg-ink text-bone">
+      <div className="mx-auto max-w-[1400px] px-4 py-16 md:px-8 lg:py-24">
+        <div className="mb-12 grid gap-6 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <p className="label mb-6 text-bone/60">Película digital</p>
+            <h2 className="display text-5xl font-extrabold sm:text-7xl">Elige tu carrete.</h2>
+          </div>
+          <p className="self-end text-lg leading-relaxed text-bone/75 lg:col-span-4 lg:col-start-9">Cada X9 trae estilos de película que cargas en la cámara. Cambias de estilo como cambiarías de carrete.</p>
+        </div>
+        <div className="grid gap-5 md:grid-cols-3">
+          {f.map(([k, t, d], i) => (
+            <article key={k}>
+              <div className="sprockets" aria-hidden="true" />
+              <Photo src={IMG['f_' + k]} alt={`Misma foto de público en estilo ${t}`} className="aspect-[4/5]" />
+              <div className="sprockets" aria-hidden="true" />
+              <div className="mt-5 flex items-baseline justify-between"><h3 className="display text-3xl font-bold">{t}</h3><span className="label text-bone/50">{String(i + 1).padStart(2, '0')}A</span></div>
+              <p className="mt-2 text-bone/70">{d}</p>
+            </article>
           ))}
         </div>
-
-        <div className="grid gap-x-10 p-5 sm:p-8 md:grid-cols-2">
-          <div>
-            <h3 className="mb-2 border-b-4 border-ink pb-1 font-bold uppercase tracking-widest">1. Imagen</h3>
-            <ul>
-              <Spec k="Sensor" v="CMOS 1/3.2" hi />
-              <Spec k="Píxeles efectivos" v="8M" />
-              <Spec k="Resolución" v="3264×2448" />
-              <Spec k="Formato" v="JPG" />
-              <Spec k="Enfoque" v="Fijo · 0.5m → ∞" />
-              <Spec k="Obturación" v="0.5–1 s" />
-              <Spec k="ISO" v="1600" />
-              <Spec k="Balance blancos" v="Auto" />
-              <Spec k="Flash" v="2×3W LED" />
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-2 mt-6 border-b-4 border-ink pb-1 font-bold uppercase tracking-widest md:mt-0">2. Cuerpo y conexión</h3>
-            <ul>
-              <Spec k="Lente" v="5P+IR · 4.2mm" hi />
-              <Spec k="Visor" v="Óptico" />
-              <Spec k="Display" v="OLED 0.96″" />
-              <Spec k="Batería" v="800mAh" hi />
-              <Spec k="Tarjeta" v="Micro SD · 128G máx." hi />
-              <Spec k="Interfaz" v="USB Type-C" />
-              <Spec k="Tamaño" v="115×65×34mm" />
-              <Spec k="Peso" v="95 g" />
-              <Spec k="Temperatura" v="−20 ~ 60 ºC" />
-            </ul>
-          </div>
-        </div>
-        <p className="border-t-4 border-dashed border-ink p-4 text-sm font-bold uppercase tracking-wider">
-          ⚠ Aviso: esta cámara no tiene pantalla de revisión. Es a propósito.
-        </p>
-        <p className="absolute -top-5 right-4 rotate-6 border-4 border-ink bg-sun px-2 py-1 text-xs font-bold uppercase tracking-widest">En la caja: cámara + manual + cable USB-C</p>
+        <p className="label mt-10 text-bone/45">Misma foto con los tres estilos como ilustración de cada look.</p>
       </div>
     </section>
   );
 }
 
-function Buy({ onBuy, note }) {
-  const [color, setColor] = useState('orange');
-  const [qty, setQty] = useState(1);
-  const total = qty === 2 ? CONFIG.price * 2 * 0.9 : CONFIG.price;
-  const names = { orange: 'Naranja cuero', black: 'Negro textura' };
-  const buy = () => {
-    if (CONFIG.checkoutUrl) window.open(CONFIG.checkoutUrl, '_blank');
-    else onBuy(`Pedido de ejemplo: ${qty}× X9 ${names[color]} · ${money(total)}. Pon tu enlace de pago en CONFIG.checkoutUrl.`);
-  };
+/* ============ Detalles ============ */
+function Details() {
+  const items = [
+    ['Sin pantalla, sin distracciones', 'Nada que revisar, nada que borrar. Te quedas con lo que pasó, no con lo que querías que pasara.'],
+    ['Tarjeta a prueba de peques', 'La Micro SD solo sale con un destornillador. Se acabaron los sustos en el campamento.'],
+    ['Flash LED integrado', 'Doble LED de 2×3 W para interiores, fiestas y atardeceres tardíos.'],
+    ['Aguanta aventuras', 'Trabaja de −20 °C a 60 °C. Con correa y 95 g, va contigo a cualquier sitio.'],
+  ];
   return (
-    <section id="comprar" className="border-y-4 border-ink bg-cam py-20">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
-        <div className="relative mx-auto w-full max-w-md">
-          <Polaroid rotate="rotate-[-3deg]" caption={`X9 · ${names[color]}`}>
-            <div className="grid aspect-square place-items-center border-4 border-ink bg-sun">
-              <img src={IMG[color]} alt={`Cámara X9 ${names[color]}`} className="w-[92%] drop-shadow-[4px_6px_0_rgba(0,0,0,.35)]" />
-            </div>
-          </Polaroid>
-          <Sticker className="wobble absolute -right-3 -top-5 grid h-24 w-24 place-items-center rounded-full bg-paper text-center text-lg">-20%</Sticker>
+    <section id="detalles" className="mx-auto max-w-[1400px] px-4 py-16 md:px-8 lg:py-24">
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="relative grid min-h-[420px] place-items-center bg-[#E9E5DB] lg:col-span-6">
+          <img src={IMG.back} alt="Parte trasera de la X9 con el mini OLED mostrando estilo y contador" className="w-[78%] drop-shadow-[0_20px_24px_rgba(0,0,0,.3)]" />
+          <span className="label absolute left-4 top-4">Trasera · OLED 0,96″</span>
         </div>
-
-        <div className={`border-4 border-ink bg-paper p-6 sm:p-8 ${HARD_L}`}>
-          <h2 className="font-display text-4xl uppercase leading-none sm:text-5xl">Llévate la X9</h2>
-          <p className="mt-3 flex items-baseline gap-3">
-            <span className="font-display text-5xl">{money(total)}</span>
-            <s className="opacity-60">{money(qty === 2 ? CONFIG.oldPrice * 2 : CONFIG.oldPrice)}</s>
-          </p>
-
-          <fieldset className="mt-6">
-            <legend className="mb-2 text-sm font-bold uppercase tracking-widest">Color · {names[color]}</legend>
-            <div className="flex gap-4">
-              {[['orange', 'bg-cam'], ['black', 'bg-ink']].map(([k, bg]) => (
-                <button key={k} onClick={() => setColor(k)} aria-pressed={color === k} aria-label={names[k]}
-                  className={`h-14 w-14 border-4 border-ink ${bg} ${color === k ? 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1 ring-4 ring-sun' : ''} transition`} />
-              ))}
-            </div>
-          </fieldset>
-
-          <fieldset className="mt-6">
-            <legend className="mb-2 text-sm font-bold uppercase tracking-widest">Cantidad</legend>
-            <div className="grid grid-cols-2 gap-3">
-              {[[1, '1 cámara'], [2, '2 cámaras · -10%']].map(([q, t]) => (
-                <button key={q} onClick={() => setQty(q)} aria-pressed={qty === q}
-                  className={`border-4 border-ink px-3 py-3 text-left text-sm font-bold ${qty === q ? 'bg-ink text-sun' : 'bg-white'}`}>{t}</button>
-              ))}
-            </div>
-          </fieldset>
-
-          <Btn big onClick={buy} className="mt-8 w-full">Consigue la tuya</Btn>
-          {note && <p role="status" className="mt-4 border-4 border-ink bg-sun p-3 text-sm font-bold">{note}</p>}
-          <ul className="mt-5 grid gap-1 text-sm font-bold">
-            <li>✔ 30 días para devolverla</li><li>✔ 12 meses de garantía</li><li>✔ Pago seguro</li>
-          </ul>
-          <p className="mt-3 text-xs opacity-70">Precios y condiciones de ejemplo. Ajusta a tu política real.</p>
+        <div className="flex flex-col justify-between lg:col-span-6 lg:pl-10">
+          <div>
+            <p className="label mb-6">Detalles</p>
+            <h2 className="display text-5xl font-extrabold sm:text-6xl">Sencilla por fuera. Pensada por dentro.</h2>
+          </div>
+          <dl className="mt-10 divide-y divide-[color:var(--line)] border-y border-[color:var(--line)]">
+            {items.map(([t, d]) => (
+              <div key={t} className="grid gap-1 py-5 sm:grid-cols-[14rem_1fr] sm:gap-6"><dt className="font-semibold">{t}</dt><dd className="text-ink/70">{d}</dd></div>
+            ))}
+          </dl>
         </div>
       </div>
     </section>
   );
 }
 
+/* ============ Specs ============ */
+function Row({ k, v }) {
+  return <div className="flex justify-between gap-4 border-t border-[color:var(--line)] py-3 text-[15px]"><dt className="text-ink/60">{k}</dt><dd className="text-right font-medium">{v}</dd></div>;
+}
+function Specs() {
+  return (
+    <section id="specs" className="border-t border-[color:var(--line)]">
+      <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-16 md:px-8 lg:grid-cols-12 lg:py-24">
+        <div className="lg:col-span-4">
+          <p className="label mb-6">Especificaciones</p>
+          <h2 className="display text-5xl font-extrabold">Los números, sin letra pequeña.</h2>
+          <p className="mt-6 text-ink/70">8 MP y foco fijo: estética de compacta clásica, con su grano y su carácter. Una cámara para disfrutar, no para sustituir a una réflex.</p>
+        </div>
+        <div className="grid gap-x-12 md:grid-cols-2 lg:col-span-8">
+          <div>
+            <h3 className="label pb-3">Imagen</h3>
+            <dl>
+              <Row k="Sensor" v="CMOS 1/3,2″ · 8M píxeles" /><Row k="Resolución" v="3264 × 2448" /><Row k="Formato" v="JPG" />
+              <Row k="Lente" v="5P+IR · 4,2 mm" /><Row k="Enfoque" v="Fijo · 0,5 m → ∞" /><Row k="Obturación" v="0,5 – 1 s" />
+              <Row k="ISO" v="1600" /><Row k="Balance de blancos" v="Automático" /><Row k="Flash" v="2×3 W LED" />
+            </dl>
+          </div>
+          <div className="mt-10 md:mt-0">
+            <h3 className="label pb-3">Cuerpo y conexión</h3>
+            <dl>
+              <Row k="Visor" v="Óptico" /><Row k="Display" v="OLED 0,96″" /><Row k="Batería" v="Li-ion 800 mAh" />
+              <Row k="Almacenamiento" v="Micro SD · hasta 128G" /><Row k="Interfaz" v="USB Type-C" /><Row k="Tamaño" v="115 × 65 × 34 mm" />
+              <Row k="Peso" v="95 g" /><Row k="Temperatura" v="−20 a 60 °C" /><Row k="En la caja" v="Cámara, manual, cable USB-C" />
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============ FAQ ============ */
 function Faq() {
   const qs = [
     ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas al móvil o al ordenador.'],
     ['¿Cómo saco las fotos?', 'Por USB-C con el cable incluido, o sacando la Micro SD con un destornillador. Son JPG normales, sin app ni cuenta.'],
-    ['¿Qué calidad tiene?', 'Sensor de 8M con foco fijo e ISO 1600: estética de compacta de los 2000, con su grano y su carácter. Es para disfrutar, no para sustituir a una réflex.'],
-    ['¿Funciona con poca luz?', 'Lleva un flash de 2×3W LED. Para fiestas y atardeceres tardíos, justo lo que pide el estilo.'],
+    ['¿Qué calidad tiene?', 'Sensor de 8 MP con foco fijo e ISO 1600: estética de compacta clásica, con grano y carácter. Para disfrutar, no para sustituir a una réflex.'],
+    ['¿Incluye tarjeta de memoria?', 'Incluye una tarjeta preinstalada y admite hasta 128G.'],
+    ['¿Y si no me convence?', 'Tienes 30 días para devolverla. (Ajusta el plazo a tu política real.)'],
   ];
   return (
-    <section id="faq" className="mx-auto max-w-3xl px-4 py-20">
-      <h2 className="mb-10 font-display text-5xl uppercase leading-none sm:text-6xl">Dudas <span className="bg-sun px-2">típicas</span></h2>
-      <div className="grid gap-4">
-        {qs.map(([q, a]) => (
-          <details key={q} className={`group border-4 border-ink bg-white ${HARD} open:bg-sky`}>
-            <summary className="flex cursor-pointer items-center justify-between gap-4 p-4 font-bold">
-              {q}<span className="grid h-8 w-8 shrink-0 place-items-center border-4 border-ink bg-cam text-xl leading-none group-open:rotate-45 transition">+</span>
-            </summary>
-            <p className="px-4 pb-4 leading-relaxed">{a}</p>
-          </details>
-        ))}
+    <section id="faq" className="border-t border-[color:var(--line)]">
+      <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-16 md:px-8 lg:grid-cols-12 lg:py-24">
+        <h2 className="display text-5xl font-extrabold lg:col-span-4">Preguntas frecuentes</h2>
+        <div className="border-b border-[color:var(--line)] lg:col-span-7 lg:col-start-6">
+          {qs.map(([q, a]) => (
+            <details key={q} className="group border-t border-[color:var(--line)]">
+              <summary className="flex cursor-pointer items-center justify-between gap-6 py-6 text-lg font-semibold">{q}
+                <span className="text-3xl font-light leading-none transition group-open:rotate-45">+</span></summary>
+              <p className="max-w-2xl pb-6 text-ink/75">{a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============ CTA final + footer ============ */
+function Final() {
+  return (
+    <section className="photo grain relative isolate overflow-hidden">
+      <img src={IMG.sea} alt="Atardecer sobre el mar con nubes violetas, foto analógica" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/70 via-ink/10 to-ink/20" />
+      <div className="mx-auto flex min-h-[560px] max-w-[1400px] flex-col justify-end px-4 py-14 text-white md:px-8">
+        <h2 className="display max-w-4xl text-[2.8rem] font-extrabold sm:text-[5.2rem]">La próxima vez que importe, no mires la pantalla.</h2>
+        <div className="mt-8 flex flex-wrap items-center gap-6">
+          <Button>Comprar la X9 · {money(CONFIG.price)}</Button>
+          <p className="label">30 días de devolución · 12 meses de garantía</p>
+        </div>
       </div>
     </section>
   );
@@ -378,15 +393,13 @@ function Faq() {
 
 function Footer() {
   return (
-    <footer className="border-t-4 border-ink bg-ink text-paper">
-      <Marquee dur={22} className="border-b-4 border-paper/30 py-4 font-display text-4xl uppercase text-sun sm:text-6xl" text="X9 · Unplug · Capture · Cherish" sep="★" />
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm font-bold uppercase tracking-widest">
-        <p>© {new Date().getFullYear()} X9. Hecha para el caos.</p>
-        <nav className="flex flex-wrap gap-5" aria-label="Legal">
-          <a href="#top" className="hover:text-sun">Envíos</a><a href="#top" className="hover:text-sun">Devoluciones</a>
-          <a href="#top" className="hover:text-sun">Privacidad</a><a href="#top" className="hover:text-sun">Términos</a>
-        </nav>
+    <footer className="bg-ink text-bone">
+      <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-14 md:grid-cols-12 md:px-8">
+        <div className="md:col-span-5"><p className="display text-6xl font-extrabold">X9<span className="text-clay">.</span></p><p className="mt-3 max-w-xs text-bone/60">Cámara digital retro sin pantalla. Unplug, Capture, Cherish.</p></div>
+        <nav className="grid gap-2 text-sm md:col-span-3 md:col-start-7" aria-label="Pie"><span className="label mb-2 text-bone/50">Tienda</span><a href="#comprar" className="link-u w-fit">Cámara</a><a href="#specs" className="link-u w-fit">Especificaciones</a><a href="#faq" className="link-u w-fit">Preguntas</a></nav>
+        <nav className="grid gap-2 text-sm md:col-span-3" aria-label="Legal"><span className="label mb-2 text-bone/50">Legal</span><a href="#top" className="link-u w-fit">Envíos</a><a href="#top" className="link-u w-fit">Devoluciones</a><a href="#top" className="link-u w-fit">Privacidad</a><a href="#top" className="link-u w-fit">Términos</a></nav>
       </div>
+      <p className="label border-t border-bone/15 px-4 py-5 text-center text-bone/50">© {new Date().getFullYear()} X9 · Fotografías de Unsplash con tratamiento analógico</p>
     </footer>
   );
 }
@@ -394,21 +407,19 @@ function Footer() {
 function StickyBar() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const buy = document.getElementById('comprar');
-    let past = false, onBuy = false;
+    const buy = document.getElementById('comprar'); let past = false, onBuy = false;
     const upd = () => setShow(past && !onBuy);
-    const sc = () => { past = window.scrollY > 600; upd(); };
+    const sc = () => { past = window.scrollY > 700; upd(); };
     const io = new IntersectionObserver(([e]) => { onBuy = e.isIntersecting; upd(); }, { threshold: 0.1 });
     if (buy) io.observe(buy);
     window.addEventListener('scroll', sc, { passive: true }); sc();
     return () => { window.removeEventListener('scroll', sc); io.disconnect(); };
   }, []);
   return (
-    <div aria-hidden={!show}
-      className={`fixed inset-x-3 bottom-3 z-50 flex items-center justify-between gap-3 border-4 border-ink bg-sun p-2 pl-4 ${HARD} transition-transform duration-300 md:hidden`}
-      style={{ transform: show ? 'none' : 'translateY(160%)', bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
-      <span className="font-display text-xl leading-none">X9 · {money(CONFIG.price)}</span>
-      <Btn className="!px-4 !py-2 !text-base">Comprar</Btn>
+    <div aria-hidden={!show} className="fixed inset-x-3 z-50 flex items-center justify-between bg-ink p-2 pl-5 text-bone shadow-2xl transition-transform duration-300 md:hidden"
+      style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', transform: show ? 'none' : 'translateY(170%)' }}>
+      <span className="display text-xl font-bold">X9 · {money(CONFIG.price)}</span>
+      <a href="#comprar" className="btn bg-clay px-5 py-3 text-sm font-semibold text-ink">Comprar</a>
     </div>
   );
 }
@@ -416,19 +427,10 @@ function StickyBar() {
 function App() {
   const [note, setNote] = useState('');
   return (
-    <div className="paper min-h-screen overflow-x-clip">
-      <TopBar />
-      <Nav />
-      <main>
-        <Hero />
-        <Marquee dur={30} className="-rotate-1 scale-105 border-y-4 border-ink bg-sky py-3 font-display text-2xl uppercase" text="Apunta · Dispara · Olvídate" sep="✺" />
-        <Features />
-        <Specs />
-        <Buy onBuy={setNote} note={note} />
-        <Faq />
-      </main>
-      <Footer />
-      <StickyBar />
+    <div className="overflow-x-clip">
+      <Announce /><Nav />
+      <main><Hero /><Proof /><Buy onNote={setNote} note={note} /><Idea /><How /><Styles /><Details /><Specs /><Faq /><Final /></main>
+      <Footer /><StickyBar />
     </div>
   );
 }
