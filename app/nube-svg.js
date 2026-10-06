@@ -56,6 +56,9 @@ const pct=L=>{let lo=0,hi=Ls.length;while(lo<hi){const m=(lo+hi)>>1;if(Ls[m]<L)l
 const stp=[];for(let j=0;j<M;j++){stp.push([]);for(let i=0;i<N;i++)stp[j].push(fig(i,j)?Math.min(7,Math.floor(pct(cells[j][i].L)*8)):-1)}
 const nearStep=(i,j)=>{let best=4,bd=1e9;for(let y=Math.max(0,j-9);y<=Math.min(M-1,j+9);y++)for(let x=Math.max(0,i-9);x<=Math.min(N-1,i+9);x++)if(stp[y][x]>=0){const d=(x-i)**2+(y-j)**2;if(d<bd){bd=d;best=stp[y][x]}}return best};
 for(let j=0;j<M;j++)for(let i=0;i<N;i++)if(stp[j][i]<0)stp[j][i]=-2;
+// hueco entre figuras: celda de fondo con figura a izquierda, derecha y arriba -> sin cuadros sueltos
+const hay=(i0,j0,di,dj,n)=>{for(let k=1;k<=n;k++)if(fig(i0+di*k,j0+dj*k))return true;return false};
+const bolsillo=(i,j)=>hay(i,j,-1,0,60)&&hay(i,j,1,0,60)&&hay(i,j,0,-1,60);
 const cellsOn=[];
 for(let j=0;j<M;j++){cellsOn.push([]);for(let i=0;i<N;i++){
  let on=false;
@@ -64,7 +67,7 @@ for(let j=0;j<M;j++){cellsOn.push([]);for(let i=0;i<N;i++){
   const edge=Math.min(1,(d+1.2+sm(i,j)*1.5)/3.5);
   const hb=(((i>>1)*73856093)^((j>>1)*19349663))>>>0;const rb=(hb%1000)/1000;on=(rnd()*.45+rb*.55)<base*edge;
   if(on&&base<.9&&rnd()<.04)on=false}
- else{const d=dout[j][i];if(d<9){on=rnd()<.2*Math.pow(1-d/9,1.6)*(.4+.9*Math.max(0,sm(i*.6,j*.6)+.5))}} // nube de cuadros fuera
+ else{const d=dout[j][i];if(d<9&&!bolsillo(i,j)){on=rnd()<.2*Math.pow(1-d/9,1.6)*(.4+.9*Math.max(0,sm(i*.6,j*.6)+.5))}} // nube de cuadros fuera
  cellsOn[j].push(on)}}
 // cuadros sueltos algo mayores (2x2) en la nube, y fusión de bloques interiores iguales
 const rects=[];const used=[];for(let j=0;j<M;j++)used.push(new Array(N).fill(false));
