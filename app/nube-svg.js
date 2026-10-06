@@ -23,7 +23,7 @@ const ESQ={
  triAzulCianNaranja:[['blue',.35],['cyan',.65],['yellow',1]]
 };
 const BANDS=ESQ[process.argv[4]||'triAzulMagentaNaranja'];
-const C=6,N=W/C|0,M=H/C|0,SC=12;
+const C=5,N=W/C|0,M=H/C|0,SC=10;
 // celdas
 const cells=[];
 for(let j=0;j<M;j++){cells.push([]);for(let i=0;i<N;i++){let sr=0,sg=0,sb=0,n=0;
@@ -56,10 +56,12 @@ const pct=L=>{let lo=0,hi=Ls.length;while(lo<hi){const m=(lo+hi)>>1;if(Ls[m]<L)l
 const cellsOn=[];
 for(let j=0;j<M;j++){cellsOn.push([]);for(let i=0;i<N;i++){
  let on=false;
- if(fig(i,j)){const d=din[j][i];const p=Math.min(1,(d+2.4+sm(i,j)*2+rnd()*1.2)/4.5);on=rnd()<p;
-  if(on&&d>5&&rnd()<.006)on=false;
-  if(on&&pct(cells[j][i].L)>.94&&rnd()<.75)on=false}  // altas luces = huecos            // huecos sueltos en el interior
- else{const d=dout[j][i];if(d<7){on=rnd()<.26*Math.pow(1-d/7,1.4)*(.4+.9*Math.max(0,sm(i*.6,j*.6)+.5))}} // nube de cuadros fuera
+ if(fig(i,j)){const d=din[j][i];const dark=1-pct(cells[j][i].L);               // oscuro = lleno, claro = hueco: el tono dibuja el detalle
+  const FL=+(process.argv[7]||.3);const base=FL+(1-FL)*Math.max(0,Math.min(1,(dark-.2)/.5));
+  const edge=Math.min(1,(d+1.2+sm(i,j)*1.5)/3.5);
+  const hb=(((i>>1)*73856093)^((j>>1)*19349663))>>>0;const rb=(hb%1000)/1000;on=(rnd()*.45+rb*.55)<base*edge;
+  if(on&&base<.9&&rnd()<.04)on=false}
+ else{const d=dout[j][i];if(d<9){on=rnd()<.2*Math.pow(1-d/9,1.6)*(.4+.9*Math.max(0,sm(i*.6,j*.6)+.5))}} // nube de cuadros fuera
  cellsOn[j].push(on)}}
 // cuadros sueltos algo mayores (2x2) en la nube, y fusión de bloques interiores iguales
 const rects=[];const used=[];for(let j=0;j<M;j++)used.push(new Array(N).fill(false));
@@ -67,7 +69,7 @@ for(const s of[4,2])for(let j=0;j+s<=M;j+=s)for(let i=0;i+s<=N;i+=s){
  let all=true;for(let y=j;y<j+s&&all;y++)for(let x=i;x<i+s;x++)if(!cellsOn[y][x]||used[y][x]){all=false;break}
  if(!all)continue;
  // bloques 2x2/4x4 completos solo en zonas elegidas al azar para variar el tamaño, no en todas
- if(rnd()>(s===4?.5:.12))continue;
+ if(rnd()>(s===4?.45:.1))continue;
  for(let y=j;y<j+s;y++)for(let x=i;x<i+s;x++)used[y][x]=true;rects.push({x:i,y:j,s})}
 for(let j=0;j<M;j++)for(let i=0;i<N;i++)if(cellsOn[j][i]&&!used[j][i])rects.push({x:i,y:j,s:1});
 let bx0=N,bx1=0,by0=M,by1=0;rects.forEach(r=>{bx0=Math.min(bx0,r.x);bx1=Math.max(bx1,r.x+r.s);by0=Math.min(by0,r.y);by1=Math.max(by1,r.y+r.s)});
