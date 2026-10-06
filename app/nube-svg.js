@@ -41,7 +41,7 @@ for(let i=0;i<N;i++){push(i,0);push(i,M-1)}for(let j=0;j<M;j++){push(0,j);push(N
 while(st.length){const[i,j]=st.pop();cells[j][i].fig=false;push(i+1,j);push(i-1,j);push(i,j+1);push(i,j-1)}
 
 // color plano: un solo paso de la paleta
-const FAM=process.argv[4]||'yellow';const COL=FS[FAM][+(process.argv[6]||5)];
+const FAM=process.argv[4]||'yellow';const COL=FS[FAM][+(process.argv[6]||5)]; // argv[6] ya no se usa: el degradado recorre los 8 pasos de la familia
 const fig=(i,j)=>i>=0&&j>=0&&i<N&&j<M&&cells[j][i].fig;
 // distancia con signo al contorno (celdas): + dentro, - fuera (chamfer 2 pasadas)
 const D=[];for(let j=0;j<M;j++){D.push([]);for(let i=0;i<N;i++)D[j].push(fig(i,j)?1e3:-1e3)}
@@ -53,6 +53,9 @@ const din=dist(1),dout=dist(-1); // din: distancia de una celda de figura al fon
 const sm=(i,j)=>(Math.sin(i*.25+1)+Math.sin(j*.29+2)+Math.sin((i+j)*.17)+Math.sin((i-j)*.21+3))/4;
 const Ls=[];cells.forEach(r=>r.forEach(o=>{if(o.fig)Ls.push(o.L)}));Ls.sort((a,b)=>a-b);
 const pct=L=>{let lo=0,hi=Ls.length;while(lo<hi){const m=(lo+hi)>>1;if(Ls[m]<L)lo=m+1;else hi=m}return lo/Ls.length};
+const stp=[];for(let j=0;j<M;j++){stp.push([]);for(let i=0;i<N;i++)stp[j].push(fig(i,j)?Math.min(7,Math.floor(pct(cells[j][i].L)*8)):-1)}
+const nearStep=(i,j)=>{let best=4,bd=1e9;for(let y=Math.max(0,j-9);y<=Math.min(M-1,j+9);y++)for(let x=Math.max(0,i-9);x<=Math.min(N-1,i+9);x++)if(stp[y][x]>=0){const d=(x-i)**2+(y-j)**2;if(d<bd){bd=d;best=stp[y][x]}}return best};
+for(let j=0;j<M;j++)for(let i=0;i<N;i++)if(stp[j][i]<0)stp[j][i]=-2;
 const cellsOn=[];
 for(let j=0;j<M;j++){cellsOn.push([]);for(let i=0;i<N;i++){
  let on=false;
@@ -74,5 +77,7 @@ for(const s of[4,2])for(let j=0;j+s<=M;j+=s)for(let i=0;i+s<=N;i+=s){
 for(let j=0;j<M;j++)for(let i=0;i<N;i++)if(cellsOn[j][i]&&!used[j][i])rects.push({x:i,y:j,s:1});
 let bx0=N,bx1=0,by0=M,by1=0;rects.forEach(r=>{bx0=Math.min(bx0,r.x);bx1=Math.max(bx1,r.x+r.s);by0=Math.min(by0,r.y);by1=Math.max(by1,r.y+r.s)});
 const mg=3,vx=(bx0-mg)*SC,vy=(by0-mg)*SC,OW=(bx1-bx0+2*mg)*SC,OH=(by1-by0+2*mg)*SC;
-let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${OW} ${OH}" width="${OW}" height="${OH}" shape-rendering="crispEdges">\n<rect x="${vx}" y="${vy}" width="${OW}" height="${OH}" fill="#fff"/>\n<g fill="${COL}">`+rects.map(r=>`<rect x="${r.x*SC}" y="${r.y*SC}" width="${r.s*SC}" height="${r.s*SC}"/>`).join('')+'</g>\n</svg>\n';
+const colorOf=r=>{let sum=0;for(let y=r.y;y<r.y+r.s;y++)for(let x=r.x;x<r.x+r.s;x++){const v=stp[y][x];sum+=v>=0?v:nearStep(x,y)}return FS[FAM][Math.max(0,Math.min(7,Math.round(sum/(r.s*r.s))))]};
+const by={};rects.forEach(r=>(by[colorOf(r)]=by[colorOf(r)]||[]).push(r));
+let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${OW} ${OH}" width="${OW}" height="${OH}" shape-rendering="crispEdges">\n<rect x="${vx}" y="${vy}" width="${OW}" height="${OH}" fill="#fff"/>\n`+Object.keys(by).map(c=>`<g fill="${c}">`+by[c].map(r=>`<rect x="${r.x*SC}" y="${r.y*SC}" width="${r.s*SC}" height="${r.s*SC}"/>`).join('')+'</g>\n').join('')+'</svg>\n';
 fs.writeFileSync(process.argv[3],svg);console.log(rects.length,'cuadros',COL);
