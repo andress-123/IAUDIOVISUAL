@@ -10,7 +10,7 @@
   } } }
 </script>
 <style>
-  :root { --bone:#F5F3EE; --ink:#0F0F0E; --accent-rgb: 168 90 44; --on-rgb: 255 255 255; --accent: rgb(var(--accent-rgb)); --line:rgba(15,15,14,.14); --ease:cubic-bezier(.2,.7,.2,1); color-scheme: light; }
+  :root { --bone:#F5F3EE; --ink:#0F0F0E; --accent-rgb: 230 106 40; --on-rgb: 15 15 14; --accent: rgb(var(--accent-rgb)); --line:rgba(15,15,14,.14); --ease:cubic-bezier(.2,.7,.2,1); color-scheme: light; }
   html { scroll-behavior: smooth; scroll-padding-top: 88px; }
   body { background: var(--bone); color: var(--ink); font-family: 'Archivo','Helvetica Neue',Arial,sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.65; font-size: 14.5px; }
   .display { font-family: 'Archivo Black','Arial Black','Helvetica Neue',sans-serif; font-weight: 400 !important; letter-spacing: -0.025em; line-height: 1.04; text-transform: uppercase; text-wrap: balance; font-variant-numeric: tabular-nums; }
@@ -116,12 +116,12 @@ function useAngle() {
 const money = n => n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency;
 
 const COLORS = [
-  { id: 'plata',   name: 'Plata',        hex: '#C9CED3', bg: '#E3E5E6', acc: '124 135 145', on: '15 15 14' },
-  { id: 'marron',  name: 'Cuero marrón', hex: '#A85A2C', bg: '#EADFD0', acc: '168 90 44',   on: '255 255 255' },
-  { id: 'rosa',    name: 'Rosa',         hex: '#CD587D', bg: '#F0DDE2', acc: '200 69 111',  on: '255 255 255' },
-  { id: 'ambar',   name: 'Ámbar',        hex: '#ECA438', bg: '#F2E5CC', acc: '217 142 4',   on: '15 15 14' },
-  { id: 'celeste', name: 'Celeste',      hex: '#56B2D8', bg: '#DCEAF0', acc: '31 143 191',  on: '15 15 14' },
-  { id: 'oliva',   name: 'Verde oliva',  hex: '#58683A', bg: '#DEE2D3', acc: '91 110 55',   on: '255 255 255' },
+  { id: 'plata',   name: 'Plata',        hex: '#C9CED3', bg: '#E3E5E6', acc: '94 108 124',  on: '255 255 255' },
+  { id: 'marron',  name: 'Cuero marrón', hex: '#A85A2C', bg: '#EADFD0', acc: '230 106 40',  on: '15 15 14' },
+  { id: 'rosa',    name: 'Rosa',         hex: '#CD587D', bg: '#F0DDE2', acc: '214 58 114',  on: '255 255 255' },
+  { id: 'ambar',   name: 'Ámbar',        hex: '#ECA438', bg: '#F2E5CC', acc: '217 130 0',   on: '15 15 14' },
+  { id: 'celeste', name: 'Celeste',      hex: '#56B2D8', bg: '#DCEAF0', acc: '43 155 216',  on: '15 15 14' },
+  { id: 'oliva',   name: 'Verde oliva',  hex: '#58683A', bg: '#DEE2D3', acc: '122 154 46',  on: '15 15 14' },
 ];
 const REVIEWS = [
   { n: 'Laura M.', t: 'La llevé a un festival y es otra forma de vivirlo. No miras la pantalla, solo disparas. Las fotos tienen un grano precioso.' },
