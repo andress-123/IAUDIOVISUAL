@@ -375,9 +375,36 @@ function Buy({ note, onNote, ci, setCi }) {
         <ul className="mt-8 grid gap-3.5 border-t border-[color:var(--line)] pt-8 text-[14px]">
           {['Textura y color de carrete, sin pagar un solo revelado', 'Sin pantalla ni ajustes: apuntas, disparas y descubres después', '8 MP · flash LED · 3 estilos de película · USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
         </ul>
-        <p className="mt-8 border-t border-[color:var(--line)] pt-6 text-sm text-ink/70"><span className="label mr-2 text-ink">En la caja</span>Cámara, manual y cable USB-C. Funciona al sacarla de la caja.</p>
+        <div className="mt-8 border-l-2 border-clay bg-black/[.03] px-5 py-4">
+          <p className="label mb-2 text-ink">Qué esperar</p>
+          <p className="text-[13.5px] leading-relaxed text-ink/70">Momentos reales, no fotos perfectas. Sensor de 8 MP (3264 × 2448) y foco fijo: la estética de una compacta clásica, con su grano y su carácter.</p>
+        </div>
+        <p className="mt-6 border-t border-[color:var(--line)] pt-6 text-sm text-ink/70"><span className="label mr-2 text-ink">En la caja</span>Cámara, manual y cable USB-C. Funciona al sacarla de la caja.</p>
         <p className="mt-6 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
       </Reveal>
+    </section>
+  );
+}
+
+/* ============ Franja «Sin…» ============ */
+function Sin() {
+  const it = [
+    ['pantalla', 'Nada que revisar ni borrar. Vives el momento.'],
+    ['carrete', 'Una Micro SD de hasta 128G y a disparar.'],
+    ['revelado', 'Las fotos pasan por USB-C, sin coste por foto.'],
+    ['apps', 'Sin cuentas, sin nube y sin registrarte.'],
+  ];
+  return (
+    <section aria-label="Sin" className="border-y border-[color:var(--line)]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-2 px-5 md:px-10 lg:grid-cols-4">
+        {it.map(([w, d], i) => (
+          <Reveal key={w} delay={i * 110} className={`group border-[color:var(--line)] py-12 lg:py-16 ${i % 2 ? 'border-l pl-6' : 'pr-6'} ${i > 1 ? 'border-t lg:border-t-0' : ''} lg:border-l lg:px-8 ${i === 0 ? 'lg:border-l-0 lg:pl-0' : ''}`}>
+            <p className="label text-ink/50">Sin</p>
+            <p className="display mt-2 text-[1.6rem] transition-colors duration-500 group-hover:text-clay sm:text-4xl">{w}</p>
+            <p className="mt-4 max-w-[16rem] text-[13.5px] leading-relaxed text-ink/65">{d}</p>
+          </Reveal>
+        ))}
+      </div>
     </section>
   );
 }
@@ -430,6 +457,45 @@ function Press() {
         <p className="label text-ink/55">Han hablado de nosotros</p>
         {CONFIG.press.map(m => <span key={m} className="display text-xl text-ink/70">{m}</span>)}
       </Reveal>
+    </section>
+  );
+}
+
+/* ============ Comparativa ============ */
+function Compare() {
+  const rows = [
+    ['Sin pantalla que te distraiga', true, true],
+    ['Grano y look de película', true, true],
+    ['Sin pagar revelado', true, false],
+    ['Fotos en tu móvil al momento (USB-C)', true, false],
+    ['Reutilizable y recargable', true, false],
+    ['Coste por foto', 'Ninguno', 'Un revelado por carrete'],
+  ];
+  const Cell = ({ v, hi }) => typeof v === 'string'
+    ? <span className={`text-[13.5px] ${hi ? 'font-semibold' : 'text-ink/60'}`}>{v}</span>
+    : v ? <span aria-label="Sí" className={`tick inline-grid h-6 w-6 place-items-center text-[12px] font-bold ${hi ? 'bg-clay text-onclay' : 'bg-ink text-bone'}`}>✓</span>
+        : <span aria-label="No" className="text-xl leading-none text-ink/30">—</span>;
+  return (
+    <section id="comparativa" className="border-t border-[color:var(--line)]">
+      <div className="mx-auto max-w-[980px] px-5 py-28 md:px-10 lg:py-40">
+        <Reveal><p className="label mb-6 text-ink/55">Comparativa</p><h2 className="display max-w-2xl text-4xl sm:text-5xl">Bravo X9 frente a una cámara desechable.</h2></Reveal>
+        <div className="mt-16" role="table" aria-label="Comparativa Bravo X9 y cámara desechable">
+          <div role="row" className="grid grid-cols-[1fr_88px_88px] gap-2 border-b-2 border-ink pb-4 sm:grid-cols-[1fr_150px_150px]">
+            <span role="columnheader" className="label text-ink/40">Característica</span>
+            <span role="columnheader" className="label text-center text-clay">Bravo X9</span>
+            <span role="columnheader" className="label text-center text-ink/55">Desechable</span>
+          </div>
+          {rows.map(([t, a, b], i) => (
+            <Reveal key={t} delay={i * 80}>
+              <div role="row" className="grid grid-cols-[1fr_88px_88px] items-center gap-2 border-b border-[color:var(--line)] py-5 transition-colors hover:bg-black/[.025] sm:grid-cols-[1fr_150px_150px]">
+                <span role="cell" className="pr-2 text-[14.5px]">{t}</span>
+                <span role="cell" className="text-center"><Cell v={a} hi /></span>
+                <span role="cell" className="text-center"><Cell v={b} /></span>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -600,7 +666,7 @@ function App() {
   }, [ci]);
   return (
     <div className="overflow-x-clip">
-      <ScrollBar /><Header /><main><Hero ci={ci} /><Statement /><Buy note={note} onNote={setNote} ci={ci} setCi={setCi} /><Press /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
+      <ScrollBar /><Header /><main><Hero ci={ci} /><Statement /><Buy note={note} onNote={setNote} ci={ci} setCi={setCi} /><Press /><Sin /><Features /><Compare /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
     </div>
   );
 }
