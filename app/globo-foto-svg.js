@@ -1,4 +1,14 @@
 const fs=require('fs');const Id=require('/home/user/IAUDIOVISUAL/app/engine.js');const F=Id.FAMILIES;
+// Esquemas: familia de paleta para cada clase de color de la foto (mono/duo/tritono)
+const ESQ={
+ duoNaranja:{blue:'blue',green:'yellow',yellow:'yellow',orange:'yellow',pink:'yellow'},
+ duoMagenta:{blue:'blue',green:'red',yellow:'red',orange:'red',pink:'red'},
+ duoVerde:{blue:'blue',green:'green',yellow:'green',orange:'green',pink:'green'},
+ triVerdeNaranja:{blue:'blue',green:'green',yellow:'yellow',orange:'yellow',pink:'yellow'},
+ triNaranjaMagenta:{blue:'blue',green:'red',yellow:'yellow',orange:'yellow',pink:'red'},
+ triVerdeMagenta:{blue:'blue',green:'green',yellow:'green',orange:'red',pink:'red'}
+};
+const SCHEME=ESQ[process.argv[4]||'triVerdeNaranja'];
 const buf=fs.readFileSync(process.argv[2]);
 let p=0;const tok=()=>{while(buf[p]<=32)p++;let s='';while(buf[p]>32)s+=String.fromCharCode(buf[p++]);return s};
 tok();const W=+tok(),H=+tok();tok();p++;
@@ -30,16 +40,12 @@ for(let j=0;j<N;j++){cells.push([]);for(let i=0;i<N;i++){
  for(let y=j*C;y<j*C+C;y++)for(let x=i*C;x<i*C+C;x++){const c=px(x,y);sr+=c[0];sg+=c[1];sb+=c[2];n++}
  const mx=(i+.5)*C-cx,my=(j+.5)*C-cy,d=Math.hypot(mx,my);
  if(d>R*.985){cells[j].push(null);continue}
- const o=cls(sr/n,sg/n,sb/n);o.d=d;cells[j].push(o);(Ls[o.k]=Ls[o.k]||[]).push(o.L)}}
+ const o=cls(sr/n,sg/n,sb/n);o.d=d;o.g=SCHEME[o.k];cells[j].push(o);(Ls[o.g]=Ls[o.g]||[]).push(o.L)}}
 for(const k in Ls)Ls[k].sort((a,b)=>a-b);
 const pct=(k,L)=>{const a=Ls[k];let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>1;if(a[m]<L)lo=m+1;else hi=m}return lo/a.length};
-function color(o){const t=pct(o.k,o.L);let s;
- if(o.k==='blue'){ // mar: azul con degradado; brillos al cian
-   s=t>.97?FS.cyan[Math.min(7,Math.floor((t-.97)/.03*3))]:FS.blue[Math.min(7,Math.floor(t*8))];}
- else if(o.k==='green')s=FS.green[Math.min(7,Math.floor(t*8))];
- else if(o.k==='yellow')s=FS.yellow[7-Math.min(3,Math.floor(t*4))]; // claros del amarillo-naranja (fdbc00..)
- else if(o.k==='orange')s=FS.yellow[Math.min(3,Math.floor(t*4))];
- else s=FS.red[Math.min(7,Math.floor(t*8))];
+function color(o){const t=pct(o.g,o.L);let s;
+ if(o.k==='blue'&&o.g==='blue'&&t>.97)s=FS.cyan[Math.min(7,Math.floor((t-.97)/.03*3))];
+ else s=FS[o.g][Math.min(7,Math.floor(t*8))];
  return s}
 for(let j=0;j<N;j++)for(let i=0;i<N;i++)if(cells[j][i])cells[j][i].c=color(cells[j][i]);
 // quadtree orgánico: tamaños 32..2 celdas según un campo de ruido
@@ -51,7 +57,7 @@ function tryBlock(i,j,s,tol){if(i+s>N||j+s>N)return null;const cnt={};let n=0,al
  for(let y=j;y<j+s;y++)for(let x=i;x<i+s;x++){const b=cells[y][x];cnt[b.c]=(cnt[b.c]||0)+1}
  let best=null,bn=0;for(const c in cnt)if(cnt[c]>bn){bn=cnt[c];best=c}
  let ok=0;const fb=cells[j][i];
- for(let y=j;y<j+s;y++)for(let x=i;x<i+s;x++){const b=cells[y][x];const f=fam(b.k);const L=FS[f];
+ for(let y=j;y<j+s;y++)for(let x=i;x<i+s;x++){const b=cells[y][x];const L=FS[b.g];
   if(b.c===best||(L.indexOf(best)>=0&&Math.abs(L.indexOf(b.c)-L.indexOf(best))<=1))ok++}
  return ok/n>=(allBlue?tol[0]:tol[1])?{c:best,k:cells[j][i].k}:null}
 for(const s of[32,16,8,4,2,1])for(let j=0;j<N;j+=s)for(let i=0;i<N;i+=s){
