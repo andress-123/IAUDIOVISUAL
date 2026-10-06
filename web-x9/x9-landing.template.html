@@ -1,0 +1,436 @@
+<title>X9 Unplug</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { paper:'#F1E3B8', ink:'#0A0A0A', cam:'#E66A28', sun:'#FFD23F', sky:'#9FD3E6', pink:'#F4A6C0' },
+    fontFamily: { display:['Caprasimo','Cooper Black','Georgia','serif'], mono:['"IBM Plex Mono"','Courier New','monospace'] }
+  } } }
+</script>
+<style>
+  :root { --paper:#F1E3B8; --ink:#0A0A0A; --cam:#E66A28; color-scheme: light; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body { background: var(--paper); color: var(--ink); font-family: 'IBM Plex Mono','Courier New',monospace; -webkit-font-smoothing: antialiased; }
+  .paper {
+    background-color: var(--paper);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .1  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(rgba(10,10,10,.09) 1px, transparent 1.4px);
+    background-size: 180px 180px, 14px 14px;
+  }
+  .stripes { background-image: repeating-linear-gradient(45deg, rgba(10,10,10,.12) 0 10px, transparent 10px 20px); }
+  .halftone { background-image: radial-gradient(rgba(10,10,10,.85) 22%, transparent 24%); background-size: 10px 10px; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  .marquee-track { display: flex; width: max-content; animation: marquee var(--dur, 28s) linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  @keyframes wobble { 0%,100% { transform: rotate(-8deg) scale(1) } 50% { transform: rotate(-4deg) scale(1.06) } }
+  .wobble { animation: wobble 3.4s ease-in-out infinite; }
+  .btn-hard { transition: transform .12s, box-shadow .12s; }
+  .btn-hard:hover { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 0 #0A0A0A; }
+  .btn-hard:active { transform: translate(4px,4px); box-shadow: 0 0 0 0 #0A0A0A; }
+  :focus-visible { outline: 4px solid #0A0A0A; outline-offset: 3px; }
+  summary::-webkit-details-marker { display: none; }
+  @media (prefers-reduced-motion: reduce) { .marquee-track, .wobble { animation: none !important; } html { scroll-behavior: auto; } }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+/* ============ CONFIG: edita aquí ============ */
+const CONFIG = {
+  brand: 'X9',
+  price: 39.90,            // precio de ejemplo
+  oldPrice: 49.90,
+  currency: '€',
+  checkoutUrl: '',         // p. ej. 'https://tutienda.com/cart/123:1'  (vacío = aviso en pantalla)
+};
+const IMG = { orange: '__IMG_O__', black: '__IMG_K__' };
+const money = n => n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency;
+
+/* ============ Primitivas ============ */
+const HARD = 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]';
+const HARD_L = 'shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]';
+
+function Btn({ children, href = '#comprar', onClick, className = '', big }) {
+  const cls = `btn-hard inline-flex items-center justify-center gap-3 border-4 border-ink bg-cam text-ink font-display uppercase tracking-wide shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] ${big ? 'px-8 py-5 text-2xl sm:text-4xl' : 'px-5 py-3 text-lg'} ${className}`;
+  return onClick
+    ? <button onClick={onClick} className={cls}>{children}</button>
+    : <a href={href} className={cls}>{children}</a>;
+}
+
+function Sticker({ children, className = '' }) {
+  return <div className={`border-4 border-ink font-display uppercase leading-none ${HARD} ${className}`}>{children}</div>;
+}
+
+function Tape({ className = '' }) {
+  return <span aria-hidden="true" className={`absolute h-7 w-24 bg-sun/80 border-2 border-ink/20 ${className}`} />;
+}
+
+function Placeholder({ label, bg = 'bg-sky', className = '' }) {
+  return (
+    <div className={`${bg} stripes relative grid place-items-center border-4 border-ink p-4 text-center ${className}`} role="img" aria-label={label}>
+      <span className="bg-paper border-2 border-ink px-3 py-1 text-xs sm:text-sm font-bold uppercase tracking-wider">{label}</span>
+    </div>
+  );
+}
+
+function Polaroid({ children, caption, className = '', rotate = '' }) {
+  return (
+    <figure className={`bg-white border-4 border-ink p-3 pb-2 ${HARD_L} transition-transform duration-300 hover:rotate-0 hover:z-30 ${rotate} ${className}`}>
+      {children}
+      {caption && <figcaption className="mt-2 text-center text-xs font-bold uppercase tracking-widest">{caption}</figcaption>}
+    </figure>
+  );
+}
+
+function Marquee({ text, className = '', dur = 28, sep = '✦' }) {
+  const unit = Array.from({ length: 8 }, (_, i) => (
+    <span key={i} className="flex items-center gap-6 px-3">{text}<span aria-hidden="true">{sep}</span></span>
+  ));
+  return (
+    <div className={`marquee overflow-hidden ${className}`} aria-hidden="true">
+      <div className="marquee-track" style={{ '--dur': dur + 's' }}>
+        <div className="flex shrink-0">{unit}</div>
+        <div className="flex shrink-0">{unit}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ Secciones ============ */
+function TopBar() {
+  return <Marquee dur={34} className="bg-ink text-sun py-2 text-sm font-bold uppercase tracking-widest" text="Cero pantallas · Mucho flash · Envío gratis desde 40 €" />;
+}
+
+function Nav() {
+  return (
+    <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+      <a href="#top" className="flex items-center gap-2" aria-label="X9 inicio">
+        <Sticker className="bg-cam px-3 py-2 text-3xl -rotate-3">X9</Sticker>
+        <span className="hidden sm:block text-xs font-bold uppercase leading-tight tracking-widest">Cámara<br/>sin pantalla</span>
+      </a>
+      <nav className="hidden md:flex gap-6 text-sm font-bold uppercase tracking-widest" aria-label="Principal">
+        <a className="hover:underline decoration-4 underline-offset-4" href="#features">Qué hace</a>
+        <a className="hover:underline decoration-4 underline-offset-4" href="#specs">Bajo el capó</a>
+        <a className="hover:underline decoration-4 underline-offset-4" href="#faq">Dudas</a>
+      </nav>
+      <Btn className="!px-4 !py-2 !text-base">Comprar</Btn>
+    </header>
+  );
+}
+
+function Hero() {
+  return (
+    <section id="top" className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-6 lg:grid-cols-[1.1fr_1fr] lg:pt-12">
+      <div>
+        <Sticker className="mb-6 inline-block rotate-[-2deg] bg-sun px-3 py-2 text-base sm:text-xl">Unplug, Capture, Cherish</Sticker>
+        <h1 className="font-display text-[3.4rem] uppercase leading-[0.9] sm:text-[6rem] lg:text-[6.5rem]">
+          Cero<br/>pantallas.<br/>
+          <span className="relative inline-block bg-cam px-3 border-4 border-ink -rotate-1 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">Mucho flash.</span>
+        </h1>
+        <p className="mt-8 max-w-xl text-lg font-medium leading-relaxed sm:text-xl">
+          La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center gap-5">
+          <Btn big>Consigue la tuya →</Btn>
+          <p className="text-sm font-bold uppercase leading-tight tracking-wider">
+            <span className="text-3xl font-display normal-case tracking-normal">{money(CONFIG.price)}</span><br/>
+            <s className="opacity-60">{money(CONFIG.oldPrice)}</s> · envío gratis +40 €
+          </p>
+        </div>
+      </div>
+
+      <div className="relative mx-auto h-[420px] w-full max-w-[520px] sm:h-[540px]">
+        <Polaroid rotate="rotate-[5deg]" className="absolute right-0 top-0 w-[58%]" caption="Foto lifestyle">
+          <Placeholder label="Espacio para foto lifestyle con flash" bg="bg-pink" className="aspect-[4/5]" />
+        </Polaroid>
+        <Polaroid rotate="rotate-[-6deg]" className="absolute bottom-0 left-0 w-[72%]" caption="X9 · acabado cuero naranja">
+          <div className="grid aspect-[4/3] place-items-center border-4 border-ink bg-sky">
+            <img src={IMG.orange} alt="Cámara X9 naranja, vista frontal" className="w-[94%] drop-shadow-[4px_6px_0_rgba(0,0,0,.35)]" />
+          </div>
+        </Polaroid>
+        <Sticker className="wobble absolute -left-2 top-6 grid h-24 w-24 place-items-center rounded-full bg-sun text-center text-sm sm:h-28 sm:w-28 sm:text-base">8 MP<br/>95 g</Sticker>
+        <Sticker className="absolute right-2 top-[52%] rotate-6 bg-ink px-3 py-2 text-sm !text-sun sm:text-base">00168</Sticker>
+      </div>
+    </section>
+  );
+}
+
+function FeatureCard({ n, title, tag, children, className = '', bg }) {
+  return (
+    <article className={`relative border-4 border-ink p-6 ${HARD_L} transition-transform duration-300 hover:rotate-0 hover:z-20 ${bg} ${className}`}>
+      <Tape className="-top-4 left-6 -rotate-3" />
+      <p className="mb-3 inline-block border-2 border-ink bg-paper px-2 py-0.5 text-xs font-bold uppercase tracking-widest">{tag}</p>
+      <h3 className="font-display text-3xl uppercase leading-none sm:text-4xl">{title}</h3>
+      <div className="mt-3 text-base leading-relaxed">{children}</div>
+    </article>
+  );
+}
+
+function Features() {
+  return (
+    <section id="features" className="border-y-4 border-ink bg-sun/60 py-20">
+      <div className="mx-auto max-w-6xl px-4">
+        <h2 className="mb-14 max-w-3xl font-display text-5xl uppercase leading-[0.95] sm:text-7xl">
+          Tres cosas.<br/><span className="bg-ink px-3 text-sun">Ni una más.</span>
+        </h2>
+        <div className="grid gap-10 md:grid-cols-6 md:gap-y-14">
+          <FeatureCard bg="bg-white" tag="Feature 01" title="Easy To Use" className="md:col-span-3 md:-rotate-2">
+            Sin ajustes. Sin menús. Solo apuntar y disparar. Si sabes usar un botón, ya sabes usar la X9.
+          </FeatureCard>
+          <FeatureCard bg="bg-cam" tag="Feature 02" title="Screen-Free Design" className="md:col-span-3 md:mt-12 md:rotate-3">
+            Vive el momento, no la pantalla. Aquí nadie revisa cada foto: se revela cuando llegas a casa.
+          </FeatureCard>
+          <FeatureCard bg="bg-sky" tag="Feature 03" title="Digital Film Style" className="md:col-span-4 md:col-start-2 md:-rotate-1">
+            Filtros de película directamente en la cámara. Cambia de carrete sin cambiar de carrete.
+            <div className="mt-4 flex flex-wrap gap-3">
+              {['Retro', 'Classic', 'Mono'].map((t, i) => (
+                <span key={t} className={`border-4 border-ink bg-paper px-4 py-1 font-display text-xl uppercase ${HARD} ${['-rotate-3', 'rotate-2', '-rotate-1'][i]}`}>{t}</span>
+              ))}
+            </div>
+          </FeatureCard>
+        </div>
+
+        <div className="mt-20 grid items-center gap-10 md:grid-cols-2">
+          <Polaroid rotate="rotate-[-3deg]" caption="Verano / ruta / festival">
+            <Placeholder label="Espacio para foto lifestyle con flash" bg="bg-pink" className="aspect-[4/3]" />
+          </Polaroid>
+          <div className={`relative rotate-1 border-4 border-ink bg-paper p-6 ${HARD_L}`}>
+            <Tape className="-top-4 right-8 rotate-3" />
+            <h3 className="font-display text-3xl uppercase leading-none sm:text-4xl">A prueba de peques</h3>
+            <p className="mt-3 leading-relaxed">La tarjeta Micro SD solo se saca con un destornillador. Nadie la pierde en el campamento. Un botón de disparo, un selector de flash y a correr.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Spec({ k, v, hi }) {
+  return (
+    <li className={`flex items-baseline gap-2 py-1.5 ${hi ? 'font-bold' : ''}`}>
+      <span className="shrink-0">{k}</span>
+      <span aria-hidden="true" className="min-w-4 flex-1 border-b-2 border-dotted border-ink/60" />
+      <span className="text-right">{v}</span>
+    </li>
+  );
+}
+
+function Specs() {
+  const big = [
+    ['A', 'Sensor', '8M', 'píxeles'],
+    ['B', 'Lente', '4.2mm', '5P + IR'],
+    ['C', 'Batería', '800mAh', 'Li-ion · USB-C'],
+    ['D', 'Tarjeta', '128G', 'Micro SD máx.'],
+  ];
+  return (
+    <section id="specs" className="mx-auto max-w-6xl px-4 py-20">
+      <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+        <h2 className="font-display text-5xl uppercase leading-[0.95] sm:text-7xl">Bajo el<br/>capó</h2>
+        <Sticker className="rotate-3 bg-cam px-3 py-2 text-lg">Léelo antes de usar</Sticker>
+      </div>
+
+      <div className={`relative border-4 border-ink bg-[#FBF5E1] ${HARD_L}`}>
+        <div className="flex items-center justify-between border-b-4 border-ink bg-ink px-4 py-2 text-xs font-bold uppercase tracking-widest text-sun sm:text-sm">
+          <span>Manual de usuario · Mod. X9</span><span>Pág. 04</span>
+        </div>
+
+        <div className="grid grid-cols-2 border-b-4 border-ink lg:grid-cols-4">
+          {big.map(([l, k, v, s], i) => (
+            <div key={l} className={`p-5 ${i % 2 === 0 ? 'border-r-4' : 'lg:border-r-4'} ${i < 2 ? 'border-b-4 lg:border-b-0' : ''} ${i === 3 ? '!border-r-0' : ''} border-ink`}>
+              <p className="text-xs font-bold uppercase tracking-widest">Fig. {l} · {k}</p>
+              <p className="mt-2 font-display text-4xl leading-none text-cam [-webkit-text-stroke:1.5px_#0A0A0A] sm:text-5xl">{v}</p>
+              <p className="mt-2 text-sm">{s}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-x-10 p-5 sm:p-8 md:grid-cols-2">
+          <div>
+            <h3 className="mb-2 border-b-4 border-ink pb-1 font-bold uppercase tracking-widest">1. Imagen</h3>
+            <ul>
+              <Spec k="Sensor" v="CMOS 1/3.2" hi />
+              <Spec k="Píxeles efectivos" v="8M" />
+              <Spec k="Resolución" v="3264×2448" />
+              <Spec k="Formato" v="JPG" />
+              <Spec k="Enfoque" v="Fijo · 0.5m → ∞" />
+              <Spec k="Obturación" v="0.5–1 s" />
+              <Spec k="ISO" v="1600" />
+              <Spec k="Balance blancos" v="Auto" />
+              <Spec k="Flash" v="2×3W LED" />
+            </ul>
+          </div>
+          <div>
+            <h3 className="mb-2 mt-6 border-b-4 border-ink pb-1 font-bold uppercase tracking-widest md:mt-0">2. Cuerpo y conexión</h3>
+            <ul>
+              <Spec k="Lente" v="5P+IR · 4.2mm" hi />
+              <Spec k="Visor" v="Óptico" />
+              <Spec k="Display" v="OLED 0.96″" />
+              <Spec k="Batería" v="800mAh" hi />
+              <Spec k="Tarjeta" v="Micro SD · 128G máx." hi />
+              <Spec k="Interfaz" v="USB Type-C" />
+              <Spec k="Tamaño" v="115×65×34mm" />
+              <Spec k="Peso" v="95 g" />
+              <Spec k="Temperatura" v="−20 ~ 60 ºC" />
+            </ul>
+          </div>
+        </div>
+        <p className="border-t-4 border-dashed border-ink p-4 text-sm font-bold uppercase tracking-wider">
+          ⚠ Aviso: esta cámara no tiene pantalla de revisión. Es a propósito.
+        </p>
+        <p className="absolute -top-5 right-4 rotate-6 border-4 border-ink bg-sun px-2 py-1 text-xs font-bold uppercase tracking-widest">En la caja: cámara + manual + cable USB-C</p>
+      </div>
+    </section>
+  );
+}
+
+function Buy({ onBuy, note }) {
+  const [color, setColor] = useState('orange');
+  const [qty, setQty] = useState(1);
+  const total = qty === 2 ? CONFIG.price * 2 * 0.9 : CONFIG.price;
+  const names = { orange: 'Naranja cuero', black: 'Negro textura' };
+  const buy = () => {
+    if (CONFIG.checkoutUrl) window.open(CONFIG.checkoutUrl, '_blank');
+    else onBuy(`Pedido de ejemplo: ${qty}× X9 ${names[color]} · ${money(total)}. Pon tu enlace de pago en CONFIG.checkoutUrl.`);
+  };
+  return (
+    <section id="comprar" className="border-y-4 border-ink bg-cam py-20">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 md:grid-cols-2">
+        <div className="relative mx-auto w-full max-w-md">
+          <Polaroid rotate="rotate-[-3deg]" caption={`X9 · ${names[color]}`}>
+            <div className="grid aspect-square place-items-center border-4 border-ink bg-sun">
+              <img src={IMG[color]} alt={`Cámara X9 ${names[color]}`} className="w-[92%] drop-shadow-[4px_6px_0_rgba(0,0,0,.35)]" />
+            </div>
+          </Polaroid>
+          <Sticker className="wobble absolute -right-3 -top-5 grid h-24 w-24 place-items-center rounded-full bg-paper text-center text-lg">-20%</Sticker>
+        </div>
+
+        <div className={`border-4 border-ink bg-paper p-6 sm:p-8 ${HARD_L}`}>
+          <h2 className="font-display text-4xl uppercase leading-none sm:text-5xl">Llévate la X9</h2>
+          <p className="mt-3 flex items-baseline gap-3">
+            <span className="font-display text-5xl">{money(total)}</span>
+            <s className="opacity-60">{money(qty === 2 ? CONFIG.oldPrice * 2 : CONFIG.oldPrice)}</s>
+          </p>
+
+          <fieldset className="mt-6">
+            <legend className="mb-2 text-sm font-bold uppercase tracking-widest">Color · {names[color]}</legend>
+            <div className="flex gap-4">
+              {[['orange', 'bg-cam'], ['black', 'bg-ink']].map(([k, bg]) => (
+                <button key={k} onClick={() => setColor(k)} aria-pressed={color === k} aria-label={names[k]}
+                  className={`h-14 w-14 border-4 border-ink ${bg} ${color === k ? 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1 ring-4 ring-sun' : ''} transition`} />
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="mt-6">
+            <legend className="mb-2 text-sm font-bold uppercase tracking-widest">Cantidad</legend>
+            <div className="grid grid-cols-2 gap-3">
+              {[[1, '1 cámara'], [2, '2 cámaras · -10%']].map(([q, t]) => (
+                <button key={q} onClick={() => setQty(q)} aria-pressed={qty === q}
+                  className={`border-4 border-ink px-3 py-3 text-left text-sm font-bold ${qty === q ? 'bg-ink text-sun' : 'bg-white'}`}>{t}</button>
+              ))}
+            </div>
+          </fieldset>
+
+          <Btn big onClick={buy} className="mt-8 w-full">Consigue la tuya</Btn>
+          {note && <p role="status" className="mt-4 border-4 border-ink bg-sun p-3 text-sm font-bold">{note}</p>}
+          <ul className="mt-5 grid gap-1 text-sm font-bold">
+            <li>✔ 30 días para devolverla</li><li>✔ 12 meses de garantía</li><li>✔ Pago seguro</li>
+          </ul>
+          <p className="mt-3 text-xs opacity-70">Precios y condiciones de ejemplo. Ajusta a tu política real.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Faq() {
+  const qs = [
+    ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas al móvil o al ordenador.'],
+    ['¿Cómo saco las fotos?', 'Por USB-C con el cable incluido, o sacando la Micro SD con un destornillador. Son JPG normales, sin app ni cuenta.'],
+    ['¿Qué calidad tiene?', 'Sensor de 8M con foco fijo e ISO 1600: estética de compacta de los 2000, con su grano y su carácter. Es para disfrutar, no para sustituir a una réflex.'],
+    ['¿Funciona con poca luz?', 'Lleva un flash de 2×3W LED. Para fiestas y atardeceres tardíos, justo lo que pide el estilo.'],
+  ];
+  return (
+    <section id="faq" className="mx-auto max-w-3xl px-4 py-20">
+      <h2 className="mb-10 font-display text-5xl uppercase leading-none sm:text-6xl">Dudas <span className="bg-sun px-2">típicas</span></h2>
+      <div className="grid gap-4">
+        {qs.map(([q, a]) => (
+          <details key={q} className={`group border-4 border-ink bg-white ${HARD} open:bg-sky`}>
+            <summary className="flex cursor-pointer items-center justify-between gap-4 p-4 font-bold">
+              {q}<span className="grid h-8 w-8 shrink-0 place-items-center border-4 border-ink bg-cam text-xl leading-none group-open:rotate-45 transition">+</span>
+            </summary>
+            <p className="px-4 pb-4 leading-relaxed">{a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="border-t-4 border-ink bg-ink text-paper">
+      <Marquee dur={22} className="border-b-4 border-paper/30 py-4 font-display text-4xl uppercase text-sun sm:text-6xl" text="X9 · Unplug · Capture · Cherish" sep="★" />
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm font-bold uppercase tracking-widest">
+        <p>© {new Date().getFullYear()} X9. Hecha para el caos.</p>
+        <nav className="flex flex-wrap gap-5" aria-label="Legal">
+          <a href="#top" className="hover:text-sun">Envíos</a><a href="#top" className="hover:text-sun">Devoluciones</a>
+          <a href="#top" className="hover:text-sun">Privacidad</a><a href="#top" className="hover:text-sun">Términos</a>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
+function StickyBar() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const buy = document.getElementById('comprar');
+    let past = false, onBuy = false;
+    const upd = () => setShow(past && !onBuy);
+    const sc = () => { past = window.scrollY > 600; upd(); };
+    const io = new IntersectionObserver(([e]) => { onBuy = e.isIntersecting; upd(); }, { threshold: 0.1 });
+    if (buy) io.observe(buy);
+    window.addEventListener('scroll', sc, { passive: true }); sc();
+    return () => { window.removeEventListener('scroll', sc); io.disconnect(); };
+  }, []);
+  return (
+    <div aria-hidden={!show}
+      className={`fixed inset-x-3 bottom-3 z-50 flex items-center justify-between gap-3 border-4 border-ink bg-sun p-2 pl-4 ${HARD} transition-transform duration-300 md:hidden`}
+      style={{ transform: show ? 'none' : 'translateY(160%)', bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
+      <span className="font-display text-xl leading-none">X9 · {money(CONFIG.price)}</span>
+      <Btn className="!px-4 !py-2 !text-base">Comprar</Btn>
+    </div>
+  );
+}
+
+function App() {
+  const [note, setNote] = useState('');
+  return (
+    <div className="paper min-h-screen overflow-x-clip">
+      <TopBar />
+      <Nav />
+      <main>
+        <Hero />
+        <Marquee dur={30} className="-rotate-1 scale-105 border-y-4 border-ink bg-sky py-3 font-display text-2xl uppercase" text="Apunta · Dispara · Olvídate" sep="✺" />
+        <Features />
+        <Specs />
+        <Buy onBuy={setNote} note={note} />
+        <Faq />
+      </main>
+      <Footer />
+      <StickyBar />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
