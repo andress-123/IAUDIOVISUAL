@@ -76,7 +76,28 @@ const CONFIG = {
   pack2Discount: 0.10,
   checkoutUrl: '',          // enlace de pago real (Shopify, Stripe, WhatsApp…). Vacío = aviso de ejemplo.
   reviewsAreExamples: true, // pon false cuando sustituyas las opiniones por reseñas reales
+  freeShippingFrom: 40,
+  addons: [                 // venta cruzada (precios de ejemplo)
+    { id: 'funda', name: 'Funda protectora', desc: 'Para llevarla en la mochila sin un rasguño', price: 12 },
+    { id: 'sd',    name: 'Tarjeta Micro SD 64G extra', desc: 'Más fotos sin pensar en el espacio', price: 9 },
+    { id: 'urgente', name: 'Envío urgente 24 h', desc: 'Para que llegue antes del viaje o la fiesta', price: 4.9, noShipCount: true },
+  ],
+  popup: { enabled: true, delaySec: 8, discount: '10 %', code: 'BIENVENIDA10', endpoint: '' }, // endpoint: tu proveedor de email
+  press: [],                // medios donde has salido: ['Nombre del medio', ...]. Vacío = no se muestra
 };
+/* Versiones de la landing según el problema del cliente. Enlaza el anuncio a  #viajes  #ninos  #regalo  #fiestas */
+const ANGLES = {
+  viajes:  { tag: 'Para viajar', line: 'Vuelves con 400 fotos del móvil y no recuerdas ninguna. Viaja mirando, no encuadrando.' },
+  ninos:   { tag: 'Para niños',  line: 'Su primera cámara de verdad: un botón, cero pantallas y una tarjeta que no se pierde.' },
+  regalo:  { tag: 'Para regalar', line: 'Un regalo que no se parece a nada y se entiende en cinco segundos.' },
+  fiestas: { tag: 'Para fiestas', line: 'Fotos de fiesta sin tener el móvil en la mano toda la noche.' },
+};
+function useAngle() {
+  const get = () => { try { return ANGLES[(location.hash || '').replace('#', '')] || null; } catch (e) { return null; } };
+  const [a, setA] = useState(get);
+  useEffect(() => { const f = () => setA(get()); addEventListener('hashchange', f); return () => removeEventListener('hashchange', f); }, []);
+  return a;
+}
 const money = n => n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency;
 
 const COLORS = [
@@ -128,7 +149,7 @@ function ScrollBar() {
 }
 
 /* ============ Cabecera ============ */
-const MSGS = ['Envío gratis desde 40 €', '30 días para probarla', '12 meses de garantía'];
+const MSGS = ['Entrega en 24–72 h · envío gratis desde 40 €', '30 días para probarla', '12 meses de garantía'];
 function Header() {
   const [i, setI] = useState(0); const [sc, setSc] = useState(false);
   useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % MSGS.length), 3600); return () => clearInterval(t); }, []);
@@ -157,16 +178,22 @@ function Buy({ note, onNote }) {
   const [qty, setQty] = useState(1);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [added, setAdded] = useState(false);
+  const [extras, setExtras] = useState([]);
+  const angle = useAngle();
   const c = COLORS[ci];
   const totalT = qty === 2 ? CONFIG.price * 2 * (1 - CONFIG.pack2Discount) : CONFIG.price;
   const oldT = CONFIG.oldPrice * qty;
-  const total = useCount(totalT), old = useCount(oldT), save = useCount(oldT - totalT);
+  const addT = CONFIG.addons.filter(a => extras.includes(a.id)).reduce((t, a) => t + a.price, 0);
+  const shipBase = totalT + CONFIG.addons.filter(a => extras.includes(a.id) && !a.noShipCount).reduce((t, a) => t + a.price, 0);
+  const left = Math.max(0, CONFIG.freeShippingFrom - shipBase);
+  const total = useCount(totalT), old = useCount(oldT), save = useCount(oldT - totalT), grand = useCount(totalT + addT);
+  const toggle = id => setExtras(e => e.includes(id) ? e.filter(x => x !== id) : [...e, id]);
   const shown = view === 'front' ? IMG[c.id] : IMG.back;
   const move = e => { const r = e.currentTarget.getBoundingClientRect(); setTilt({ x: (e.clientX - r.left) / r.width - .5, y: (e.clientY - r.top) / r.height - .5 }); };
   const buy = () => {
     setAdded(true); setTimeout(() => setAdded(false), 1800);
     CONFIG.checkoutUrl ? window.open(CONFIG.checkoutUrl.replace('{color}', encodeURIComponent(c.name)).replace('{qty}', qty), '_blank')
-      : onNote(`Ejemplo: ${qty}× Bravo X9 ${c.name} · ${money(totalT)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
+      : onNote(`Ejemplo: ${qty}× Bravo X9 ${c.name}${extras.length ? ' + ' + extras.join(', ') : ''} · ${money(totalT + addT)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
   };
   const pick = i => { setCi(i); setView('front'); };
   return (
@@ -193,9 +220,10 @@ function Buy({ note, onNote }) {
       </Reveal>
 
       <Reveal delay={120} className="lg:col-span-5 lg:pt-4">
-        <p className="label flex items-center gap-3"><span className="dotpulse h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · sale en 24–48 h</p>
+        <p className="label flex items-center gap-3"><span className="dotpulse h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · entrega en 24–72 h</p>
         <h1 className="display mt-6 text-5xl sm:text-6xl">Bravo X9</h1>
-        <p className="mt-5 text-lg text-ink/75">La cámara digital retro sin pantalla. <span className="text-clay">Mira el momento, no la pantalla.</span></p>
+        {angle && <p key={angle.tag} className="label fade mt-6 inline-block bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
+        <p key={angle ? angle.tag : 'd'} className="fade mt-5 text-lg text-ink/75">{angle ? angle.line : <>La cámara digital retro sin pantalla. <span className="text-clay">Mira el momento, no la pantalla.</span></>}</p>
 
         <p className="mt-10 flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <span className="display text-5xl">{money(total)}</span>
@@ -227,8 +255,27 @@ function Buy({ note, onNote }) {
           </div>
         </fieldset>
 
-        <button onClick={buy} className={`btn shine group mt-12 flex min-h-[68px] w-full items-center justify-center gap-3 text-lg font-semibold ${added ? 'bg-[#2F8F5B] text-white' : 'bg-clay text-ink hover:bg-ink hover:text-bone'}`}>
-          {added ? <span className="fade">✓ Añadido</span> : <span>Comprar ahora · {money(total)} <span className="arrow">→</span></span>}
+        <fieldset className="mt-10">
+          <legend className="label mb-4">Añade a tu pedido</legend>
+          <div className="grid gap-3">
+            {CONFIG.addons.map(a => (
+              <label key={a.id} className={`flex cursor-pointer items-center gap-4 border px-5 py-4 transition duration-300 hover:-translate-y-0.5 ${extras.includes(a.id) ? 'border-ink bg-white' : 'border-[color:var(--line)] hover:border-ink'}`}>
+                <input type="checkbox" checked={extras.includes(a.id)} onChange={() => toggle(a.id)} className="peer sr-only" />
+                <span aria-hidden="true" className={`grid h-5 w-5 shrink-0 place-items-center border text-[12px] transition ${extras.includes(a.id) ? 'border-ink bg-ink text-bone' : 'border-ink/40'}`}>{extras.includes(a.id) ? <span className="tick">✓</span> : ''}</span>
+                <span className="flex-1"><span className="block text-[15px] font-semibold">{a.name}</span><span className="block text-sm text-ink/60">{a.desc}</span></span>
+                <span className="text-[15px] font-semibold">+{money(a.price)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="mt-8">
+          <p className="mb-2 text-sm">{left > 0 ? <>Te faltan <b>{money(left)}</b> para el envío gratis.</> : <b className="text-[#2F8F5B]">✓ Tienes envío gratis.</b>}</p>
+          <div className="h-1.5 w-full bg-black/10"><div className="h-full bg-clay transition-[width] duration-700" style={{ width: Math.min(100, shipBase / CONFIG.freeShippingFrom * 100) + '%' }} /></div>
+        </div>
+
+        <button onClick={buy} className={`btn shine group mt-8 flex min-h-[68px] w-full items-center justify-center gap-3 text-lg font-semibold ${added ? 'bg-[#2F8F5B] text-white' : 'bg-clay text-ink hover:bg-ink hover:text-bone'}`}>
+          {added ? <span className="fade">✓ Añadido</span> : <span>Comprar ahora · {money(grand)} <span className="arrow">→</span></span>}
         </button>
         {note && <p key={note} role="status" className="fade mt-4 bg-clay/15 p-4 text-sm font-medium">{note}</p>}
 
@@ -280,6 +327,19 @@ function Features() {
         </div>
         <p className="label mt-6 text-ink/50">Misma foto con los tres estilos, como ilustración.</p>
       </div>
+    </section>
+  );
+}
+
+/* ============ Medios (solo si hay) ============ */
+function Press() {
+  if (!CONFIG.press.length) return null;
+  return (
+    <section aria-label="Medios" className="border-t border-[color:var(--line)]">
+      <Reveal className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-14 gap-y-6 px-5 py-14 md:px-10">
+        <p className="label text-ink/55">Han hablado de nosotros</p>
+        {CONFIG.press.map(m => <span key={m} className="display text-xl text-ink/70">{m}</span>)}
+      </Reveal>
     </section>
   );
 }
@@ -354,6 +414,47 @@ function SpecsFaq() {
   );
 }
 
+/* ============ Captación de email ============ */
+function EmailPopup() {
+  const [open, setOpen] = useState(false); const [done, setDone] = useState(false); const [email, setEmail] = useState('');
+  const P = CONFIG.popup;
+  useEffect(() => {
+    if (!P.enabled) return;
+    try { if (sessionStorage.getItem('x9-popup')) return; } catch (e) {}
+    const t = setTimeout(() => setOpen(true), P.delaySec * 1000); return () => clearTimeout(t);
+  }, []);
+  const close = () => { setOpen(false); try { sessionStorage.setItem('x9-popup', '1'); } catch (e) {} };
+  useEffect(() => { if (!open) return; const k = e => e.key === 'Escape' && close(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, [open]);
+  if (!open) return null;
+  const submit = e => { e.preventDefault(); if (P.endpoint) { try { fetch(P.endpoint, { method: 'POST', body: JSON.stringify({ email }) }); } catch (x) {} } setDone(true); };
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-ink/60 p-5 backdrop-blur-sm fade" role="dialog" aria-modal="true" aria-labelledby="pp-t" onClick={close}>
+      <div className="pop relative w-full max-w-md bg-bone p-8 sm:p-10" onClick={e => e.stopPropagation()}>
+        <button onClick={close} aria-label="Cerrar" className="absolute right-4 top-4 grid h-10 w-10 place-items-center text-2xl transition hover:rotate-90 hover:text-clay">×</button>
+        {!done ? (
+          <form onSubmit={submit}>
+            <p className="label text-clay">Antes de irte</p>
+            <h2 id="pp-t" className="display mt-4 text-3xl">{P.discount} en tu primera cámara</h2>
+            <p className="mt-4 text-ink/70">Apúntate y te damos el código al momento. Nada de spam, solo novedades de verdad.</p>
+            <label htmlFor="pp-email" className="sr-only">Correo electrónico</label>
+            <input id="pp-email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@correo.com" className="mt-6 w-full border border-ink/30 bg-white px-4 py-4 outline-none transition focus:border-ink" />
+            <button className="btn shine mt-3 flex min-h-[56px] w-full items-center justify-center bg-clay font-semibold text-ink hover:bg-ink hover:text-bone">Quiero mi código</button>
+            <button type="button" onClick={close} className="mt-4 w-full text-center text-sm text-ink/50 link-u">No, gracias</button>
+          </form>
+        ) : (
+          <div className="fade text-center">
+            <p className="label text-[#2F8F5B]">✓ Listo</p>
+            <h2 className="display mt-4 text-3xl">Tu código</h2>
+            <p className="display mt-6 border-2 border-dashed border-ink px-4 py-5 text-3xl tracking-wider">{P.code}</p>
+            <p className="mt-4 text-sm text-ink/60">Úsalo al comprar para tener {P.discount} de descuento.{!P.endpoint && ' (Demo: conecta tu proveedor de email en CONFIG.popup.endpoint para guardar los correos.)'}</p>
+            <button onClick={close} className="btn mt-6 flex min-h-[52px] w-full items-center justify-center bg-ink font-semibold text-bone hover:bg-clay hover:text-ink">Seguir mirando</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ============ CTA final + footer ============ */
 function Final() {
   return (
@@ -395,7 +496,7 @@ function App() {
   const [note, setNote] = useState('');
   return (
     <div className="overflow-x-clip">
-      <ScrollBar /><Header /><main><Buy note={note} onNote={setNote} /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar />
+      <ScrollBar /><Header /><main><Buy note={note} onNote={setNote} /><Press /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
     </div>
   );
 }
