@@ -1,4 +1,4 @@
-<title>X9 Cámara Sin Pantalla</title>
+<title>Bravo X9 Cámara Sin Pantalla</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -26,6 +26,10 @@
   .sprockets { background: #0F0F0E; position: relative; }
   .sprockets::before { content:""; position:absolute; left:0; right:0; top:6px; height:10px;
     background: repeating-linear-gradient(90deg, #F5F3EE 0 12px, transparent 12px 28px); border-radius:2px; opacity:.9; }
+  @keyframes ping { 0% { transform: scale(.6); opacity:.9 } 80%,100% { transform: scale(2.4); opacity:0 } }
+  .hot-ring { animation: ping 2.2s cubic-bezier(0,0,.2,1) infinite; }
+  @keyframes rise { from { opacity:0; transform: translateY(18px) } to { opacity:1; transform:none } }
+  .rise { animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
   .link-u { background: linear-gradient(currentColor,currentColor) 0 100%/0 1.5px no-repeat; transition: background-size .3s; }
   .link-u:hover { background-size: 100% 1.5px; }
   .btn { transition: background .2s, color .2s, transform .2s; }
@@ -78,7 +82,7 @@ function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--line)] bg-bone/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 md:px-8">
-        <a href="#top" className="display text-[26px]" aria-label="X9, inicio">X9<span className="text-clay">.</span></a>
+        <a href="#top" className="flex items-baseline gap-2" aria-label="Bravo X9, inicio"><span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label text-ink/60">X9</span></a>
         <nav className="hidden gap-9 text-[15px] font-medium md:flex" aria-label="Principal">
           {[['#comprar', 'Cámara'], ['#estilos', 'Estilos'], ['#detalles', 'Detalles'], ['#specs', 'Specs'], ['#faq', 'Preguntas']].map(([h, t]) => <a key={h} href={h} className="link-u">{t}</a>)}
         </nav>
@@ -89,34 +93,56 @@ function Nav() {
 }
 
 /* ============ Hero ============ */
-function Hero() {
+const HOT = [
+  { x: 17.8, y: 17, t: 'Disparador', d: 'Un solo botón. Aprietas y listo.', side: 'right' },
+  { x: 58.5, y: 22, t: 'Flash LED 2×3 W', d: 'Para interiores, fiestas y atardeceres tardíos.', side: 'left' },
+  { x: 77, y: 15.6, t: 'Visor óptico', d: 'Miras por el visor, no por una pantalla.', side: 'left' },
+  { x: 51.5, y: 57, t: 'Lente 5P+IR · 4,2 mm', d: 'Enfoque fijo de 0,5 m al infinito.', side: 'right' },
+  { x: 88, y: 60, t: 'Acabado en cuero', d: 'Textura agradable, agarre firme y 95 g.', side: 'left' },
+];
+function Hot({ h, i, open, setOpen }) {
+  const on = open === i;
   return (
-    <section id="top" className="mx-auto grid max-w-[1400px] gap-4 px-4 pb-6 pt-8 md:px-8 lg:grid-cols-12 lg:pt-12">
-      <div className="flex flex-col justify-between lg:col-span-5 lg:pr-6">
-        <div>
-          <p className="label mb-6 flex items-center gap-3"><span className="h-px w-8 bg-ink" />Unplug · Capture · Cherish</p>
-          <h1 className="display text-[2.7rem] sm:text-[3.8rem] xl:text-[4.2rem]">Mira el momento.<br /><span className="text-clay">No la pantalla.</span></h1>
-          <p className="mt-7 max-w-md text-lg leading-relaxed text-ink/80">La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día. Apuntas, disparas y descubres las fotos después.</p>
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-            <Button>Comprar la X9</Button>
-            <p className="text-sm"><span className="display text-3xl font-bold">{money(CONFIG.price)}</span> <s className="ml-1 text-ink/50">{money(CONFIG.oldPrice)}</s></p>
-          </div>
+    <div className="absolute z-20" style={{ left: h.x + '%', top: h.y + '%' }}>
+      <button onClick={() => setOpen(on ? -1 : i)} onMouseEnter={() => setOpen(i)} onFocus={() => setOpen(i)} aria-label={h.t} aria-expanded={on}
+        className="relative -ml-4 -mt-4 grid h-8 w-8 place-items-center">
+        <span className="hot-ring absolute inset-0 rounded-full bg-white/70" />
+        <span className={`relative h-3.5 w-3.5 rounded-full border-2 border-ink transition ${on ? 'scale-125 bg-clay' : 'bg-white'}`} />
+      </button>
+      <div role="status" className={`pointer-events-none absolute top-6 z-30 w-52 border border-ink bg-bone p-3 text-left shadow-xl transition duration-200 ${h.side === 'left' ? 'right-[-8px]' : 'left-[-8px]'} ${on ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'}`}>
+        <p className="label !text-[0.66rem]">{h.t}</p>
+        <p className="mt-1 text-[13px] leading-snug text-ink/75">{h.d}</p>
+      </div>
+    </div>
+  );
+}
+
+function Hero() {
+  const [open, setOpen] = useState(-1);
+  return (
+    <section id="top" className="relative mx-auto grid max-w-[1400px] items-center gap-6 px-4 pb-10 pt-6 md:px-8 lg:grid-cols-12 lg:gap-0 lg:pb-16 lg:pt-8">
+      <div className="relative order-first lg:order-last lg:col-span-7">
+        <div aria-hidden="true" className="absolute left-[16%] top-[6%] -z-10 aspect-square w-[74%] rounded-full bg-[radial-gradient(circle_at_40%_35%,#EADBC2,#E4CFAE_65%,#DDC39B)] opacity-80" />
+        <div className="rise relative" onMouseLeave={() => setOpen(-1)}>
+          <img src={IMG.hero} alt="Cámara Bravo X9 con cuero marrón, vista frontal en tres cuartos" className="w-full drop-shadow-[0_34px_30px_rgba(40,25,10,.38)]" />
+          {HOT.map((h, i) => <Hot key={h.t} h={h} i={i} open={open} setOpen={setOpen} />)}
         </div>
-        <dl className="mt-10 hidden grid-cols-3 border-t border-[color:var(--line)] pt-5 lg:grid">
-          {[['8 MP', 'Sensor CMOS'], ['95 g', 'Cabe en el bolsillo'], ['USB-C', 'Sin apps ni nube']].map(([a, b]) => (
-            <div key={a}><dt className="display text-2xl font-bold">{a}</dt><dd className="label mt-1 !normal-case !tracking-normal text-ink/60">{b}</dd></div>
-          ))}
-        </dl>
+        <p className="label mt-2 text-center text-ink/55 lg:text-right">Toca los puntos para ver los detalles</p>
       </div>
 
-      <div className="grid h-[520px] grid-cols-2 grid-rows-2 gap-4 sm:h-[640px] lg:col-span-7 lg:h-[680px]">
-        <Photo src={IMG.road} alt="Carretera de desierto al atardecer con tonos rojos, foto analógica" className="row-span-2" caption="Ruta 12 · ISO 400" pos="50% 60%" />
-        <div className="relative grid place-items-center overflow-hidden bg-deep">
-          <img src={IMG.orange} alt="Cámara X9 naranja, vista frontal" className="w-[88%] drop-shadow-[0_18px_22px_rgba(0,0,0,.45)]" />
-          <span className="label absolute left-3 top-3 text-bone/80">Clay</span>
-          <span className="label absolute bottom-3 right-3 bg-ink px-2 py-1 text-sun">00168</span>
+      <div className="relative z-10 lg:col-span-5 lg:pr-10">
+        <p className="label mb-5 flex items-center gap-3"><span className="h-px w-8 bg-ink" />Unplug · Capture · Cherish</p>
+        <h1 className="display text-[2.4rem] sm:text-[3.4rem] xl:text-[3.9rem]">Mira el momento. <span className="block text-clay">No la pantalla.</span></h1>
+        <p className="mt-6 max-w-md text-lg leading-relaxed text-ink/80">La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día.</p>
+        <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <Button className="w-full sm:w-auto">Comprar la Bravo X9</Button>
+          <p className="text-sm"><span className="display text-2xl">{money(CONFIG.price)}</span> <s className="ml-1 text-ink/50">{money(CONFIG.oldPrice)}</s></p>
         </div>
-        <Photo src={IMG.stage} alt="Concierto con luces cálidas desde el público, foto analógica" caption="Festival · flash off" pos="50% 40%" />
+        <dl className="mt-9 grid grid-cols-3 border-t border-[color:var(--line)] pt-5">
+          {[['8 MP', 'Sensor CMOS'], ['95 g', 'Cabe en el bolsillo'], ['USB-C', 'Sin apps ni nube']].map(([a, b]) => (
+            <div key={a}><dt className="display text-xl">{a}</dt><dd className="label mt-1 !normal-case !tracking-normal text-ink/60">{b}</dd></div>
+          ))}
+        </dl>
       </div>
     </section>
   );
@@ -135,25 +161,26 @@ function Proof() {
 
 /* ============ Compra ============ */
 const COLORS = {
-  orange: { name: 'Naranja Clay', bg: 'bg-deep', swatch: 'bg-clay', img: 'orange' },
+  cuero: { name: 'Cuero Marrón', bg: 'bg-deep', swatch: 'bg-[#A85A2C]', img: 'hero' },
+  orange: { name: 'Naranja Clay', bg: 'bg-[#2A2724]', swatch: 'bg-clay', img: 'orange' },
   black: { name: 'Negro Carbón', bg: 'bg-clay', swatch: 'bg-ink', img: 'black' },
 };
 function Buy({ onNote, note }) {
-  const [color, setColor] = useState('orange');
+  const [color, setColor] = useState('cuero');
   const [view, setView] = useState('front');
   const [qty, setQty] = useState(1);
   const c = COLORS[color];
   const total = qty === 2 ? CONFIG.price * 2 * 0.9 : CONFIG.price;
   const shown = view === 'front' ? IMG[c.img] : view === 'back' ? IMG.back : IMG.sides;
-  const alts = { front: `X9 ${c.name}, vista frontal`, back: 'X9, trasera con mini OLED y contador', sides: 'X9, vistas superior, frontal e inferior' };
+  const alts = { front: `Bravo X9 ${c.name}, vista frontal`, back: 'X9, trasera con mini OLED y contador', sides: 'X9, vistas superior, frontal e inferior' };
   const buy = () => CONFIG.checkoutUrl ? window.open(CONFIG.checkoutUrl, '_blank')
-    : onNote(`Ejemplo: ${qty}× X9 ${c.name} · ${money(total)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
+    : onNote(`Ejemplo: ${qty}× Bravo X9 ${c.name} · ${money(total)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
   return (
     <section id="comprar" className="mx-auto max-w-[1400px] px-4 py-16 md:px-8 lg:py-24">
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <div className={`relative grid aspect-[5/4] place-items-center overflow-hidden transition-colors duration-500 ${view === 'front' ? c.bg : 'bg-[#E9E5DB]'}`}>
-            <img src={shown} alt={alts[view]} className="max-h-[78%] w-[82%] object-contain drop-shadow-[0_22px_26px_rgba(0,0,0,.35)]" />
+            <img src={shown} alt={alts[view]} className="max-h-[88%] w-[88%] object-contain drop-shadow-[0_26px_28px_rgba(0,0,0,.4)]" />
             <span className="label absolute left-4 top-4 text-bone mix-blend-difference">{c.name}</span>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-4">
@@ -166,7 +193,7 @@ function Buy({ onNote, note }) {
 
         <div className="flex flex-col border border-[color:var(--line)] p-6 sm:p-9 lg:col-span-5">
           <p className="label flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · sale en 24–48 h</p>
-          <h2 className="display mt-5 text-3xl sm:text-4xl">X9 Cámara retro sin pantalla</h2>
+          <h2 className="display mt-5 text-3xl sm:text-4xl">Bravo X9 Cámara retro sin pantalla</h2>
           <p className="mt-5 flex items-baseline gap-3"><span className="display text-4xl font-bold">{money(total)}</span><s className="text-ink/50">{money(qty === 2 ? CONFIG.oldPrice * 2 : CONFIG.oldPrice)}</s></p>
           <p className="mt-1 text-sm text-ink/60">IVA incluido. Cámara, manual y cable USB-C en la caja.</p>
 
@@ -395,11 +422,11 @@ function Footer() {
   return (
     <footer className="bg-ink text-bone">
       <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-14 md:grid-cols-12 md:px-8">
-        <div className="md:col-span-5"><p className="display text-5xl">X9<span className="text-clay">.</span></p><p className="mt-3 max-w-xs text-bone/60">Cámara digital retro sin pantalla. Unplug, Capture, Cherish.</p></div>
+        <div className="md:col-span-5"><p className="display text-5xl" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></p><p className="mt-3 max-w-xs text-bone/60">Bravo X9, cámara digital retro sin pantalla. Unplug, Capture, Cherish.</p></div>
         <nav className="grid gap-2 text-sm md:col-span-3 md:col-start-7" aria-label="Pie"><span className="label mb-2 text-bone/50">Tienda</span><a href="#comprar" className="link-u w-fit">Cámara</a><a href="#specs" className="link-u w-fit">Especificaciones</a><a href="#faq" className="link-u w-fit">Preguntas</a></nav>
         <nav className="grid gap-2 text-sm md:col-span-3" aria-label="Legal"><span className="label mb-2 text-bone/50">Legal</span><a href="#top" className="link-u w-fit">Envíos</a><a href="#top" className="link-u w-fit">Devoluciones</a><a href="#top" className="link-u w-fit">Privacidad</a><a href="#top" className="link-u w-fit">Términos</a></nav>
       </div>
-      <p className="label border-t border-bone/15 px-4 py-5 text-center text-bone/50">© {new Date().getFullYear()} X9 · Fotografías de Unsplash con tratamiento analógico</p>
+      <p className="label border-t border-bone/15 px-4 py-5 text-center text-bone/50">© {new Date().getFullYear()} Bravo · Fotografías de Unsplash con tratamiento analógico</p>
     </footer>
   );
 }
