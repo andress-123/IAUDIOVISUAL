@@ -171,7 +171,7 @@ function Buy({ note, onNote }) {
   const pick = i => { setCi(i); setView('front'); };
   return (
     <section id="top" className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 pt-8 md:px-10 lg:grid-cols-12 lg:gap-20 lg:pb-36 lg:pt-14">
-      <Reveal className="lg:col-span-7">
+      <Reveal className="lg:sticky lg:top-24 lg:col-span-7 lg:self-start">
         <div className="stage relative grid aspect-[4/3.3] place-items-center overflow-hidden transition-colors duration-700 sm:aspect-[4/3]" style={{ background: c.bg }}
           onMouseMove={move} onMouseLeave={() => setTilt({ x: 0, y: 0 })}>
           <div className="floaty w-[84%]">
@@ -236,9 +236,10 @@ function Buy({ note, onNote }) {
           {['Envío gratis desde 40 €', '30 días de devolución', '12 meses de garantía', 'Pago seguro'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
         </ul>
         <ul className="mt-8 grid gap-3.5 border-t border-[color:var(--line)] pt-8 text-[15px]">
-          {['Sin pantalla ni ajustes: apuntas y disparas', '8 MP · flash LED · estilos de película', 'Tarjeta Micro SD incluida · carga por USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
+          {['Sin pantalla ni ajustes: apuntas y disparas', 'Revelado gratis: pasas las fotos por USB-C, sin apps ni cuentas', '8 MP · flash LED · estilos de película'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
         </ul>
-        <p className="mt-8 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
+        <p className="mt-8 border-t border-[color:var(--line)] pt-6 text-sm text-ink/70"><span className="label mr-2 text-ink">En la caja</span>Cámara, manual y cable USB-C. Funciona al sacarla de la caja.</p>
+        <p className="mt-6 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
       </Reveal>
     </section>
   );
@@ -255,12 +256,12 @@ function Photo({ src, alt, className = '', caption }) {
 }
 function Features() {
   const f = [
-    ['Sin pantalla', 'Vive el momento en vez de revisarlo. Las fotos las descubres después.'],
-    ['Apunta y dispara', 'Sin menús ni ajustes. Un botón y un selector de flash.'],
-    ['Estilos de película', 'Retro, Classic y Mono cargados en la cámara.'],
-    ['A prueba de peques', 'La Micro SD solo sale con un destornillador.'],
-    ['Flash LED 2×3 W', 'Para interiores, fiestas y atardeceres tardíos.'],
-    ['95 g y USB-C', 'Cabe en el bolsillo. Batería de 800 mAh y sin apps ni nube.'],
+    ['Nada que perfeccionar', 'Sin pantalla no hay segundas oportunidades. Vives el momento y descubres las fotos después.'],
+    ['Revelado gratis', 'Una desechable se paga cada vez que la revelas. Aquí pasas las fotos por USB-C y ya está.'],
+    ['Se usa mil veces', 'No la tiras: la recargas y vuelves a usarla en cada viaje, fiesta o domingo.'],
+    ['Estilos de película', 'Retro, Classic y Mono cargados en la cámara. Cambias de estilo como de carrete.'],
+    ['A prueba de peques', 'Un botón, un selector de flash y una Micro SD que solo sale con un destornillador.'],
+    ['Flash LED y 95 g', 'Flash de 2×3 W para interiores y fiestas. Cabe en el bolsillo y carga por USB-C.'],
   ];
   const s = [['retro', 'Retro'], ['classic', 'Classic'], ['mono', 'Mono']];
   return (
@@ -326,6 +327,8 @@ function Acc({ q, a }) {
 function SpecsFaq() {
   const qs = [
     ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas al móvil o al ordenador.'],
+    ['¿Tengo que pagar revelado?', 'No. A diferencia de una cámara desechable, no hay laboratorio: conectas la cámara y las fotos pasan a tu móvil u ordenador sin coste por foto.'],
+    ['¿Se puede reutilizar?', 'Sí. Se recarga por USB-C y sirve para tantas fotos como quepan en la tarjeta. No se tira después de usarla.'],
     ['¿Cómo saco las fotos?', 'Por USB-C con el cable incluido o sacando la Micro SD con un destornillador. Son JPG normales, sin app ni cuenta.'],
     ['¿Qué calidad tiene?', 'Sensor de 8 MP con foco fijo: estética de compacta clásica, con grano y carácter. Para disfrutar, no para sustituir a una réflex.'],
     ['¿Y si no me convence?', 'Tienes 30 días para devolverla. (Ajusta el plazo a tu política real.)'],
