@@ -63,6 +63,10 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: jitter .6s steps(4) infinite; }
   @keyframes jitter { 0% { background-position: 0 0 } 25% { background-position: -40px 20px } 50% { background-position: 30px -30px } 75% { background-position: -20px -50px } 100% { background-position: 0 0 } }
   @keyframes scrollcue { 0% { transform: scaleY(0); transform-origin: top } 50% { transform: scaleY(1); transform-origin: top } 51% { transform-origin: bottom } 100% { transform: scaleY(0); transform-origin: bottom } }
+  @keyframes bloom { from { opacity: 0; transform: translateY(18px) scale(.97); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+  .bloom { animation: bloom 1.2s var(--ease) both; }
+  .tile { transition: transform .7s var(--ease), box-shadow .7s var(--ease); }
+  .tile:hover { transform: translateY(-6px) scale(1.04); box-shadow: 0 30px 40px -28px rgba(15,15,14,.5); z-index: 30; }
   .dotpulse { position: relative; }
   .dotpulse::after { content:""; position:absolute; inset:0; border-radius:9999px; background:#2F8F5B; animation: ping 2s cubic-bezier(0,0,.2,1) infinite; }
   :focus-visible { outline: 3px solid #E66A28; outline-offset: 4px; }
@@ -158,94 +162,99 @@ function ScrollBar() {
   return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-clay" style={{ transform: `scaleX(${p})` }} />;
 }
 
-/* ============ Cabecera (transparente sobre la foto) ============ */
-const MSGS = ['Entrega en 24–72 h · envío gratis desde 40 €', '30 días para probarla', '12 meses de garantía'];
+/* ============ Cabecera ============ */
+const MSGS = ['Feeling analógico · cero gasto en revelado', 'Entrega en 24–72 h · envío gratis desde 40 €', '30 días para probarla'];
 function Header() {
-  const [i, setI] = useState(0); const [over, setOver] = useState(true);
+  const [i, setI] = useState(0); const [sc, setSc] = useState(false);
   useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % MSGS.length), 3600); return () => clearInterval(t); }, []);
-  useEffect(() => { const f = () => setOver(scrollY < innerHeight * 0.82); addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f); }, []);
-  const tone = over ? 'text-white' : 'text-ink';
+  useEffect(() => { const f = () => setSc(scrollY > 12); addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f); }, []);
   return (
-    <header className={`fixed inset-x-0 top-0 z-40 transition-all duration-500 ${over ? 'bg-transparent' : 'bg-bone/92 backdrop-blur shadow-[0_10px_30px_-22px_rgba(0,0,0,.45)]'}`}>
+    <header className={`sticky top-0 z-40 bg-bone/92 backdrop-blur transition-all duration-300 ${sc ? 'border-b border-[color:var(--line)]' : 'border-b border-transparent'}`}>
       <div className="label flex h-9 items-center justify-center bg-ink text-bone"><span key={i} className="fade">{MSGS[i]}</span></div>
-      <div className={`mx-auto flex max-w-[1400px] items-center justify-between px-5 transition-all duration-500 md:px-10 ${over ? 'h-20' : 'h-16'} ${tone}`}>
+      <div className={`mx-auto flex max-w-[1500px] items-center justify-between px-5 transition-all duration-300 md:px-10 ${sc ? 'h-14' : 'h-20'}`}>
         <a href="#top" className="flex items-baseline gap-2" aria-label="Bravo X9, inicio">
-          <span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label opacity-70">X9</span>
+          <span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label text-ink/55">X9</span>
         </a>
         <nav className="hidden gap-10 text-sm font-medium md:flex" aria-label="Principal">
           <a className="link-u" href="#comprar">La cámara</a><a className="link-u" href="#caracteristicas">Características</a><a className="link-u" href="#opiniones">Opiniones</a><a className="link-u" href="#faq">Preguntas</a>
         </nav>
-        <a href="#comprar" className={`btn shine flex min-h-[44px] items-center px-6 text-sm font-semibold ${over ? 'bg-white text-ink hover:bg-clay' : 'bg-ink text-bone hover:bg-clay hover:text-ink'}`}>Comprar</a>
+        <a href="#comprar" className="btn shine flex min-h-[44px] items-center bg-ink px-6 text-sm font-semibold text-bone hover:bg-clay hover:text-ink">Comprar</a>
       </div>
     </header>
   );
 }
 
-/* ============ Home: foto a pantalla completa ============ */
-const SLIDES = [
-  { id: 'h_sea', cap: 'Atardecer · ISO 400', pos: '50% 62%' },
-  { id: 'h_stage', cap: 'Festival · flash off', pos: '50% 50%' },
-  { id: 'h_terrace', cap: 'Terraza · 21:40', pos: '50% 45%' },
+/* ============ Home: grid de fotos analógicas ============ */
+/* l, t = posición (% del contenedor) · w = ancho (%) · ar = proporción · f = fuerza del parallax */
+const TILES = [
+  { k: 'road',    c: 'Ruta 12',      l: 7,  t: 12, w: 12,   ar: '3/4', f: 14 },
+  { k: 'valley',  c: 'Valle · 06:10', l: 74, t: 7,  w: 12.5, ar: '4/5', f: 22 },
+  { k: 'stage',   c: 'Festival',     l: 87, t: 40, w: 16,   ar: '4/3', f: 30 },
+  { k: 'powder',  c: 'Holi',         l: -1.5, t: 54, w: 11.5, ar: '3/4', f: 26 },
+  { k: 'toast',   c: 'Brindis',      l: 21, t: 66, w: 10.5, ar: '3/4', f: 12 },
+  { k: 'terrace', c: 'Terraza · 21:40', l: 73, t: 68, w: 19, ar: '3/2', f: 18 },
+  { k: 'cam',     c: 'Bravo X9',     l: 43.5, t: 76, w: 13, ar: '4/3', f: 34 },
 ];
+function TileImg({ t }) {
+  if (t.k === 'cam') return <a href="#comprar" aria-label="Ver la cámara Bravo X9" className="grid h-full w-full place-items-center bg-[#EADFD0]"><img src={IMG.marron} alt="Cámara Bravo X9" className="w-[92%] drop-shadow-[0_14px_14px_rgba(40,25,10,.3)]" /></a>;
+  return <img src={IMG[t.k]} alt={t.c + ', foto analógica'} className="h-full w-full object-cover" />;
+}
 function Hero() {
-  const [n, setN] = useState(0); const angle = useAngle();
-  useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => setN(x => (x + 1) % SLIDES.length), 6500); return () => clearInterval(t);
-  }, []);
+  const angle = useAngle(); const ref = useRef(null);
+  const move = e => { const el = ref.current; if (!el) return; el.style.setProperty('--mx', (e.clientX / innerWidth - .5).toFixed(3)); el.style.setProperty('--my', (e.clientY / innerHeight - .5).toFixed(3)); };
   return (
-    <section id="top" className="relative isolate h-[100svh] min-h-[640px] w-full bg-ink text-white">
-      <div className="hero-grain absolute inset-0 -z-10 overflow-hidden">
-        {SLIDES.map((sl, i) => (
-          <div key={sl.id} className={`slide absolute inset-0 ${i === n ? 'on' : ''}`} aria-hidden={i !== n}>
-            {i === n && <img key={'k' + n} src={IMG[sl.id]} alt={i === 0 ? 'Atardecer sobre el mar con nubes violetas, foto analógica' : sl.cap + ', foto analógica'} className="kb h-full w-full object-cover" style={{ objectPosition: sl.pos }} />}
-            {i !== n && <img src={IMG[sl.id]} alt="" className="h-full w-full object-cover" style={{ objectPosition: sl.pos }} />}
-          </div>
+    <section id="top" ref={ref} onMouseMove={move} className="relative overflow-hidden">
+      {/* escritorio: fotos repartidas */}
+      <div className="relative mx-auto hidden h-[calc(100svh-116px)] min-h-[740px] max-w-[1500px] md:block">
+        {TILES.map((t, i) => (
+          <figure key={t.k} className="bloom absolute" style={{ left: t.l + '%', top: t.t + '%', width: t.w + '%', animationDelay: 0.15 + i * 0.12 + 's' }}>
+            <div style={{ transform: `translate3d(calc(var(--mx,0) * ${t.f}px), calc(var(--my,0) * ${t.f}px), 0)`, transition: 'transform .8s cubic-bezier(.2,.7,.2,1)' }}>
+              <div className="tile relative overflow-hidden border border-ink/60 bg-ink/5" style={{ aspectRatio: t.ar }}><TileImg t={t} /></div>
+              <figcaption className="label mt-2 !text-[0.66rem] text-ink/70">({String(i + 1).padStart(2, '0')}){t.k === 'cam' ? ' ' + t.c : ''}</figcaption>
+            </div>
+          </figure>
         ))}
-        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/75 via-black/25 to-black/50" />
-      </div>
-
-      <div className="mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-24 pt-40 md:px-10 md:pb-28">
-        {angle && <p key={angle.tag} className="label fade mb-5 inline-block self-start bg-white px-3 py-1.5 text-ink">{angle.tag}</p>}
-        <p className="label up mb-6 flex items-center gap-4 text-white/85" style={{ animationDelay: '.1s' }}><span className="h-px w-10 bg-white/80" />Unplug · Capture · Cherish</p>
-        <h1 className="display up max-w-[18ch] text-[clamp(2.6rem,8vw,7.6rem)] leading-[.95]" style={{ animationDelay: '.25s', textShadow: '0 6px 50px rgba(0,0,0,.5)' }}>Mira el momento. <span className="block text-clay">No la pantalla.</span></h1>
-        <p className="up mt-8 max-w-xl text-lg text-white/85 sm:text-xl" style={{ animationDelay: '.45s' }}>{angle ? angle.line : 'La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día.'}</p>
-        <div className="up mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: '.6s' }}>
-          <a href="#comprar" className="btn shine flex min-h-[64px] items-center bg-clay px-10 text-lg font-semibold text-ink hover:bg-white">Consigue la tuya · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
-          <a href="#idea" className="btn hidden min-h-[64px] items-center border border-white/60 px-8 sm:flex text-lg font-medium text-white hover:bg-white hover:text-ink">Ver cómo se ve</a>
+        <div className="absolute left-1/2 top-[24%] z-10 w-[min(46%,700px)] -translate-x-1/2 text-center">
+          {angle && <p key={angle.tag} className="label fade mb-5 inline-block bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
+          <p className="label up mb-6 text-ink/60" style={{ animationDelay: '.1s' }}>Unplug · Capture · Cherish</p>
+          <h1 className="display up text-[clamp(2rem,3.35vw,3.6rem)]" style={{ animationDelay: '.25s' }}>Textura analógica.<span className="block text-clay">Cero revelados.</span></h1>
+          <p className="up mx-auto mt-6 max-w-sm text-[15px] text-ink/70" style={{ animationDelay: '.45s' }}>{angle ? angle.line : 'La cámara con alma de carrete: grano, color y el gusto de esperar a ver las fotos. Sin gastar un euro en revelar.'}</p>
+          <div className="up mt-7" style={{ animationDelay: '.6s' }}>
+            <a href="#comprar" className="btn shine inline-flex min-h-[60px] items-center bg-clay px-9 text-base font-semibold text-ink hover:bg-ink hover:text-bone">Consigue la tuya · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+          </div>
         </div>
       </div>
 
-      {/* contador de fotograma */}
-      <div className="label absolute right-5 top-36 z-10 hidden items-center gap-3 text-white/85 md:right-10 md:flex">
-        {SLIDES.map((sl, i) => <button key={sl.id} onClick={() => setN(i)} aria-label={'Foto ' + (i + 1)} className={`h-[2px] transition-all duration-500 ${i === n ? 'w-12 bg-clay' : 'w-6 bg-white/50 hover:bg-white'}`} />)}
-        <span key={n} className="fade ml-2">{String(n + 1).padStart(2, '0')}/{String(SLIDES.length).padStart(2, '0')} · {SLIDES[n].cap}</span>
+      {/* móvil: texto + grid escalonado */}
+      <div className="px-5 pb-16 pt-10 md:hidden">
+        {angle && <p key={angle.tag} className="label fade mb-4 inline-block bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
+        <p className="label up mb-4 text-ink/60">Unplug · Capture · Cherish</p>
+        <h1 className="display up text-[2.6rem]" style={{ animationDelay: '.15s' }}>Textura analógica.<span className="block text-clay">Cero revelados.</span></h1>
+        <p className="up mt-5 text-[16px] text-ink/70" style={{ animationDelay: '.3s' }}>{angle ? angle.line : 'La cámara con alma de carrete: grano, color y el gusto de esperar a ver las fotos. Sin gastar un euro en revelar.'}</p>
+        <a href="#comprar" className="btn shine up mt-7 flex min-h-[60px] w-full items-center justify-center bg-clay text-base font-semibold text-ink" style={{ animationDelay: '.45s' }}>Consigue la tuya · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+        <div className="mt-14 grid grid-cols-2 gap-x-4 gap-y-6">
+          {TILES.slice(0, 6).map((t, i) => (
+            <figure key={t.k} className={`bloom ${i % 2 ? 'mt-12' : ''}`} style={{ animationDelay: 0.3 + i * 0.1 + 's' }}>
+              <div className="overflow-hidden border border-ink/60" style={{ aspectRatio: t.ar === '4/3' || t.ar === '3/2' ? '4/5' : t.ar }}>{t.k === 'cam' ? <TileImg t={t} /> : <img src={IMG[t.k]} alt={t.c + ', foto analógica'} className="h-full w-full object-cover" />}</div>
+              <figcaption className="label mt-2 !text-[0.66rem] text-ink/70">({String(i + 1).padStart(2, '0')})</figcaption>
+            </figure>
+          ))}
+        </div>
       </div>
-      <a href="#idea" aria-label="Bajar" className="absolute bottom-8 left-1/2 hidden h-14 w-px -translate-x-1/2 overflow-hidden bg-white/25 md:block"><span className="block h-full w-px bg-white" style={{ animation: 'scrollcue 2.2s ease-in-out infinite' }} /></a>
-
-      {/* la cámara asoma por debajo del hero */}
-      <a href="#comprar" aria-label="Ver la cámara Bravo X9" className="group absolute -bottom-10 right-[2%] z-20 w-[min(56vw,480px)] md:-bottom-20 md:right-[5%]">
-        <div className="floaty"><img src={IMG.marron} alt="Cámara Bravo X9" className="w-full drop-shadow-[0_40px_36px_rgba(0,0,0,.5)] transition duration-700 group-hover:-rotate-3 group-hover:scale-[1.04]" /></div>
-      </a>
     </section>
   );
 }
 
-/* ============ Manifiesto + banda de fotos ============ */
+/* ============ Manifiesto ============ */
 function Statement() {
   return (
-    <section id="idea" className="mx-auto max-w-[1400px] px-5 pb-12 pt-40 md:px-10 md:pt-56">
+    <section id="idea" className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-44">
       <Reveal><p className="label mb-8 text-ink/55">La idea</p>
-        <h2 className="display max-w-5xl text-4xl sm:text-6xl lg:text-7xl">Hacemos mil fotos al año y no vivimos <span className="text-clay">ninguna</span>.</h2></Reveal>
-      <Reveal delay={150}><p className="mt-12 max-w-xl text-xl leading-relaxed text-ink/75">Sacas el móvil, encuadras, repites, miras si has salido bien… y el momento ya pasó. La X9 quita la pantalla del medio: lo que ves es lo que ocurre, y lo que captas es una sorpresa que te espera en la tarjeta.</p></Reveal>
-    </section>
-  );
-}
-function Band() {
-  const ph = [['terrace', 'Terraza · 21:40', 'aspect-[4/5] md:aspect-[3/4]'], ['toast', 'Brindis', 'aspect-[4/5] md:aspect-[3/4]'], ['powder', 'Holi', 'aspect-[4/5] md:aspect-[3/4]']];
-  return (
-    <section aria-label="Fotos" className="grid grid-cols-1 gap-1 sm:grid-cols-3">
-      {ph.map(([k, c, a], i) => <Reveal key={k} delay={i * 130}><Photo src={IMG[k]} alt={c + ', foto analógica'} className={a} caption={c} /></Reveal>)}
+        <h2 className="display max-w-5xl text-4xl sm:text-6xl lg:text-7xl">Todo el feeling del carrete. <span className="text-clay">Ninguna factura de revelado.</span></h2></Reveal>
+      <div className="mt-14 grid gap-8 md:grid-cols-2 md:gap-16">
+        <Reveal delay={120}><p className="text-xl leading-relaxed text-ink/75">Una cámara desechable parece barata hasta que la revelas, y cada foto cuesta dinero. La X9 te da lo que buscas de lo analógico: el grano, los colores, la imperfección y esa espera por ver cómo salió todo.</p></Reveal>
+        <Reveal delay={240}><p className="text-xl leading-relaxed text-ink/75">Sin pantalla no hay segundas oportunidades, y por USB-C las fotos pasan a tu móvil al momento. Sin laboratorio, sin esperas y sin coste por foto.</p></Reveal>
+      </div>
     </section>
   );
 }
@@ -276,7 +285,7 @@ function Buy({ note, onNote }) {
   };
   const pick = i => { setCi(i); setView('front'); };
   return (
-    <section id="comprar" className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 pt-32 md:px-10 lg:grid-cols-12 lg:gap-20 lg:pb-36 lg:pt-14">
+    <section id="comprar" className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 pt-8 md:px-10 lg:grid-cols-12 lg:gap-20 lg:pb-36 lg:pt-14">
       <Reveal className="lg:sticky lg:top-24 lg:col-span-7 lg:self-start">
         <div className="stage relative grid aspect-[4/3.3] place-items-center overflow-hidden transition-colors duration-700 sm:aspect-[4/3]" style={{ background: c.bg }}
           onMouseMove={move} onMouseLeave={() => setTilt({ x: 0, y: 0 })}>
@@ -302,7 +311,7 @@ function Buy({ note, onNote }) {
         <p className="label flex items-center gap-3"><span className="dotpulse h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · entrega en 24–72 h</p>
         <h1 className="display mt-6 text-5xl sm:text-6xl">Bravo X9</h1>
         {angle && <p key={angle.tag} className="label fade mt-6 inline-block bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
-        <p key={angle ? angle.tag : 'd'} className="fade mt-5 text-lg text-ink/75">{angle ? angle.line : <>La cámara digital retro sin pantalla. <span className="text-clay">Mira el momento, no la pantalla.</span></>}</p>
+        <p key={angle ? angle.tag : 'd'} className="fade mt-5 text-lg text-ink/75">{angle ? angle.line : <>La cámara con alma analógica y sin pantalla. <span className="text-clay">El grano de siempre, sin pagar revelado.</span></>}</p>
 
         <p className="mt-10 flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <span className="display text-5xl">{money(total)}</span>
@@ -362,7 +371,7 @@ function Buy({ note, onNote }) {
           {['Envío gratis desde 40 €', '30 días de devolución', '12 meses de garantía', 'Pago seguro'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
         </ul>
         <ul className="mt-8 grid gap-3.5 border-t border-[color:var(--line)] pt-8 text-[15px]">
-          {['Sin pantalla ni ajustes: apuntas y disparas', 'Revelado gratis: pasas las fotos por USB-C, sin apps ni cuentas', '8 MP · flash LED · estilos de película'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
+          {['Textura y color de carrete, sin pagar un solo revelado', 'Sin pantalla ni ajustes: apuntas, disparas y descubres después', '8 MP · flash LED · 3 estilos de película · USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
         </ul>
         <p className="mt-8 border-t border-[color:var(--line)] pt-6 text-sm text-ink/70"><span className="label mr-2 text-ink">En la caja</span>Cámara, manual y cable USB-C. Funciona al sacarla de la caja.</p>
         <p className="mt-6 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
@@ -382,10 +391,10 @@ function Photo({ src, alt, className = '', caption }) {
 }
 function Features() {
   const f = [
-    ['Nada que perfeccionar', 'Sin pantalla no hay segundas oportunidades. Vives el momento y descubres las fotos después.'],
     ['Revelado gratis', 'Una desechable se paga cada vez que la revelas. Aquí pasas las fotos por USB-C y ya está.'],
+    ['Textura de carrete', 'Retro, Classic y Mono: grano, color y contraste de película cargados en la cámara.'],
+    ['Sin pantalla', 'No hay nada que perfeccionar. Vives el momento y descubres las fotos después.'],
     ['Se usa mil veces', 'No la tiras: la recargas y vuelves a usarla en cada viaje, fiesta o domingo.'],
-    ['Estilos de película', 'Retro, Classic y Mono cargados en la cámara. Cambias de estilo como de carrete.'],
     ['A prueba de peques', 'Un botón, un selector de flash y una Micro SD que solo sale con un destornillador.'],
     ['Flash LED y 95 g', 'Flash de 2×3 W para interiores y fiestas. Cabe en el bolsillo y carga por USB-C.'],
   ];
@@ -393,7 +402,7 @@ function Features() {
   return (
     <section id="caracteristicas" className="border-t border-[color:var(--line)]">
       <div className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-40">
-        <Reveal><p className="label mb-6 text-ink/55">Características</p><h2 className="display max-w-3xl text-4xl sm:text-6xl">Hecha para disparar, no para configurar.</h2></Reveal>
+        <Reveal><p className="label mb-6 text-ink/55">Características</p><h2 className="display max-w-3xl text-4xl sm:text-6xl">El carrete, sin la factura.</h2></Reveal>
         <dl className="mt-20 grid gap-x-14 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
           {f.map(([t, d], i) => (
             <Reveal key={t} delay={(i % 3) * 120}>
@@ -466,6 +475,7 @@ function Acc({ q, a }) {
 function SpecsFaq() {
   const qs = [
     ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas al móvil o al ordenador.'],
+    ['¿Es una cámara analógica de verdad?', 'Es una cámara digital (sensor de 8 MP) hecha para sentirse analógica: sin pantalla, con grano, color de película y la espera de descubrir las fotos. No lleva carrete ni hay que revelar nada.'],
     ['¿Tengo que pagar revelado?', 'No. A diferencia de una cámara desechable, no hay laboratorio: conectas la cámara y las fotos pasan a tu móvil u ordenador sin coste por foto.'],
     ['¿Se puede reutilizar?', 'Sí. Se recarga por USB-C y sirve para tantas fotos como quepan en la tarjeta. No se tira después de usarla.'],
     ['¿Cómo saco las fotos?', 'Por USB-C con el cable incluido o sacando la Micro SD con un destornillador. Son JPG normales, sin app ni cuenta.'],
@@ -542,17 +552,15 @@ function EmailPopup() {
 /* ============ CTA final + footer ============ */
 function Final() {
   return (
-    <section className="relative isolate bg-ink text-bone">
-      <div className="hero-grain absolute inset-0 -z-10 overflow-hidden">
-        <img src={IMG.h_valley} alt="Valle con río y montañas al amanecer, foto analógica" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/25 to-black/30" />
+    <section className="bg-ink text-bone">
+      <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-12 px-5 py-28 md:flex-row md:items-center md:px-10 lg:py-40">
+        <Reveal><h2 className="display max-w-2xl text-4xl sm:text-6xl">El feeling de lo analógico, <span className="text-clay">sin gastar en revelar.</span></h2></Reveal>
+        <Reveal delay={150} className="w-full md:w-auto">
+          <a href="#comprar" className="btn shine flex min-h-[68px] w-full items-center justify-center bg-clay px-12 text-lg font-semibold text-ink hover:bg-bone md:w-auto">Elegir mi color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+        </Reveal>
       </div>
-      <div className="mx-auto flex min-h-[80svh] max-w-[1400px] flex-col justify-end gap-10 px-5 pb-20 pt-40 md:px-10">
-        <Reveal><h2 className="display max-w-4xl text-4xl sm:text-6xl lg:text-7xl">La próxima vez que importe, <span className="text-clay">no mires la pantalla.</span></h2></Reveal>
-        <Reveal delay={150}><a href="#comprar" className="btn shine inline-flex min-h-[68px] w-full items-center justify-center bg-clay px-12 text-lg font-semibold text-ink hover:bg-white sm:w-auto">Elegir mi color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a></Reveal>
-      </div>
-      <div className="border-t border-white/20 bg-ink">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6 px-5 py-10 text-sm text-bone/60 md:px-10">
+      <div className="border-t border-bone/15">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-6 px-5 py-10 text-sm text-bone/60 md:px-10">
           <p>© {new Date().getFullYear()} Bravo · Fotografías de Unsplash con tratamiento analógico</p>
           <nav className="flex gap-8" aria-label="Legal"><a href="#top" className="link-u">Envíos</a><a href="#top" className="link-u">Devoluciones</a><a href="#top" className="link-u">Privacidad</a><a href="#top" className="link-u">Términos</a></nav>
         </div>
@@ -566,7 +574,7 @@ function StickyBar() {
   useEffect(() => {
     const el = document.getElementById('comprar'); if (!el) return;
     let past = false, onBuy = false; const upd = () => setShow(past && !onBuy);
-    const sc = () => { past = scrollY > innerHeight * 0.9; upd(); };
+    const sc = () => { past = scrollY > innerHeight * 0.6; upd(); };
     const io = new IntersectionObserver(([e]) => { onBuy = e.isIntersecting; upd(); }, { threshold: 0.05 });
     io.observe(el); addEventListener('scroll', sc, { passive: true }); sc();
     return () => { io.disconnect(); removeEventListener('scroll', sc); };
@@ -585,7 +593,7 @@ function App() {
   const [note, setNote] = useState('');
   return (
     <div className="overflow-x-clip">
-      <ScrollBar /><Header /><main><Hero /><Statement /><Band /><Buy note={note} onNote={setNote} /><Press /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
+      <ScrollBar /><Header /><main><Hero /><Statement /><Buy note={note} onNote={setNote} /><Press /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
     </div>
   );
 }
