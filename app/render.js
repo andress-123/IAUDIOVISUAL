@@ -56,6 +56,10 @@ if (fs.existsSync(fotosDir)) for (const f of fs.readdirSync(fotosDir).filter((n)
   for (const seed of [1, 2, 3]) jobs.push([`figura-${path.parse(f).name}-${seed}`, { comp: 'figura', seed, foto: 'data:image/' + path.extname(f).slice(1).replace('jpg', 'jpeg') + ';base64,' + fs.readFileSync(path.join(fotosDir, f)).toString('base64') }]);
 const only = process.argv[2];
 if (only) for (let i = jobs.length - 1; i >= 0; i--) if (!jobs[i][0].includes(only)) jobs.splice(i, 1);
+// Globo: 4 ejercicios (abstracto -> icónico). Usa app/fotos/tierra.png solo para sacar la máscara de continentes (nivel 4)
+const tierraPng = path.join(fotosDir, 'tierra.png');
+const tierraUri = fs.existsSync(tierraPng) ? 'data:image/png;base64,' + fs.readFileSync(tierraPng).toString('base64') : undefined;
+[1, 2, 3, 4, 5].forEach((n) => jobs.push([`globo-0${n}`, { comp: 'globo', nivel: n, seed: 5, w: 1200, h: 1200, foto: tierraUri }]));
 (async () => {
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch({ executablePath: process.env.CHROME || undefined });

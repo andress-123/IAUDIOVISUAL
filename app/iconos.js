@@ -59,7 +59,7 @@
     { id: 'interes', nombre: 'Interés compuesto', rot: [0.35, -0.5, 0], build() {    // bola de nieve que va creciendo
       return [
         { faces: icosphere([-1.45, -0.95, 0.5], 0.36, 1), fams: ['yellow', 'red'], axis: 1, rev: true },
-        { faces: icosphere([-0.7, -0.4, 0.3], 0.66, 1), fams: ['lime', 'green'], axis: 1, rev: true },
+        { faces: icosphere([-0.7, -0.4, 0.3], 0.66, 1), fams: ['green', 'cyan'], axis: 1, rev: true },
         { faces: icosphere([0.55, 0.3, 0], 1.1, 1), fams: ['cyan', 'blue'], axis: 1, rev: true },
       ]; } },
     { id: 'volatilidad', nombre: 'Volatilidad', rot: [0.25, -0.55, 0.25], build() {     // muelle
@@ -78,12 +78,12 @@
       const hook = []; for (let i = 0; i <= 14; i++) { const f = (i / 14) * Math.PI; hook.push([-0.3 + 0.3 * Math.cos(f), -1.05 - 0.3 * Math.sin(f), 0]); }
       const hookF = sweep(hook, (i) => [Math.cos((i / 14) * Math.PI), -Math.sin((i / 14) * Math.PI), 0], 0.045, 0.045, false);
       return [
-        { faces: canopyA, fams: ['blue', 'cyan'], axis: 1, rev: false }, { faces: canopyB, fams: ['cyan', 'lime'], axis: 1, rev: false },
+        { faces: canopyA, fams: ['blue', 'cyan'], axis: 1, rev: false }, { faces: canopyB, fams: ['cyan', 'green'], axis: 1, rev: false },
         { faces: shaft.concat(hookF), fams: ['yellow', 'red'], axis: 1, rev: false },
       ]; } },
     { id: 'deuda', nombre: 'Deuda', rot: [0.5, -0.4, -0.42], build() {       // cadena de eslabones
       const { P, N } = stadium(0.5, 0.95), rotX = (v) => [v[0], -v[2], v[1]], links = [];
-      [[-1.55, false, ['yellow', 'red']], [0, true, ['blue', 'cyan']], [1.55, false, ['lime', 'green']]].forEach(([x, turned, fams]) => {
+      [[-1.55, false, ['yellow', 'red']], [0, true, ['blue', 'cyan']], [1.55, false, ['green', 'cyan']]].forEach(([x, turned, fams]) => {
         const PP = P.map((p) => { const q = turned ? rotX(p) : p; return [q[0] + x, q[1], q[2]]; }), NN = N.map((v) => (turned ? rotX(v) : v));
         links.push({ faces: sweep(PP, (i) => NN[i], 0.13, 0.13, true), fams, axis: 0, rev: false });
       });
@@ -91,7 +91,7 @@
     { id: 'liquidez', nombre: 'Liquidez', rot: [0.2, 0.5, 0.18], build() {      // gota
       const prof = []; for (let i = 0; i <= 26; i++) { const th = Math.PI - (i / 26) * Math.PI;                           // de abajo (π) a la punta (0)
         prof.push([0.74 * Math.sin(th) * Math.pow(Math.sin(th / 2), 1.35), 1.15 * Math.cos(th)]); }
-      return [{ faces: lathe(prof, 10, (p) => p), fams: ['blue', 'cyan', 'lime'], axis: 1, rev: false }]; } },
+      return [{ faces: lathe(prof, 10, (p) => p), fams: ['blue', 'cyan', 'green'], axis: 1, rev: false }]; } },
     { id: 'ahorro', nombre: 'Ahorro paciente', rot: [0.3, -0.5, 0.12], build() {   // bellota
       const body = []; for (let i = 0; i <= 14; i++) { const s = i / 14; body.push([0.6 * Math.pow(Math.sin(Math.PI * 0.5 * Math.min(1, s * 1.12)), 0.8), -1.05 + 1.2 * s]); }
       const cap = []; for (let i = 0; i <= 10; i++) { const a = (i / 10) * (Math.PI / 2); cap.push([0.7 * Math.cos(a) + 0.0, 0.1 + 0.6 * Math.sin(a)]); }
@@ -99,8 +99,8 @@
       const stem = sweep([[0, 0.66, 0], [0.05, 0.9, 0], [0.16, 1.08, 0]], () => [1, 0, 0], 0.06, 0.06, false);
       return [
         { faces: lathe(body, 9, (p) => p), fams: ['yellow'], axis: 1, rev: true },
-        { faces: lathe(cap, 9, (p) => p), fams: ['green', 'lime'], axis: 1, rev: false },
-        { faces: stem, fams: ['green', 'lime'], axis: 1, rev: false },
+        { faces: lathe(cap, 9, (p) => p), fams: ['green', 'cyan'], axis: 1, rev: false },
+        { faces: stem, fams: ['green', 'cyan'], axis: 1, rev: false },
       ]; } },
   ];
 

@@ -1,16 +1,18 @@
 /* Motor generativo — identidad "Tener más / Expandirse"
-   Paleta y formas leídas de las láminas de referencia (hex aproximados: confirmar con la guideline). */
+   PALETA EXACTA tomada del SVG de referencia (Illustrator): cada familia es una escalera fija de 8 pasos.
+   MODOS DE FUSIÓN de la referencia: hard-light (casi todo), overlay (algunos grupos), capa aislada sin fondo propio. */
 (function (root) {
-  // Cada familia: color base (el de la paleta) -> color final del degradado (más saturado)
-  const FAMILIES = {
-    blue:   { name: 'Azul',        base: '#009EDE', end: '#0050FF' },
-    cyan:   { name: 'Cian',        base: '#5CD0FF', end: '#00F5FF' },
-    green:  { name: 'Verde',       base: '#5AB32A', end: '#00E67A' },
-    lime:   { name: 'Verde claro', base: '#99E371', end: '#E6FF8A' },
-    yellow: { name: 'Amarillo',    base: '#F4C00E', end: '#FF6A00' },
-    red:    { name: 'Rojo',        base: '#D02E26', end: '#FF00B4' },
+  const STEPS = {
+    blue:   ['#00a0e3', '#0098e7', '#0091eb', '#0089ef', '#0081f3', '#0079f7', '#0072fb', '#006aff'],
+    cyan:   ['#5dcfff', '#50d5ff', '#42daff', '#35e0ff', '#28e5ff', '#1bebff', '#0df0ff', '#00f6ff'],
+    green:  ['#2bb500', '#25bc12', '#1fc424', '#19cb36', '#12d247', '#0cd959', '#06e16b', '#00e87d'],
+    yellow: ['#fdbc00', '#fdaf00', '#fea200', '#fe9500', '#fe8700', '#fe7a00', '#ff6d00', '#ff6000'],
+    red:    ['#e20613', '#e6052b', '#ea0443', '#ee035b', '#f30374', '#f7028c', '#fb01a4', '#ff00bc'],
+    gray:   ['#cbcbcb', '#c4c4c4', '#bcbcbc', '#b5b5b5', '#aeaeae', '#a7a7a7', '#9f9f9f', '#989898'],
   };
-  const ORDER = ['blue', 'cyan', 'green', 'lime', 'yellow', 'red'];
+  const FAMILIES = {};
+  Object.keys(STEPS).forEach((k) => { FAMILIES[k] = { name: k, steps: STEPS[k], base: STEPS[k][0], end: STEPS[k][7] }; });
+  const ORDER = ['blue', 'cyan', 'green', 'yellow', 'red'];          // el gris es neutro: no entra en las rotaciones de color
 
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -37,7 +39,8 @@
             toSrgb(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)];
   };
   const mix = (c1, c2, t) => { const A = toLab(c1), B = toLab(c2); return fromLab(A.map((v, i) => lerp(v, B[i], t))); };
-  const grad = (fam, t) => mix(hex(FAMILIES[fam].base), hex(FAMILIES[fam].end), clamp(t));
+  // t en [0,1] recorre los 8 pasos exactos de la familia (interpolando entre pasos contiguos)
+  const grad = (fam, t) => { const st = FAMILIES[fam].steps, x = clamp(t) * (st.length - 1), i = Math.min(st.length - 2, Math.floor(x)); return mix(hex(st[i]), hex(st[i + 1]), x - i); };
 
   function rng(seed) { // mulberry32
     let a = seed >>> 0;
@@ -78,12 +81,12 @@ const ramp = (fams, t) => {
   // Recorridos de la paleta ordenados de OSCURO a CLARO: el tono de la foto avanza por el degradado (vivo, sin sombras sucias)
   // y la forma se lee porque la claridad crece siempre en el mismo sentido.
   const PATHS = [
-    ['#0050FF', '#009EDE', '#5AB32A', '#99E371', '#F4C00E'],             // azul -> azul claro -> verde -> lima -> amarillo
-    ['#0050FF', '#009EDE', '#5CD0FF', '#99E371', '#E6FF8A'],             // azul -> cian -> lima
-    ['#D02E26', '#FF6A00', '#F4C00E', '#99E371'],                         // rojo -> naranja -> amarillo -> lima
-    ['#0050FF', '#009EDE', '#5AB32A', '#00E67A', '#E6FF8A'],             // azul -> verde -> verde claro
-    ['#D02E26', '#FF00B4', '#FF6A00', '#F4C00E', '#E6FF8A'],             // rojo -> rosa -> naranja -> amarillo (como las láminas)
-    ['#0050FF', '#00E67A', '#99E371', '#F4C00E'],                         // azul -> verde menta -> lima -> amarillo
+    ['#006aff', '#00a0e3', '#2bb500', '#00e87d', '#fdbc00'],             // azul -> verde -> amarillo
+    ['#006aff', '#00a0e3', '#5dcfff', '#00f6ff'],                         // azul -> cian
+    ['#e20613', '#ff6000', '#fdbc00'],                                    // rojo -> naranja -> amarillo
+    ['#006aff', '#00a0e3', '#2bb500', '#00e87d', '#00f6ff'],             // azul -> verde -> cian claro
+    ['#e20613', '#ff00bc', '#ff6000', '#fdbc00'],                         // rojo -> magenta -> naranja -> amarillo (como las láminas)
+    ['#006aff', '#00e87d', '#fdbc00'],                                    // azul -> verde -> amarillo
   ];
   // mezcla en OKLCH: interpola luminosidad y croma y gira el matiz por el camino corto -> el degradado se mantiene saturado (azul->verde pasa por cian, no por gris)
   const mixLch = (c1, c2, t) => {
@@ -95,7 +98,7 @@ const ramp = (fams, t) => {
   };
   const pathColor = (stops, t) => { const n = stops.length - 1, x = clamp(t) * n, i = Math.min(n - 1, Math.floor(x)); return mixLch(hex(stops[i]), hex(stops[i + 1]), x - i); };
   // rampas de 2-3 familias SEGURAS: avanzan por matices vecinos, así las transiciones no pasan por grises
-  const SAFE_RAMPS = [['blue', 'green', 'yellow'], ['blue', 'cyan', 'green'], ['cyan', 'green', 'lime'], ['green', 'lime', 'yellow'], ['lime', 'yellow', 'red'], ['green', 'yellow', 'red']];
+  const SAFE_RAMPS = [['blue', 'green', 'yellow'], ['blue', 'cyan', 'green'], ['cyan', 'green', 'yellow'], ['green', 'yellow', 'red'], ['blue', 'cyan', 'yellow'], ['yellow', 'red']];
   const otherFam = (R, f) => { let o; do { o = R.pick(ORDER); } while (o === f); return o; };
 
   /* ---------- Formas ---------- */
@@ -203,7 +206,7 @@ const ramp = (fams, t) => {
   // Bandas dentadas apiladas (franjas de la lámina 10)
   function bands(ctx, W, H, o) {
     const R = o.R, N = noise2(o.seed + 3);
-    const fams = o.fams || R.pick([['green', 'cyan', 'blue', 'lime'], ['yellow', 'red', 'blue', 'cyan'], ORDER]);
+    const fams = o.fams || R.pick([['green', 'cyan', 'blue'], ['yellow', 'red', 'blue', 'cyan'], ORDER]);
     const cell = Math.round(H / 34);
     const nb = fams.length;
     const bandH = H / (nb + 1);
@@ -520,7 +523,7 @@ const ramp = (fams, t) => {
 
   // OPTIMISMO: cruces que ascienden y crecen hacia delante; el brazo vertical se estira hacia arriba y se aclara
   function optimismo(ctx, W, H, o) {
-    const R = o.R, n = 6, seqH = ['yellow', 'lime', 'green', 'cyan', 'blue'], seqV = ['red', 'yellow', 'lime', 'cyan', 'yellow'];
+    const R = o.R, n = 6, seqH = ['yellow', 'green', 'cyan', 'blue'], seqV = ['red', 'yellow', 'green', 'cyan'];
     const off = R.range(-0.03, 0.03);
     for (let i = 0; i < n; i++) {
       const t = i / (n - 1), k = Math.min(seqH.length - 1, Math.floor(t * seqH.length));
@@ -550,13 +553,13 @@ const ramp = (fams, t) => {
 
   // TRABAJO DURO: cruces apiladas como ladrillos en una pirámide; la última fila sigue a medio hacer
   function trabajo(ctx, W, H, o) {
-    const R = o.R, rowsN = 6, cs = H * 0.09, pitch = cs * 2, seq = ['red', 'yellow', 'lime', 'green', 'cyan', 'blue'];
-    const vs = R.pick([0, 2, 4]);
+    const R = o.R, rowsN = 5, cs = H * 0.09, pitch = cs * 2, seq = ['red', 'yellow', 'green', 'cyan', 'blue'];
+    const vs = R.pick([0, 1, 2]);
     for (let r = 0; r < rowsN; r++) {
       const count = 8 - r, y = H * 0.88 - r * cs * 1.4, x0 = W / 2 - ((count - 1) / 2) * pitch;
       for (let c = 0; c < count; c++) {
         const half = r === rowsN - 1 && c >= count - 2;                         // fila de arriba sin terminar
-        plus(ctx, x0 + c * pitch, y, cs, { R, famH: seq[r], famV: seq[(r + 1 + vs) % 6], L1: 1, L2: 1, U1: half ? 0.2 : 1, U2: half ? 0.2 : 1,
+        plus(ctx, x0 + c * pitch, y, cs, { R, famH: seq[r], famV: seq[(r + 1 + vs) % seq.length], L1: 1, L2: 1, U1: half ? 0.2 : 1, U2: half ? 0.2 : 1,
           T1: 0.5, T2: 0.5, steps: 4, revH: r % 2 === 0, revV: false });
       }
     }
@@ -564,10 +567,10 @@ const ramp = (fams, t) => {
 
   // CALMA: pocas cruces, alineadas en el horizonte, brazos largos y horizontales, muchos pasos suaves y mucho aire
   function calma(ctx, W, H, o) {
-    const R = o.R, cool = ['blue', 'cyan', 'green', 'lime'], n = 3, y = H * 0.5;
+    const R = o.R, cool = ['blue', 'cyan', 'green'], n = 3, y = H * 0.5;
     const picks = [R.pick(cool), R.pick(cool), R.pick(cool)];
     for (let i = 0; i < n; i++) {
-      plus(ctx, W * (0.2 + 0.3 * i), y, H * 0.2, { R, famH: picks[i], famV: cool[(cool.indexOf(picks[i]) + 1) % 4], L1: 1.25, L2: 1.25, U1: 0.6, U2: 0.6, T1: 0.34, T2: 0.1, steps: 14, revH: false, revV: false });
+      plus(ctx, W * (0.2 + 0.3 * i), y, H * 0.2, { R, famH: picks[i], famV: cool[(cool.indexOf(picks[i]) + 1) % cool.length], L1: 1.25, L2: 1.25, U1: 0.6, U2: 0.6, T1: 0.34, T2: 0.1, steps: 14, revH: false, revV: false });
     }
     strips(ctx, 'cyan', W * 0.08, H * 0.8, W * 0.84, H * 0.03, 28, true, false, 0, R);   // línea de horizonte
   }
@@ -586,11 +589,11 @@ const ramp = (fams, t) => {
   // UNIÓN: un anillo de cruces cuyos brazos se solapan con los vecinos y mezclan sus colores
   function union(ctx, W, H, o) {
     const R = o.R, n = R.pick([6, 7, 8]), rad = H * 0.3, cx = W / 2, cy = H / 2, chord = 2 * rad * Math.sin(Math.PI / n);
-    const st = R.int(0, 5);
+    const st = R.int(0, ORDER.length - 1);
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 - Math.PI / 2;
       plus(ctx, cx + rad * Math.cos(a), cy + rad * Math.sin(a), chord * 0.62,
-        { R, famH: ORDER[(st + i) % 6], famV: ORDER[(st + i + 3) % 6], rot: a + Math.PI / 2, L1: 1, L2: 1, U1: 0.55, U2: 0.55, T1: 0.34, T2: 0.28, steps: 7, revH: false, revV: false });
+        { R, famH: ORDER[(st + i) % ORDER.length], famV: ORDER[(st + i + 2) % ORDER.length], rot: a + Math.PI / 2, L1: 1, L2: 1, U1: 0.55, U2: 0.55, T1: 0.34, T2: 0.28, steps: 7, revH: false, revV: false });
     }
   }
 
@@ -777,6 +780,7 @@ const ramp = (fams, t) => {
       if (cnt > 18) { subj[r * cols + c] = 1; mean[r * cols + c] = [rr / cnt, gg / cnt, bb / cnt]; }
     }
     const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    const nearestStep = (c) => { let best = null; for (const f of Object.keys(FAMILIES)) FAMILIES[f].steps.forEach((hx, i) => { const d = dist(hex(hx), c); if (!best || d < best.d) best = { f, i, d }; }); return best; };
     const tonal = (c, d) => (d >= 0 ? mix(c, [255, 255, 255], d) : shade(c, -d));          // d>0 aclara, d<0 oscurece (sin ensuciar)
     const GR = rng((o.seed || 1) * 7717 + 3), GN = noise2(o.seed + 555), PR = rng((o.seed || 1) * 104729 + 7);
     const colMap = new Map(), used = new Uint8Array(n);
@@ -792,12 +796,13 @@ const ramp = (fams, t) => {
       if (GR() < gapP(c, r, sz)) return;                                                   // hueco en blanco
       if (sz < 4) { ctx.fillStyle = css(m); ctx.fillRect(x0, y0, w, h); return; }
       // degradado dentro del bloque: tiras con el color real de cada franja + un cambio de tono (más claro hacia la luz, arriba/izquierda)
-      const kk = sz >= 8 ? 6 : 4, vert = GR() < 0.85;
+      const kk = sz >= 8 ? 6 : 4, vert = GR() < 0.85, near = nearestStep(m);
       for (let i = 0; i < kk; i++) {
         let sc = [0, 0, 0], sn = 0;
         for (let dr = 0; dr < sz; dr++) for (let dc = 0; dc < sz; dc++) { const t = (vert ? dc : dr) / sz; if (Math.floor(t * kk) !== i) continue; const v = mean[(r + dr) * cols + c + dc]; if (v) { sc = [sc[0] + v[0], sc[1] + v[1], sc[2] + v[2]]; sn++; } }
         const base = sn ? sc.map((v) => v / sn) : m;
-        ctx.fillStyle = css(tonal(base, (0.5 - i / (kk - 1)) * 0.2));
+        // si el bloque está cerca de la paleta, el degradado avanza por los pasos exactos de su familia; si es una mezcla (fusión), cambio de tono
+        ctx.fillStyle = near && near.d < 70 ? FAMILIES[near.f].steps[clamp(near.i + Math.round((i / (kk - 1) - 0.5) * 4), 0, 7)] : css(tonal(base, (0.5 - i / (kk - 1)) * 0.2));
         if (vert) { const a = x0 + Math.round(w * i / kk), b = x0 + Math.round(w * (i + 1) / kk); ctx.fillRect(a, y0, b - a, h); }
         else { const a = y0 + Math.round(h * i / kk), b = y0 + Math.round(h * (i + 1) / kk); ctx.fillRect(x0, a, w, b - a); }
       }
@@ -872,7 +877,7 @@ const ramp = (fams, t) => {
   // Cruz de rectángulos escalonados (lámina del baloncesto): brazos de rectángulos sueltos, desalineados, que SE SOLAPAN en el centro y se mezclan; algún brazo es un bloque plano grande
   function escalera(ctx, W, H, o) {
     const R = o.R, S = H * 0.4, cx = W * 0.5 + R.range(-0.05, 0.05) * W, cy = H * 0.5 + R.range(-0.03, 0.03) * H;
-    const st = R.int(0, 5), dir = R() < 0.5 ? 1 : -1, f = [0, 1, 2, 3].map((k) => ORDER[(((st + dir * k) % 6) + 6) % 6]), flat = R.int(0, 3);   // 4 familias CONSECUTIVAS: al solaparse se mezclan limpias; un brazo es un bloque plano grande
+    const st = R.int(0, ORDER.length - 1), dir = R() < 0.5 ? 1 : -1, f = [0, 1, 2, 3].map((k) => ORDER[(((st + dir * k) % ORDER.length) + ORDER.length) % ORDER.length]), flat = R.int(0, 3);   // 4 familias CONSECUTIVAS: al solaparse se mezclan limpias; un brazo es un bloque plano grande
     const m = R.int(5, 7), cw = S * R.range(0.15, 0.2);
     // brazo izquierdo: columnas cuya altura crece hacia el centro (el degradado avanza hacia dentro); llega hasta pasado el centro
     if (flat !== 0) for (let i = 0; i < m; i++) { const g = i / (m - 1), hh = S * (0.2 + 0.7 * Math.pow(g, 1.1)); ctx.fillStyle = rgb(grad(f[0], g)); ctx.fillRect(cx + S * 0.06 - (m - i) * cw, cy - hh / 2 + R.range(-0.03, 0.03) * S, cw + 0.6, hh); }
@@ -903,8 +908,97 @@ const ramp = (fams, t) => {
       }
     }
     ctx.globalCompositeOperation = 'source-over';
-    { const f = R.pick(['green', 'lime', 'cyan']), m = R.int(5, 7); let x = W * 0.04, y = H * 0.06;                  // escalón diagonal (esquina superior izquierda)
+    { const f = R.pick(['green', 'cyan', 'blue']), m = R.int(5, 7); let x = W * 0.04, y = H * 0.06;                  // escalón diagonal (esquina superior izquierda)
       for (let j = 0; j < m; j++) { const g = j / (m - 1), w = W * (0.04 + 0.016 * j), h = H * (0.045 + 0.01 * j); ctx.fillStyle = rgb(grad(f, g)); ctx.fillRect(x, y, w, h); x += w * 0.8; y += h * 0.85; } }
+  }
+
+
+  /* ---------- Primitivas del SVG de referencia (todas en grupos de 8 pasos exactos, hard-light u overlay) ---------- */
+  const rectPoly = (x, y, w, h, rot = 0) => { const cx = x + w / 2, cy = y + h / 2, c = Math.cos(rot), s = Math.sin(rot); return [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(([a, b]) => [cx + a * c - b * s, cy + a * s + b * c]); };
+  // grupo: la pieza i usa el paso i de la familia (como los grupos de 8 rectángulos del SVG); 'modo' = hard-light | overlay
+  function grupo(ctx, fam, piezas, modo) {
+    const st = FAMILIES[fam].steps; ctx.save(); ctx.globalCompositeOperation = modo || 'hard-light';
+    piezas.forEach((p, i) => { if (!p) return; ctx.fillStyle = st[Math.round(i * (st.length - 1) / Math.max(1, piezas.length - 1))]; ctx.beginPath(); p.forEach((q, k) => (k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.closePath(); ctx.fill(); });
+    ctx.restore();
+  }
+  // columnas que se solapan (ancho > paso): meridianos / franjas
+  const colsP = (x, y, w, h, n, step) => Array.from({ length: n }, (_, i) => rectPoly(x + i * step, y, w, h));
+  // filas que crecen (triángulo escalonado): ancho de w0 a w1, alineadas a la izquierda ('l'), derecha ('r') o centradas ('c')
+  const rowsP = (x, y, h, n, w0, w1, align, stepY) => { const W = Math.max(w0, w1); return Array.from({ length: n }, (_, i) => { const w = w0 + (w1 - w0) * (i / Math.max(1, n - 1)), xx = align === 'r' ? x + W - w : align === 'c' ? x + (W - w) / 2 : x; return rectPoly(xx, y + i * (stepY || h), w, h); }); };
+  // lentes de meridiano (abanico convergente a los polos) entre longitudes consecutivas de un hemisferio
+  const lensP = (cx, cy, R, n, over) => Array.from({ length: n }, (_, k) => {
+    const f0 = -Math.PI / 2 + (k * Math.PI) / n - over, f1 = -Math.PI / 2 + ((k + 1) * Math.PI) / n + over, pts = [];
+    for (let i = 0; i <= 24; i++) { const th = -Math.PI / 2 + (i / 24) * Math.PI; pts.push([cx + R * Math.cos(th) * Math.sin(f0), cy - R * Math.sin(th)]); }
+    for (let i = 24; i >= 0; i--) { const th = -Math.PI / 2 + (i / 24) * Math.PI; pts.push([cx + R * Math.cos(th) * Math.sin(f1), cy - R * Math.sin(th)]); }
+    return pts;
+  });
+  // anillo de n cuadrados sobre una elipse inclinada (como el anillo de 8 cuadrados del SVG)
+  const ringP = (cx, cy, a, b, tilt, n, size) => Array.from({ length: n }, (_, i) => { const t = (i / n) * Math.PI * 2, x = a * Math.cos(t), y = b * Math.sin(t), c = Math.cos(tilt), s = Math.sin(tilt); return rectPoly(cx + x * c - y * s - size / 2, cy + x * s + y * c - size / 2, size, size, tilt); });
+  // tiras giradas -45º que se encogen a lo largo de una diagonal (destello / flecha de la referencia)
+  const diagP = (x, y, len, w0, w1, n, dx, dy) => Array.from({ length: n }, (_, i) => { const w = w0 + (w1 - w0) * (i / Math.max(1, n - 1)); return rectPoly(x + i * dx - len / 2, y + i * dy - w / 2, len, w, -Math.PI / 4); });
+
+  // máscara de tierra a partir de la foto del globo (verde/amarillo = tierra; azul y papel = no)
+  function mascaraTierra(photo) {
+    const c = document.createElement('canvas'); c.width = photo.width; c.height = photo.height;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(photo, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height).data, W = c.width, H = c.height;
+    let x0 = W, x1 = 0, y0 = H, y1 = 0;
+    for (let y = 0; y < H; y += 2) for (let xx = 0; xx < W; xx += 2) { const i = (y * W + xx) * 4, mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]); if (mx - mn > 30) { x0 = Math.min(x0, xx); x1 = Math.max(x1, xx); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } }
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, r0 = Math.min(x1 - x0, y1 - y0) / 2;
+    return (nx, ny) => { let l = 0, n = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const px = Math.round(cx + (nx + i * 0.02) * r0), py = Math.round(cy + (ny + j * 0.02) * r0); if (px < 0 || py < 0 || px >= W || py >= H) continue; const k = (py * W + px) * 4, r = d[k], g = d[k + 1], b = d[k + 2]; n++; if (g > b + 18 || r > b + 45) l++; } return n && l / n > 0.5; };
+  }
+
+  // EJERCICIOS DEL GLOBO, de lo abstracto a lo icónico: 1 malla de franjas · 2 meridianos y paralelos · 3 disco pixelado + anillo · 4 globo con continentes
+  function globo(ctx, W, H, o) {
+    const nivel = o.nivel || 4, art = document.createElement('canvas'); art.width = W; art.height = H;
+    const g = art.getContext('2d'), cx = W / 2, cy = H / 2 - (nivel >= 3 ? H * 0.02 : 0), R = Math.min(W, H) * 0.31;
+    if (nivel === 5) {      // PICTOGRAMA en el lenguaje estricto de la referencia: anillo de cuadrados (como el reloj/brújula) + cúmulo de bloques verdes (como el árbol) + rayos de tiras que se encogen
+      const NRg = 36, Rr = Math.min(W, H) * 0.3, sz = Rr * 0.13, tri = (i) => Math.round(Math.abs((i / NRg) * 2 - 1) * 7);          // pasos del azul, simétricos para que el anillo cierre sin salto
+      const ring = Array.from({ length: NRg }, (_, i) => { const t = (i / NRg) * Math.PI * 2; return rectPoly(cx + Rr * Math.cos(t) - sz / 2, cy + Rr * Math.sin(t) - sz / 2, sz, sz, t); });
+      const st = FAMILIES.blue.steps; g.save(); g.globalCompositeOperation = 'hard-light';
+      ring.forEach((p, i) => { g.fillStyle = st[tri(i)]; g.beginPath(); p.forEach((q, k) => (k ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]))); g.closePath(); g.fill(); }); g.restore();
+      // rayos: ecuador y meridiano central como tiras que se encogen hacia el centro (cian)
+      const rayo = (dx, dy, horiz) => Array.from({ length: 8 }, (_, i) => { const f = 1 - i / 7, len = Rr * (0.07 + 0.07 * f), th = Rr * (0.025 + 0.04 * f), d = Rr * (0.2 + 0.74 * (i / 7)); return horiz ? rectPoly(cx + dx * d - len / 2, cy - th / 2, len, th) : rectPoly(cx - th / 2, cy + dy * d - len / 2, th, len); });
+      [[1, 0, true], [-1, 0, true], [0, 1, false], [0, -1, false]].forEach(([dx, dy, h]) => grupo(g, 'cyan', rayo(dx, dy, h)));
+      if (o.image) {                                                                       // continentes: cúmulo de bloques verdes de distinto tamaño (de la foto)
+        const land = mascaraTierra(o.image), N = 22, cs = (2 * Rr * 0.8) / N, lr = Rr * 0.8, t = document.createElement('canvas'); t.width = W; t.height = H; const tx = t.getContext('2d');
+        for (let iy = 0; iy < N; iy++) for (let ix = 0; ix < N; ix++) { const nx = ((ix + 0.5) / N) * 2 - 1, ny = ((iy + 0.5) / N) * 2 - 1; if (nx * nx + ny * ny > 0.95 || !land(nx, ny)) continue; tx.fillStyle = FAMILIES.green.steps[Math.round(clamp((nx + ny + 2) / 4) * 7)]; const k = 0.78 + 0.22 * (((ix * 7 + iy * 13) % 3) / 2); tx.fillRect(cx - lr + ix * cs + (cs * (1 - k)) / 2, cy - lr + iy * cs + (cs * (1 - k)) / 2, cs * k, cs * k); }
+        g.save(); g.globalCompositeOperation = 'hard-light'; g.drawImage(t, 0, 0); g.restore();
+      }
+      // arco de sol (naranja, 8 filas que crecen) asomando por el horizonte: guiño a "Horizonte"
+      grupo(g, 'yellow', rowsP(cx - Rr * 0.25, cy + Rr * 1.065, Rr * 0.03, 8, Rr * 0.5, Rr * 0.5, 'c'), 'hard-light');
+      grupo(g, 'gray', Array.from({ length: 8 }, (_, i) => rectPoly(cx - Rr * 0.8 + i * Rr * 0.2, cy + Rr * 1.3, Rr * 0.2, Rr * 0.08)), 'overlay');
+      ctx.drawImage(art, 0, 0); return;
+    }
+    if (nivel === 1) {      // abstracto: columnas azules solapadas x filas verdes que crecen (+ filas finas cian)
+      grupo(g, 'blue', colsP(cx - R, cy - R, R * 0.5, 2 * R, 8, (2 * R - R * 0.5) / 7));
+      grupo(g, 'green', rowsP(cx - R, cy - R, (2 * R) / 8, 8, R * 0.45, 2 * R, 'l'));
+      grupo(g, 'cyan', rowsP(cx + R * 0.15, cy - R * 0.25, R * 0.09, 8, R * 0.85, R * 0.85, 'l'));
+      ctx.drawImage(art, 0, 0); return;
+    }
+    // anillo de 8 cuadrados: la mitad de atrás se dibuja primero (el globo la tapa) y la delantera después
+    const NR = 20, ring = ringP(cx, cy + R * 0.08, R * 1.42, R * 0.42, -0.38, NR, R * 0.13), delante = (i) => Math.sin((i / NR) * Math.PI * 2) >= 0;
+    if (nivel >= 2) grupo(g, 'yellow', ring.map((p, i) => (delante(i) ? null : p)), 'hard-light');
+    // globo: océano azul (paralelos en 8 pasos) + meridianos cian alternos, recortado al disco; se vacía antes el disco para ocultar la parte trasera del anillo
+    g.save(); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.clip(); g.clearRect(0, 0, W, H);
+    grupo(g, 'blue', Array.from({ length: 8 }, (_, i) => rectPoly(cx - R, cy - R + (i * 2 * R) / 8 - R * 0.05, 2 * R, (2 * R) / 8 + R * 0.1)));
+    grupo(g, 'cyan', lensP(cx, cy, R, 8, 0.05).map((p, i) => (i % 2 ? null : p)));
+    if (nivel >= 4 && o.image) {                                                       // continentes: bloques verdes (de la foto) que se funden en hard-light con el océano azul
+      const land = mascaraTierra(o.image), N = 56, cs = (2 * R) / N, t = document.createElement('canvas'); t.width = W; t.height = H; const tx = t.getContext('2d');
+      for (let iy = 0; iy < N; iy++) for (let ix = 0; ix < N; ix++) { const nx = ((ix + 0.5) / N) * 2 - 1, ny = ((iy + 0.5) / N) * 2 - 1; if (nx * nx + ny * ny > 0.97 || !land(nx, ny)) continue; tx.fillStyle = FAMILIES.green.steps[Math.round(clamp((nx + ny + 2) / 4) * 7)]; tx.fillRect(cx - R + ix * cs, cy - R + iy * cs, cs + 0.6, cs + 0.6); }
+      g.save(); g.globalCompositeOperation = 'hard-light'; g.drawImage(t, 0, 0); g.restore();
+    }
+    g.restore();
+    if (nivel >= 2) grupo(g, 'yellow', ring.map((p, i) => (delante(i) ? p : null)), 'hard-light');                                                      // parte delantera del anillo
+    if (nivel >= 3) {
+      const cols = o.cols || 80, cell = W / cols;
+      pixelImage(ctx, W, H, { ...o, image: art, cols, particulas: o.particulas === undefined ? 0.8 : o.particulas, huecosBlancos: o.huecosBlancos === undefined ? 0.4 : o.huecosBlancos });
+      // peana neutra (gris del SVG, en overlay): 8 columnas alineadas a la rejilla de píxeles, sin pasar por el pixelado
+      const px0 = Math.round((cx - R * 0.8) / cell) * cell, cw = Math.max(1, Math.round((R * 0.2) / cell)) * cell, py0 = Math.round((cy + R * 1.2) / cell) * cell;
+      grupo(ctx, 'gray', Array.from({ length: 8 }, (_, i) => rectPoly(px0 + i * cw, py0, cw + 0.5, 2 * cell)), 'overlay');
+      return;
+    }
+    ctx.drawImage(art, 0, 0);
   }
 
   /* ---------- Composiciones ---------- */
@@ -937,7 +1031,7 @@ const ramp = (fams, t) => {
     silueta: (ctx, W, H, o) => pixelFigure(ctx, W, H, o),
     pixelicono: (ctx, W, H, o) => pixelImage(ctx, W, H, o),
     optimismo, cabezoneria, trabajo, calma, caos, union, planta,
-    signos, signoGrande, escalera, dentado,
+    signos, signoGrande, escalera, dentado, globo,
     euro3d: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€' }),
     euro: (ctx, W, H, o) => glyph3d(ctx, W, H, { ...o, glifo: '€', plano: true }),
     disolver(ctx, W, H, o) { dissolvePlus(ctx, W, H, { ...o, famH: o.R.pick(ORDER), famV: otherFam(o.R, o.R.pick(ORDER)) }); },
