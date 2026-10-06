@@ -10,23 +10,53 @@
   } } }
 </script>
 <style>
-  :root { --bone:#F5F3EE; --ink:#0F0F0E; --clay:#E66A28; --line:rgba(15,15,14,.16); color-scheme: light; }
-  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
-  body { background: var(--bone); color: var(--ink); font-family: 'Archivo','Helvetica Neue',Arial,sans-serif; -webkit-font-smoothing: antialiased; }
-  .display { font-family: 'Archivo Black','Arial Black','Helvetica Neue',sans-serif; font-weight: 400 !important; letter-spacing: -0.025em; line-height: 1; text-transform: uppercase; text-wrap: balance; }
-  .label { font-family: 'DM Mono',ui-monospace,monospace; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+  :root { --bone:#F5F3EE; --ink:#0F0F0E; --clay:#E66A28; --line:rgba(15,15,14,.14); --ease:cubic-bezier(.2,.7,.2,1); color-scheme: light; }
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+  body { background: var(--bone); color: var(--ink); font-family: 'Archivo','Helvetica Neue',Arial,sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.65; }
+  .display { font-family: 'Archivo Black','Arial Black','Helvetica Neue',sans-serif; font-weight: 400 !important; letter-spacing: -0.025em; line-height: 1.04; text-transform: uppercase; text-wrap: balance; font-variant-numeric: tabular-nums; }
+  .label { font-family: 'DM Mono',ui-monospace,monospace; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
   .grain::after { content:""; position:absolute; inset:0; pointer-events:none; mix-blend-mode: overlay; opacity:.35;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-  .stage { background-image: radial-gradient(ellipse at 50% 38%, rgba(255,255,255,.75), rgba(255,255,255,0) 62%); }
-  .btn { transition: background .2s, color .2s, transform .15s; }
-  .btn:active { transform: scale(.98); }
-  .link-u { background: linear-gradient(currentColor,currentColor) 0 100%/0 1.5px no-repeat; transition: background-size .3s; }
+  .stage { background-image: radial-gradient(ellipse at 50% 40%, rgba(255,255,255,.8), rgba(255,255,255,0) 62%); perspective: 1100px; }
+
+  /* --- microanimaciones --- */
+  .js .rv { opacity: 0; transform: translateY(32px); transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: var(--d, 0ms); }
+  .js .rv.in { opacity: 1; transform: none; }
+  .line { transform: scaleX(0); transform-origin: left; transition: transform 1s var(--ease); transition-delay: calc(var(--d, 0ms) + 150ms); }
+  .in .line, .line.in { transform: scaleX(1); }
+  .js .star { opacity: 0; transform: scale(.4) rotate(-25deg); display: inline-block; transition: opacity .4s, transform .5s var(--ease); transition-delay: calc(var(--d, 0ms) + var(--i) * 90ms + 250ms); }
+  .in .star { opacity: 1; transform: none; }
+  @keyframes pop { from { opacity: 0; transform: scale(.92) rotate(-2.5deg) translateY(8px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+  .pop { animation: pop .65s var(--ease) both; }
+  @keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+  .floaty { animation: floaty 6s ease-in-out infinite; }
+  @keyframes ping { 0% { transform: scale(.7); opacity:.8 } 80%,100% { transform: scale(2.4); opacity:0 } }
+  .ping { animation: ping 2s cubic-bezier(0,0,.2,1) infinite; }
+  @keyframes fade { from { opacity:0; transform: translateY(6px) } to { opacity:1; transform:none } }
+  .fade { animation: fade .6s var(--ease) both; }
+  @keyframes tick { from { transform: scale(0) rotate(-40deg) } to { transform: none } }
+  .tick { animation: tick .35s var(--ease) both; }
+  .shine { position: relative; overflow: hidden; }
+  .shine::before { content:""; position:absolute; inset:0; transform: translateX(-120%) skewX(-20deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); transition: transform .8s var(--ease); }
+  .shine:hover::before { transform: translateX(120%) skewX(-20deg); }
+  .btn { transition: background .25s, color .25s, transform .2s var(--ease), box-shadow .3s; }
+  .btn:hover { box-shadow: 0 16px 30px -16px rgba(15,15,14,.55); transform: translateY(-2px); }
+  .btn:active { transform: translateY(0) scale(.985); }
+  .arrow { display: inline-block; transition: transform .3s var(--ease); }
+  .btn:hover .arrow { transform: translateX(6px); }
+  .link-u { background: linear-gradient(currentColor,currentColor) 0 100%/0 1.5px no-repeat; transition: background-size .35s var(--ease); }
   .link-u:hover { background-size: 100% 1.5px; }
-  @keyframes rise { from { opacity:0; transform: translateY(14px) } to { opacity:1; transform:none } }
-  .rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
-  :focus-visible { outline: 3px solid #E66A28; outline-offset: 3px; }
-  summary::-webkit-details-marker { display: none; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } html { scroll-behavior: auto; } }
+  .lift { transition: transform .5s var(--ease), box-shadow .5s var(--ease); }
+  .lift:hover { transform: translateY(-6px); box-shadow: 0 28px 40px -28px rgba(15,15,14,.45); }
+  .zoom img { transition: transform 1.4s var(--ease); }
+  .zoom:hover img { transform: scale(1.06); }
+  .acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s var(--ease); }
+  .acc.open { grid-template-rows: 1fr; }
+  .acc > div { overflow: hidden; }
+  .dotpulse { position: relative; }
+  .dotpulse::after { content:""; position:absolute; inset:0; border-radius:9999px; background:#2F8F5B; animation: ping 2s cubic-bezier(0,0,.2,1) infinite; }
+  :focus-visible { outline: 3px solid #E66A28; outline-offset: 4px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } html { scroll-behavior: auto; } .js .rv, .js .star { opacity: 1; transform: none; } .line { transform: none; } }
 </style>
 
 <div id="root"></div>
@@ -37,7 +67,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 
 <script type="text/babel" data-presets="react">
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 const IMG = window.IMG;
 
 /* ============ CONFIG: edita aquí ============ */
@@ -49,7 +79,6 @@ const CONFIG = {
 };
 const money = n => n.toFixed(2).replace('.', ',') + ' ' + CONFIG.currency;
 
-/* Colores reales del producto (los 6 de fábrica) */
 const COLORS = [
   { id: 'plata',   name: 'Plata',        hex: '#C9CED3', bg: '#E3E5E6' },
   { id: 'marron',  name: 'Cuero marrón', hex: '#A85A2C', bg: '#EADFD0' },
@@ -58,24 +87,61 @@ const COLORS = [
   { id: 'celeste', name: 'Celeste',      hex: '#56B2D8', bg: '#DCEAF0' },
   { id: 'oliva',   name: 'Verde oliva',  hex: '#58683A', bg: '#DEE2D3' },
 ];
-
 const REVIEWS = [
   { n: 'Laura M.', t: 'La llevé a un festival y es otra forma de vivirlo. No miras la pantalla, solo disparas. Las fotos tienen un grano precioso.' },
   { n: 'Carlos R.', t: 'Se la regalé a mi sobrino de 9 años y no la suelta. Lo de la tarjeta atornillada es genial para niños.' },
   { n: 'Ana P.', t: 'Cuesta poco, pesa nada y da fotos con mucho carácter. La uso en los viajes en vez del móvil.' },
 ];
 
+/* ============ Hooks y utilidades de animación ============ */
+function useJs() { useEffect(() => { document.documentElement.classList.add('js'); }, []); }
+
+function Reveal({ children, delay = 0, className = '', as: Tag = 'div' }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    if (!('IntersectionObserver' in window)) { el.classList.add('in'); return; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add('in'); io.disconnect(); } }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    io.observe(el); return () => io.disconnect();
+  }, []);
+  return <Tag ref={ref} className={`rv ${className}`} style={{ '--d': delay + 'ms' }}>{children}</Tag>;
+}
+
+function useCount(target, ms = 550) {
+  const [v, setV] = useState(target); const from = useRef(target);
+  useEffect(() => {
+    const a = from.current, b = target; if (a === b) return;
+    const t0 = performance.now(); let raf;
+    const step = t => { const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3); setV(a + (b - a) * e); if (p < 1) raf = requestAnimationFrame(step); else from.current = b; };
+    raf = requestAnimationFrame(step); return () => { cancelAnimationFrame(raf); from.current = b; };
+  }, [target]);
+  return v;
+}
+
+function ScrollBar() {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const f = () => { const h = document.documentElement.scrollHeight - innerHeight; setP(h > 0 ? scrollY / h : 0); };
+    addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f);
+  }, []);
+  return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-clay" style={{ transform: `scaleX(${p})` }} />;
+}
+
 /* ============ Cabecera ============ */
+const MSGS = ['Envío gratis desde 40 €', '30 días para probarla', '12 meses de garantía'];
 function Header() {
+  const [i, setI] = useState(0); const [sc, setSc] = useState(false);
+  useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % MSGS.length), 3600); return () => clearInterval(t); }, []);
+  useEffect(() => { const f = () => setSc(scrollY > 12); addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f); }, []);
   return (
     <>
-      <div className="label bg-ink px-4 py-2.5 text-center text-bone">Envío gratis desde 40 € · 30 días para probarla · 12 meses de garantía</div>
-      <header className="border-b border-[color:var(--line)] bg-bone">
-        <div className="mx-auto flex h-14 max-w-[1300px] items-center justify-between px-4 md:px-8">
+      <div className="label flex h-10 items-center justify-center bg-ink text-bone"><span key={i} className="fade">{MSGS[i]}</span></div>
+      <header className={`sticky top-0 z-40 bg-bone/90 backdrop-blur transition-all duration-300 ${sc ? 'border-b border-[color:var(--line)] shadow-[0_10px_30px_-22px_rgba(0,0,0,.4)]' : 'border-b border-transparent'}`}>
+        <div className={`mx-auto flex max-w-[1240px] items-center justify-between px-5 transition-all duration-300 md:px-10 ${sc ? 'h-14' : 'h-20'}`}>
           <a href="#top" className="flex items-baseline gap-2" aria-label="Bravo X9, inicio">
-            <span className="display text-[24px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label text-ink/60">X9</span>
+            <span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label text-ink/55">X9</span>
           </a>
-          <nav className="hidden gap-8 text-sm font-medium sm:flex" aria-label="Principal">
+          <nav className="hidden gap-10 text-sm font-medium sm:flex" aria-label="Principal">
             <a className="link-u" href="#caracteristicas">Características</a><a className="link-u" href="#opiniones">Opiniones</a><a className="link-u" href="#faq">Preguntas</a>
           </nav>
         </div>
@@ -89,80 +155,91 @@ function Buy({ note, onNote }) {
   const [ci, setCi] = useState(1);
   const [view, setView] = useState('front');
   const [qty, setQty] = useState(1);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [added, setAdded] = useState(false);
   const c = COLORS[ci];
-  const total = qty === 2 ? CONFIG.price * 2 * (1 - CONFIG.pack2Discount) : CONFIG.price;
-  const old = CONFIG.oldPrice * qty;
+  const totalT = qty === 2 ? CONFIG.price * 2 * (1 - CONFIG.pack2Discount) : CONFIG.price;
+  const oldT = CONFIG.oldPrice * qty;
+  const total = useCount(totalT), old = useCount(oldT), save = useCount(oldT - totalT);
   const shown = view === 'front' ? IMG[c.id] : IMG.back;
-  const buy = () => CONFIG.checkoutUrl
-    ? window.open(CONFIG.checkoutUrl.replace('{color}', encodeURIComponent(c.name)).replace('{qty}', qty), '_blank')
-    : onNote(`Ejemplo: ${qty}× Bravo X9 ${c.name} · ${money(total)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
+  const move = e => { const r = e.currentTarget.getBoundingClientRect(); setTilt({ x: (e.clientX - r.left) / r.width - .5, y: (e.clientY - r.top) / r.height - .5 }); };
+  const buy = () => {
+    setAdded(true); setTimeout(() => setAdded(false), 1800);
+    CONFIG.checkoutUrl ? window.open(CONFIG.checkoutUrl.replace('{color}', encodeURIComponent(c.name)).replace('{qty}', qty), '_blank')
+      : onNote(`Ejemplo: ${qty}× Bravo X9 ${c.name} · ${money(totalT)}. Añade tu enlace de pago en CONFIG.checkoutUrl.`);
+  };
+  const pick = i => { setCi(i); setView('front'); };
   return (
-    <section id="top" className="mx-auto grid max-w-[1300px] gap-5 px-4 py-6 md:px-8 lg:grid-cols-12 lg:gap-10 lg:py-10">
-      {/* Galería */}
-      <div className="lg:col-span-7">
-        <div className="stage rise relative grid aspect-[4/3.2] place-items-center overflow-hidden transition-colors duration-500 sm:aspect-[4/3]" style={{ background: c.bg }}>
-          <img key={view + c.id} src={shown} alt={view === 'front' ? `Cámara Bravo X9 en ${c.name}` : 'Trasera de la Bravo X9 con mini OLED y contador'}
-            className="rise w-[86%] max-h-[90%] object-contain drop-shadow-[0_26px_26px_rgba(30,20,10,.32)]" />
-          <span className="label absolute left-4 top-4 text-ink/70">{view === 'front' ? c.name : 'Trasera · OLED 0,96″'}</span>
+    <section id="top" className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 pt-8 md:px-10 lg:grid-cols-12 lg:gap-20 lg:pb-36 lg:pt-14">
+      <Reveal className="lg:col-span-7">
+        <div className="stage relative grid aspect-[4/3.3] place-items-center overflow-hidden transition-colors duration-700 sm:aspect-[4/3]" style={{ background: c.bg }}
+          onMouseMove={move} onMouseLeave={() => setTilt({ x: 0, y: 0 })}>
+          <div className="floaty w-[84%]">
+            <img key={view + c.id} src={shown} alt={view === 'front' ? `Cámara Bravo X9 en ${c.name}` : 'Trasera de la Bravo X9 con mini OLED y contador'}
+              className="pop w-full object-contain drop-shadow-[0_34px_30px_rgba(30,20,10,.3)]"
+              style={{ transform: `rotateY(${tilt.x * 10}deg) rotateX(${-tilt.y * 8}deg)`, transition: 'transform .25s ease-out' }} />
+          </div>
+          <span key={c.id + view} className="label fade absolute left-6 top-6 text-ink/65">{view === 'front' ? c.name : 'Trasera · OLED 0,96″'}</span>
         </div>
-        <div className="mt-3 grid grid-cols-6 gap-2 sm:gap-3">
+        <div className="mt-5 grid grid-cols-6 gap-3 sm:gap-4">
           {COLORS.map((x, i) => (
-            <button key={x.id} onClick={() => { setCi(i); setView('front'); }} aria-label={x.name} aria-pressed={ci === i && view === 'front'}
-              className={`aspect-[4/3] border-2 transition ${ci === i && view === 'front' ? 'border-ink' : 'border-transparent hover:border-ink/40'}`} style={{ background: x.bg }}>
-              <img src={IMG[x.id]} alt="" className="h-full w-full object-contain p-1" />
+            <button key={x.id} onClick={() => pick(i)} aria-label={x.name} aria-pressed={ci === i && view === 'front'}
+              className={`aspect-[4/3] border-2 transition duration-300 hover:-translate-y-1 ${ci === i && view === 'front' ? 'border-ink' : 'border-transparent opacity-80 hover:opacity-100'}`} style={{ background: x.bg }}>
+              <img src={IMG[x.id]} alt="" className="h-full w-full object-contain p-1.5" />
             </button>
           ))}
         </div>
-        <button onClick={() => setView(view === 'back' ? 'front' : 'back')} className="label mt-3 underline underline-offset-4 hover:text-clay">{view === 'back' ? '← Ver frontal' : 'Ver trasera →'}</button>
-      </div>
+        <button onClick={() => setView(view === 'back' ? 'front' : 'back')} className="label link-u mt-5 hover:text-clay">{view === 'back' ? '← Ver frontal' : 'Ver trasera →'}</button>
+      </Reveal>
 
-      {/* Panel de compra */}
-      <div className="lg:col-span-5">
-        <p className="label flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · sale en 24–48 h</p>
-        <h1 className="display mt-4 text-4xl sm:text-5xl">Bravo X9</h1>
-        <p className="mt-2 text-lg font-medium text-ink/75">La cámara digital retro sin pantalla. <span className="text-clay">Mira el momento, no la pantalla.</span></p>
+      <Reveal delay={120} className="lg:col-span-5 lg:pt-4">
+        <p className="label flex items-center gap-3"><span className="dotpulse h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · sale en 24–48 h</p>
+        <h1 className="display mt-6 text-5xl sm:text-6xl">Bravo X9</h1>
+        <p className="mt-5 text-lg text-ink/75">La cámara digital retro sin pantalla. <span className="text-clay">Mira el momento, no la pantalla.</span></p>
 
-        <p className="mt-6 flex flex-wrap items-baseline gap-3">
-          <span className="display text-4xl">{money(total)}</span>
-          <s className="text-ink/50">{money(old)}</s>
-          <span className="label bg-clay px-2 py-1 text-ink">Ahorras {money(old - total)}</span>
+        <p className="mt-10 flex flex-wrap items-baseline gap-x-4 gap-y-2">
+          <span className="display text-5xl">{money(total)}</span>
+          <s className="text-ink/45">{money(old)}</s>
+          <span className="label bg-clay px-2.5 py-1.5 text-ink">Ahorras {money(save)}</span>
         </p>
 
-        <fieldset className="mt-6">
-          <legend className="label mb-3">Color — <span className="text-clay">{c.name}</span></legend>
-          <div className="flex flex-wrap gap-3">
+        <fieldset className="mt-12">
+          <legend className="label mb-4">Color — <span key={c.id} className="fade inline-block text-clay">{c.name}</span></legend>
+          <div className="flex flex-wrap gap-4">
             {COLORS.map((x, i) => (
-              <button key={x.id} onClick={() => { setCi(i); setView('front'); }} aria-label={x.name} aria-pressed={ci === i}
-                className={`h-11 w-11 rounded-full ring-offset-2 ring-offset-[#F5F3EE] transition ${ci === i ? 'ring-2 ring-ink' : 'ring-1 ring-black/15 hover:ring-ink/50'}`} style={{ background: x.hex }} />
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="mt-6">
-          <legend className="label mb-3">Cantidad</legend>
-          <div className="grid grid-cols-2 gap-3">
-            {[[1, '1 cámara', ''], [2, '2 cámaras', 'Ahorra un 10 %']].map(([q, t, s]) => (
-              <button key={q} onClick={() => setQty(q)} aria-pressed={qty === q}
-                className={`border px-4 py-3 text-left transition ${qty === q ? 'border-ink bg-ink text-bone' : 'border-[color:var(--line)] hover:border-ink'}`}>
-                <span className="block text-[15px] font-semibold">{t}</span><span className={`label !text-[0.65rem] ${qty === q ? 'text-clay' : 'text-ink/55'}`}>{s || ' '}</span>
+              <button key={x.id} onClick={() => pick(i)} aria-label={x.name} aria-pressed={ci === i}
+                className={`group relative grid h-12 w-12 place-items-center rounded-full ring-offset-[3px] ring-offset-[#F5F3EE] transition duration-300 hover:scale-110 ${ci === i ? 'ring-2 ring-ink' : 'ring-1 ring-black/15 hover:ring-ink/50'}`} style={{ background: x.hex }}>
+                {ci === i && <span className="tick text-[13px] font-bold" style={{ color: x.id === 'plata' || x.id === 'ambar' ? '#0F0F0E' : '#fff' }}>✓</span>}
               </button>
             ))}
           </div>
         </fieldset>
 
-        <button onClick={buy} className="btn mt-7 flex min-h-[62px] w-full items-center justify-center gap-3 bg-clay text-lg font-semibold text-ink hover:bg-ink hover:text-bone">
-          Comprar ahora · {money(total)}
-        </button>
-        {note && <p role="status" className="mt-3 bg-clay/15 p-3 text-sm font-medium">{note}</p>}
+        <fieldset className="mt-10">
+          <legend className="label mb-4">Cantidad</legend>
+          <div className="grid grid-cols-2 gap-4">
+            {[[1, '1 cámara', ''], [2, '2 cámaras', 'Ahorra un 10 %']].map(([q, t, sub]) => (
+              <button key={q} onClick={() => setQty(q)} aria-pressed={qty === q}
+                className={`border px-5 py-4 text-left transition duration-300 hover:-translate-y-0.5 ${qty === q ? 'border-ink bg-ink text-bone' : 'border-[color:var(--line)] hover:border-ink'}`}>
+                <span className="block text-[15px] font-semibold">{t}</span><span className={`label !text-[0.65rem] ${qty === q ? 'text-clay' : 'text-ink/55'}`}>{sub || ' '}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-        <ul className="mt-6 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-[color:var(--line)] pt-5 text-sm">
-          {['Envío gratis desde 40 €', '30 días de devolución', '12 meses de garantía', 'Pago seguro'].map(t => <li key={t} className="flex gap-2"><span className="text-clay">✓</span>{t}</li>)}
+        <button onClick={buy} className={`btn shine group mt-12 flex min-h-[68px] w-full items-center justify-center gap-3 text-lg font-semibold ${added ? 'bg-[#2F8F5B] text-white' : 'bg-clay text-ink hover:bg-ink hover:text-bone'}`}>
+          {added ? <span className="fade">✓ Añadido</span> : <span>Comprar ahora · {money(total)} <span className="arrow">→</span></span>}
+        </button>
+        {note && <p key={note} role="status" className="fade mt-4 bg-clay/15 p-4 text-sm font-medium">{note}</p>}
+
+        <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[color:var(--line)] pt-8 text-sm">
+          {['Envío gratis desde 40 €', '30 días de devolución', '12 meses de garantía', 'Pago seguro'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
         </ul>
-        <ul className="mt-5 grid gap-2 border-t border-[color:var(--line)] pt-5 text-[15px]">
-          {['Sin pantalla ni ajustes: apuntas y disparas', '8 MP · flash LED · estilos de película', 'Tarjeta Micro SD incluida · carga por USB-C'].map(t => <li key={t} className="flex gap-3"><span className="mt-2 h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
+        <ul className="mt-8 grid gap-3.5 border-t border-[color:var(--line)] pt-8 text-[15px]">
+          {['Sin pantalla ni ajustes: apuntas y disparas', '8 MP · flash LED · estilos de película', 'Tarjeta Micro SD incluida · carga por USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
         </ul>
-        <p className="mt-5 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
-      </div>
+        <p className="mt-8 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
+      </Reveal>
     </section>
   );
 }
@@ -170,13 +247,12 @@ function Buy({ note, onNote }) {
 /* ============ Características ============ */
 function Photo({ src, alt, className = '', caption }) {
   return (
-    <figure className={`grain relative overflow-hidden bg-ink ${className}`}>
+    <figure className={`grain zoom relative overflow-hidden bg-ink ${className}`}>
       <img src={src} alt={alt} className="h-full w-full object-cover" />
-      {caption && <figcaption className="label absolute bottom-3 left-3 z-10 text-white/90">{caption}</figcaption>}
+      {caption && <figcaption className="label absolute bottom-4 left-4 z-10 text-white/90">{caption}</figcaption>}
     </figure>
   );
 }
-
 function Features() {
   const f = [
     ['Sin pantalla', 'Vive el momento en vez de revisarlo. Las fotos las descubres después.'],
@@ -189,17 +265,19 @@ function Features() {
   const s = [['retro', 'Retro'], ['classic', 'Classic'], ['mono', 'Mono']];
   return (
     <section id="caracteristicas" className="border-t border-[color:var(--line)]">
-      <div className="mx-auto max-w-[1300px] px-4 py-14 md:px-8 lg:py-20">
-        <h2 className="display max-w-3xl text-3xl sm:text-5xl">Hecha para disparar, no para configurar.</h2>
-        <dl className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-          {f.map(([t, d]) => (
-            <div key={t} className="border-t-2 border-ink pt-4"><dt className="display text-lg">{t}</dt><dd className="mt-2 text-ink/70">{d}</dd></div>
+      <div className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-40">
+        <Reveal><p className="label mb-6 text-ink/55">Características</p><h2 className="display max-w-3xl text-4xl sm:text-6xl">Hecha para disparar, no para configurar.</h2></Reveal>
+        <dl className="mt-20 grid gap-x-14 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
+          {f.map(([t, d], i) => (
+            <Reveal key={t} delay={(i % 3) * 120}>
+              <div className="line mb-6 h-[2px] bg-ink" /><dt className="display text-xl">{t}</dt><dd className="mt-3 max-w-xs text-ink/70">{d}</dd>
+            </Reveal>
           ))}
         </dl>
-        <div className="mt-14 grid gap-3 sm:grid-cols-3">
-          {s.map(([k, t]) => <Photo key={k} src={IMG['f_' + k]} alt={`Misma foto en estilo ${t}`} className="aspect-[4/5]" caption={`Estilo ${t}`} />)}
+        <div className="mt-28 grid gap-5 sm:grid-cols-3 lg:gap-8">
+          {s.map(([k, t], i) => <Reveal key={k} delay={i * 140}><Photo src={IMG['f_' + k]} alt={`Misma foto en estilo ${t}`} className="aspect-[4/5]" caption={`Estilo ${t}`} /></Reveal>)}
         </div>
-        <p className="label mt-3 text-ink/50">Misma foto con los tres estilos, como ilustración.</p>
+        <p className="label mt-6 text-ink/50">Misma foto con los tres estilos, como ilustración.</p>
       </div>
     </section>
   );
@@ -209,17 +287,22 @@ function Features() {
 function Reviews() {
   return (
     <section id="opiniones" className="border-t border-[color:var(--line)] bg-[#EDEAE2]">
-      <div className="mx-auto max-w-[1300px] px-4 py-14 md:px-8 lg:py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="display text-3xl sm:text-5xl">Lo que dicen<br />quienes la usan.</h2>
-          {CONFIG.reviewsAreExamples && <p className="label border border-dashed border-ink/40 px-3 py-2 text-ink/60">Opiniones de ejemplo · sustitúyelas por reseñas reales</p>}
-        </div>
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          {REVIEWS.map(r => (
-            <figure key={r.n} className="flex flex-col justify-between bg-bone p-6">
-              <div><p className="text-clay" aria-label="5 de 5 estrellas">★★★★★</p><blockquote className="mt-4 text-[17px] leading-relaxed">“{r.t}”</blockquote></div>
-              <figcaption className="label mt-6 text-ink/60">{r.n}</figcaption>
-            </figure>
+      <div className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-40">
+        <Reveal className="flex flex-wrap items-end justify-between gap-6">
+          <h2 className="display text-4xl sm:text-6xl">Lo que dicen<br />quienes la usan.</h2>
+          {CONFIG.reviewsAreExamples && <p className="label border border-dashed border-ink/40 px-4 py-3 text-ink/60">Opiniones de ejemplo · sustitúyelas por reseñas reales</p>}
+        </Reveal>
+        <div className="mt-20 grid gap-6 md:grid-cols-3 lg:gap-8">
+          {REVIEWS.map((r, i) => (
+            <Reveal key={r.n} delay={i * 130}>
+              <figure className="lift flex h-full flex-col justify-between bg-bone p-8 lg:p-10">
+                <div>
+                  <p className="text-xl tracking-wider text-clay" style={{ '--d': i * 130 + 'ms' }} aria-label="5 de 5 estrellas">{[0, 1, 2, 3, 4].map(n => <span key={n} className="star" style={{ '--i': n }}>★</span>)}</p>
+                  <blockquote className="mt-6 text-[17px] leading-[1.75]">“{r.t}”</blockquote>
+                </div>
+                <figcaption className="label mt-10 text-ink/60">{r.n}</figcaption>
+              </figure>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -227,8 +310,19 @@ function Reviews() {
   );
 }
 
-/* ============ Specs + FAQ ============ */
-function Row({ k, v }) { return <div className="flex justify-between gap-4 border-t border-[color:var(--line)] py-2.5 text-[15px]"><dt className="text-ink/60">{k}</dt><dd className="text-right font-medium">{v}</dd></div>; }
+/* ============ FAQ + specs ============ */
+function Row({ k, v }) { return <div className="flex justify-between gap-6 border-t border-[color:var(--line)] py-4 text-[15px] transition-colors hover:bg-black/[.03]"><dt className="text-ink/60">{k}</dt><dd className="text-right font-medium">{v}</dd></div>; }
+function Acc({ q, a }) {
+  const [o, setO] = useState(false);
+  return (
+    <div className="border-t border-[color:var(--line)]">
+      <button onClick={() => setO(!o)} aria-expanded={o} className="group flex w-full items-center justify-between gap-8 py-7 text-left text-[17px] font-semibold">
+        <span className="link-u">{q}</span><span className={`text-3xl font-light leading-none transition-transform duration-500 ${o ? 'rotate-[135deg] text-clay' : ''}`}>+</span>
+      </button>
+      <div className={`acc ${o ? 'open' : ''}`}><div><p className="max-w-lg pb-8 text-ink/75">{a}</p></div></div>
+    </div>
+  );
+}
 function SpecsFaq() {
   const qs = [
     ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas al móvil o al ordenador.'],
@@ -238,27 +332,20 @@ function SpecsFaq() {
   ];
   return (
     <section id="faq" className="border-t border-[color:var(--line)]">
-      <div className="mx-auto grid max-w-[1300px] gap-12 px-4 py-14 md:px-8 lg:grid-cols-2 lg:py-20">
-        <div>
-          <h2 className="display text-3xl sm:text-4xl">Preguntas</h2>
-          <div className="mt-8 border-b border-[color:var(--line)]">
-            {qs.map(([q, a]) => (
-              <details key={q} className="group border-t border-[color:var(--line)]">
-                <summary className="flex cursor-pointer items-center justify-between gap-6 py-5 text-[17px] font-semibold">{q}<span className="text-3xl font-light leading-none transition group-open:rotate-45">+</span></summary>
-                <p className="pb-5 text-ink/75">{a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h2 className="display text-3xl sm:text-4xl">Especificaciones</h2>
-          <dl className="mt-8">
+      <div className="mx-auto grid max-w-[1240px] gap-20 px-5 py-28 md:px-10 lg:grid-cols-2 lg:gap-28 lg:py-40">
+        <Reveal>
+          <h2 className="display text-4xl sm:text-5xl">Preguntas</h2>
+          <div className="mt-14 border-b border-[color:var(--line)]">{qs.map(([q, a]) => <Acc key={q} q={q} a={a} />)}</div>
+        </Reveal>
+        <Reveal delay={140}>
+          <h2 className="display text-4xl sm:text-5xl">Especificaciones</h2>
+          <dl className="mt-14">
             <Row k="Sensor" v="CMOS 1/3,2″ · 8 MP" /><Row k="Resolución" v="3264 × 2448 · JPG" /><Row k="Lente" v="5P+IR · 4,2 mm" />
             <Row k="Enfoque" v="Fijo · 0,5 m → ∞" /><Row k="Obturación · ISO" v="0,5–1 s · 1600" /><Row k="Flash" v="2×3 W LED" />
             <Row k="Display" v="OLED 0,96″" /><Row k="Batería" v="Li-ion 800 mAh" /><Row k="Almacenamiento" v="Micro SD hasta 128G" />
             <Row k="Interfaz" v="USB Type-C" /><Row k="Tamaño · peso" v="115×65×34 mm · 95 g" /><Row k="En la caja" v="Cámara, manual, cable USB-C" />
           </dl>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -268,14 +355,16 @@ function SpecsFaq() {
 function Final() {
   return (
     <section className="bg-ink text-bone">
-      <div className="mx-auto flex max-w-[1300px] flex-col items-start justify-between gap-8 px-4 py-14 md:flex-row md:items-center md:px-8">
-        <h2 className="display max-w-2xl text-3xl sm:text-5xl">La próxima vez que importe, <span className="text-clay">no mires la pantalla.</span></h2>
-        <a href="#top" className="btn flex min-h-[60px] w-full items-center justify-center bg-clay px-10 text-lg font-semibold text-ink hover:bg-bone md:w-auto">Elegir mi color · {money(CONFIG.price)}</a>
+      <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-12 px-5 py-28 md:flex-row md:items-center md:px-10 lg:py-40">
+        <Reveal><h2 className="display max-w-2xl text-4xl sm:text-6xl">La próxima vez que importe, <span className="text-clay">no mires la pantalla.</span></h2></Reveal>
+        <Reveal delay={150} className="w-full md:w-auto">
+          <a href="#top" className="btn shine flex min-h-[68px] w-full items-center justify-center bg-clay px-12 text-lg font-semibold text-ink hover:bg-bone md:w-auto">Elegir mi color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+        </Reveal>
       </div>
       <div className="border-t border-bone/15">
-        <div className="mx-auto flex max-w-[1300px] flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-bone/60 md:px-8">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-6 px-5 py-10 text-sm text-bone/60 md:px-10">
           <p>© {new Date().getFullYear()} Bravo · Fotografías de Unsplash con tratamiento analógico</p>
-          <nav className="flex gap-5" aria-label="Legal"><a href="#top" className="link-u">Envíos</a><a href="#top" className="link-u">Devoluciones</a><a href="#top" className="link-u">Privacidad</a><a href="#top" className="link-u">Términos</a></nav>
+          <nav className="flex gap-8" aria-label="Legal"><a href="#top" className="link-u">Envíos</a><a href="#top" className="link-u">Devoluciones</a><a href="#top" className="link-u">Privacidad</a><a href="#top" className="link-u">Términos</a></nav>
         </div>
       </div>
     </section>
@@ -290,8 +379,8 @@ function StickyBar() {
     io.observe(el); return () => io.disconnect();
   }, []);
   return (
-    <div aria-hidden={!show} className="fixed inset-x-3 z-50 flex items-center justify-between bg-ink p-2 pl-5 text-bone shadow-2xl transition-transform duration-300 md:hidden"
-      style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', transform: show ? 'none' : 'translateY(170%)' }}>
+    <div aria-hidden={!show} className="fixed inset-x-3 z-50 flex items-center justify-between bg-ink p-2 pl-5 text-bone shadow-2xl transition-transform duration-500 md:hidden"
+      style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', transform: show ? 'none' : 'translateY(170%)', transitionTimingFunction: 'cubic-bezier(.2,.7,.2,1)' }}>
       <span className="display text-lg">Bravo X9 · {money(CONFIG.price)}</span>
       <a href="#top" className="btn bg-clay px-5 py-3 text-sm font-semibold text-ink">Comprar</a>
     </div>
@@ -299,10 +388,11 @@ function StickyBar() {
 }
 
 function App() {
+  useJs();
   const [note, setNote] = useState('');
   return (
     <div className="overflow-x-clip">
-      <Header /><main><Buy note={note} onNote={setNote} /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar />
+      <ScrollBar /><Header /><main><Buy note={note} onNote={setNote} /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar />
     </div>
   );
 }
