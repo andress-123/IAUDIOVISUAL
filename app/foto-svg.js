@@ -30,7 +30,11 @@ for(let j=0;j<M;j++){cells.push([]);for(let i=0;i<N;i++){let sr=0,sg=0,sb=0,n=0;
  for(let y=j*C;y<j*C+C;y++)for(let x=i*C;x<i*C+C;x++){const c=px(x,y);sr+=c[0];sg+=c[1];sb+=c[2];n++}
  const q=lch(sr/n,sg/n,sb/n);cells[j].push({L:q.L,c:q.c,h:q.h,fig:true})}}
 // fondo = cielo azul conectado a los bordes
-const isSky=o=>o.h>=195&&o.h<290&&o.c>.04;
+// fondo: 'cielo' (azul, por defecto) o 'liso' (color casi uniforme, estimado en el borde)
+let bgL=0,bgA=0,bgB=0;
+if(process.argv[5]==='liso'){let n=0;const add=o=>{bgL+=o.L;bgA+=o.c*Math.cos(o.h*Math.PI/180);bgB+=o.c*Math.sin(o.h*Math.PI/180);n++};
+ for(let i=0;i<N;i++){add(cells[0][i]);add(cells[1][i])}for(let j=0;j<M;j++){add(cells[j][0]);add(cells[j][N-1])}bgL/=n;bgA/=n;bgB/=n}
+const isSky=process.argv[5]==='liso'?(o=>Math.hypot(o.L-bgL,o.c*Math.cos(o.h*Math.PI/180)-bgA,o.c*Math.sin(o.h*Math.PI/180)-bgB)<.04):(o=>o.h>=195&&o.h<290&&o.c>.04);
 const st=[];const seen=[];for(let j=0;j<M;j++)seen.push(new Array(N).fill(false));
 const push=(i,j)=>{if(i<0||j<0||i>=N||j>=M||seen[j][i]||!isSky(cells[j][i]))return;seen[j][i]=true;st.push([i,j])};
 for(let i=0;i<N;i++){push(i,0);push(i,M-1)}for(let j=0;j<M;j++){push(0,j);push(N-1,j)}
@@ -40,7 +44,7 @@ const Ls=[];cells.forEach(r=>r.forEach(o=>{if(o.fig)Ls.push(o.L)}));Ls.sort((a,b
 const pct=L=>{let lo=0,hi=Ls.length;while(lo<hi){const m=(lo+hi)>>1;if(Ls[m]<L)lo=m+1;else hi=m}return lo/Ls.length};
 const grp=[];BANDS.forEach((b,k)=>grp.push({fam:b[0],lo:k?BANDS[k-1][1]:0,hi:b[1]}));
 for(let j=0;j<M;j++)for(let i=0;i<N;i++){const o=cells[j][i];if(!o.fig)continue;
- const t0=pct(o.L);o.white=t0>.985;let t=Math.max(0,Math.min(.9999,t0+(rnd()-.5)*.05));
+ const t0=pct(o.L);o.white=t0>(process.argv[5]==='liso'?.995:.985);let t=Math.max(0,Math.min(.9999,t0+(rnd()-.5)*.05));
  let g=grp.find(g=>t<g.hi)||grp[grp.length-1];
  const u=Math.max(0,Math.min(.9999,(t-g.lo)/(g.hi-g.lo)));
  o.g=g.fam;o.c=FS[g.fam][Math.floor(u*8)]}
@@ -68,9 +72,10 @@ for(let z=0;z<9&&edge.length;z++){const[ei,ej]=edge[rnd()*edge.length|0];const r
  for(let j=Math.max(0,ej-r|0);j<Math.min(M,ej+r);j++)for(let i=Math.max(0,ei-r|0);i<Math.min(N,ei+r);i++){
   if(cells[j][i].fig||j>M-14)continue;const d=Math.hypot(i-ei,j-ej);if(d>r)continue;
   if(rnd()<.05*(1-d/r)){const q=rnd();parts.push({x:i,y:j,s:q<.4?2:q<.7?3:q<.88?5:8,c:col})}}}
-const pad=SC*8,OW=N*SC,OH=M*SC;
+let bx0=N,bx1=0,by0=M,by1=0;for(let j=0;j<M;j++)for(let i=0;i<N;i++)if(cells[j][i].fig){bx0=Math.min(bx0,i);bx1=Math.max(bx1,i);by0=Math.min(by0,j);by1=Math.max(by1,j)}
+const mg=10,pad=0,vx=Math.max(-8,bx0-mg)*SC,vy=Math.max(-8,by0-mg)*SC,OW=(Math.min(N+8,bx1+mg)-Math.max(-8,bx0-mg))*SC,OH=(Math.min(M+8,by1+mg)-Math.max(-8,by0-mg))*SC;
 const by={};rects.concat(parts).forEach(r=>(by[r.c]=by[r.c]||[]).push(r));
-let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-pad} ${-pad} ${OW+2*pad} ${OH+2*pad}" width="${OW+2*pad}" height="${OH+2*pad}" shape-rendering="crispEdges">\n<rect x="${-pad}" y="${-pad}" width="${OW+2*pad}" height="${OH+2*pad}" fill="#fff"/>\n`;
+let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${OW} ${OH}" width="${OW}" height="${OH}" shape-rendering="crispEdges">\n<rect x="${vx}" y="${vy}" width="${OW}" height="${OH}" fill="#fff"/>\n`;
 for(const c in by)svg+=`<g fill="${c}">`+by[c].map(r=>`<rect x="${r.x*SC}" y="${r.y*SC}" width="${r.s*SC}" height="${r.s*SC}"/>`).join('')+'</g>\n';
 svg+='</svg>\n';fs.writeFileSync(process.argv[3],svg);
 console.log(rects.length,'bloques',parts.length,'partículas',Object.keys(by).length,'colores');
