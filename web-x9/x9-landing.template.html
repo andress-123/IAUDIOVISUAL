@@ -53,6 +53,16 @@
   .acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .45s var(--ease); }
   .acc.open { grid-template-rows: 1fr; }
   .acc > div { overflow: hidden; }
+  @keyframes kb { from { transform: scale(1) translate3d(0,0,0) } to { transform: scale(1.1) translate3d(-1.2%,-1%,0) } }
+  .kb { animation: kb 9s ease-out both; }
+  .slide { opacity: 0; transition: opacity 1.8s ease; }
+  .slide.on { opacity: 1; }
+  @keyframes up { from { opacity: 0; transform: translateY(40px) } to { opacity: 1; transform: none } }
+  .up { animation: up 1.1s var(--ease) both; }
+  .hero-grain::after { content:""; position:absolute; inset:0; pointer-events:none; mix-blend-mode: overlay; opacity:.45; z-index: 2;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: jitter .6s steps(4) infinite; }
+  @keyframes jitter { 0% { background-position: 0 0 } 25% { background-position: -40px 20px } 50% { background-position: 30px -30px } 75% { background-position: -20px -50px } 100% { background-position: 0 0 } }
+  @keyframes scrollcue { 0% { transform: scaleY(0); transform-origin: top } 50% { transform: scaleY(1); transform-origin: top } 51% { transform-origin: bottom } 100% { transform: scaleY(0); transform-origin: bottom } }
   .dotpulse { position: relative; }
   .dotpulse::after { content:""; position:absolute; inset:0; border-radius:9999px; background:#2F8F5B; animation: ping 2s cubic-bezier(0,0,.2,1) infinite; }
   :focus-visible { outline: 3px solid #E66A28; outline-offset: 4px; }
@@ -148,26 +158,95 @@ function ScrollBar() {
   return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-[60] h-[3px] origin-left bg-clay" style={{ transform: `scaleX(${p})` }} />;
 }
 
-/* ============ Cabecera ============ */
+/* ============ Cabecera (transparente sobre la foto) ============ */
 const MSGS = ['Entrega en 24–72 h · envío gratis desde 40 €', '30 días para probarla', '12 meses de garantía'];
 function Header() {
-  const [i, setI] = useState(0); const [sc, setSc] = useState(false);
+  const [i, setI] = useState(0); const [over, setOver] = useState(true);
   useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % MSGS.length), 3600); return () => clearInterval(t); }, []);
-  useEffect(() => { const f = () => setSc(scrollY > 12); addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f); }, []);
+  useEffect(() => { const f = () => setOver(scrollY < innerHeight * 0.82); addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f); }, []);
+  const tone = over ? 'text-white' : 'text-ink';
   return (
-    <>
-      <div className="label flex h-10 items-center justify-center bg-ink text-bone"><span key={i} className="fade">{MSGS[i]}</span></div>
-      <header className={`sticky top-0 z-40 bg-bone/90 backdrop-blur transition-all duration-300 ${sc ? 'border-b border-[color:var(--line)] shadow-[0_10px_30px_-22px_rgba(0,0,0,.4)]' : 'border-b border-transparent'}`}>
-        <div className={`mx-auto flex max-w-[1240px] items-center justify-between px-5 transition-all duration-300 md:px-10 ${sc ? 'h-14' : 'h-20'}`}>
-          <a href="#top" className="flex items-baseline gap-2" aria-label="Bravo X9, inicio">
-            <span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label text-ink/55">X9</span>
-          </a>
-          <nav className="hidden gap-10 text-sm font-medium sm:flex" aria-label="Principal">
-            <a className="link-u" href="#caracteristicas">Características</a><a className="link-u" href="#opiniones">Opiniones</a><a className="link-u" href="#faq">Preguntas</a>
-          </nav>
+    <header className={`fixed inset-x-0 top-0 z-40 transition-all duration-500 ${over ? 'bg-transparent' : 'bg-bone/92 backdrop-blur shadow-[0_10px_30px_-22px_rgba(0,0,0,.45)]'}`}>
+      <div className="label flex h-9 items-center justify-center bg-ink text-bone"><span key={i} className="fade">{MSGS[i]}</span></div>
+      <div className={`mx-auto flex max-w-[1400px] items-center justify-between px-5 transition-all duration-500 md:px-10 ${over ? 'h-20' : 'h-16'} ${tone}`}>
+        <a href="#top" className="flex items-baseline gap-2" aria-label="Bravo X9, inicio">
+          <span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label opacity-70">X9</span>
+        </a>
+        <nav className="hidden gap-10 text-sm font-medium md:flex" aria-label="Principal">
+          <a className="link-u" href="#comprar">La cámara</a><a className="link-u" href="#caracteristicas">Características</a><a className="link-u" href="#opiniones">Opiniones</a><a className="link-u" href="#faq">Preguntas</a>
+        </nav>
+        <a href="#comprar" className={`btn shine flex min-h-[44px] items-center px-6 text-sm font-semibold ${over ? 'bg-white text-ink hover:bg-clay' : 'bg-ink text-bone hover:bg-clay hover:text-ink'}`}>Comprar</a>
+      </div>
+    </header>
+  );
+}
+
+/* ============ Home: foto a pantalla completa ============ */
+const SLIDES = [
+  { id: 'h_sea', cap: 'Atardecer · ISO 400', pos: '50% 62%' },
+  { id: 'h_stage', cap: 'Festival · flash off', pos: '50% 50%' },
+  { id: 'h_terrace', cap: 'Terraza · 21:40', pos: '50% 45%' },
+];
+function Hero() {
+  const [n, setN] = useState(0); const angle = useAngle();
+  useEffect(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setN(x => (x + 1) % SLIDES.length), 6500); return () => clearInterval(t);
+  }, []);
+  return (
+    <section id="top" className="relative isolate h-[100svh] min-h-[640px] w-full bg-ink text-white">
+      <div className="hero-grain absolute inset-0 -z-10 overflow-hidden">
+        {SLIDES.map((sl, i) => (
+          <div key={sl.id} className={`slide absolute inset-0 ${i === n ? 'on' : ''}`} aria-hidden={i !== n}>
+            {i === n && <img key={'k' + n} src={IMG[sl.id]} alt={i === 0 ? 'Atardecer sobre el mar con nubes violetas, foto analógica' : sl.cap + ', foto analógica'} className="kb h-full w-full object-cover" style={{ objectPosition: sl.pos }} />}
+            {i !== n && <img src={IMG[sl.id]} alt="" className="h-full w-full object-cover" style={{ objectPosition: sl.pos }} />}
+          </div>
+        ))}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/75 via-black/25 to-black/50" />
+      </div>
+
+      <div className="mx-auto flex h-full max-w-[1400px] flex-col justify-end px-5 pb-24 pt-40 md:px-10 md:pb-28">
+        {angle && <p key={angle.tag} className="label fade mb-5 inline-block self-start bg-white px-3 py-1.5 text-ink">{angle.tag}</p>}
+        <p className="label up mb-6 flex items-center gap-4 text-white/85" style={{ animationDelay: '.1s' }}><span className="h-px w-10 bg-white/80" />Unplug · Capture · Cherish</p>
+        <h1 className="display up max-w-[18ch] text-[clamp(2.6rem,8vw,7.6rem)] leading-[.95]" style={{ animationDelay: '.25s', textShadow: '0 6px 50px rgba(0,0,0,.5)' }}>Mira el momento. <span className="block text-clay">No la pantalla.</span></h1>
+        <p className="up mt-8 max-w-xl text-lg text-white/85 sm:text-xl" style={{ animationDelay: '.45s' }}>{angle ? angle.line : 'La cámara digital sin pantalla diseñada para entusiastas de la naturaleza y el caos del día a día.'}</p>
+        <div className="up mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: '.6s' }}>
+          <a href="#comprar" className="btn shine flex min-h-[64px] items-center bg-clay px-10 text-lg font-semibold text-ink hover:bg-white">Consigue la tuya · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+          <a href="#idea" className="btn hidden min-h-[64px] items-center border border-white/60 px-8 sm:flex text-lg font-medium text-white hover:bg-white hover:text-ink">Ver cómo se ve</a>
         </div>
-      </header>
-    </>
+      </div>
+
+      {/* contador de fotograma */}
+      <div className="label absolute right-5 top-36 z-10 hidden items-center gap-3 text-white/85 md:right-10 md:flex">
+        {SLIDES.map((sl, i) => <button key={sl.id} onClick={() => setN(i)} aria-label={'Foto ' + (i + 1)} className={`h-[2px] transition-all duration-500 ${i === n ? 'w-12 bg-clay' : 'w-6 bg-white/50 hover:bg-white'}`} />)}
+        <span key={n} className="fade ml-2">{String(n + 1).padStart(2, '0')}/{String(SLIDES.length).padStart(2, '0')} · {SLIDES[n].cap}</span>
+      </div>
+      <a href="#idea" aria-label="Bajar" className="absolute bottom-8 left-1/2 hidden h-14 w-px -translate-x-1/2 overflow-hidden bg-white/25 md:block"><span className="block h-full w-px bg-white" style={{ animation: 'scrollcue 2.2s ease-in-out infinite' }} /></a>
+
+      {/* la cámara asoma por debajo del hero */}
+      <a href="#comprar" aria-label="Ver la cámara Bravo X9" className="group absolute -bottom-10 right-[2%] z-20 w-[min(56vw,480px)] md:-bottom-20 md:right-[5%]">
+        <div className="floaty"><img src={IMG.marron} alt="Cámara Bravo X9" className="w-full drop-shadow-[0_40px_36px_rgba(0,0,0,.5)] transition duration-700 group-hover:-rotate-3 group-hover:scale-[1.04]" /></div>
+      </a>
+    </section>
+  );
+}
+
+/* ============ Manifiesto + banda de fotos ============ */
+function Statement() {
+  return (
+    <section id="idea" className="mx-auto max-w-[1400px] px-5 pb-12 pt-40 md:px-10 md:pt-56">
+      <Reveal><p className="label mb-8 text-ink/55">La idea</p>
+        <h2 className="display max-w-5xl text-4xl sm:text-6xl lg:text-7xl">Hacemos mil fotos al año y no vivimos <span className="text-clay">ninguna</span>.</h2></Reveal>
+      <Reveal delay={150}><p className="mt-12 max-w-xl text-xl leading-relaxed text-ink/75">Sacas el móvil, encuadras, repites, miras si has salido bien… y el momento ya pasó. La X9 quita la pantalla del medio: lo que ves es lo que ocurre, y lo que captas es una sorpresa que te espera en la tarjeta.</p></Reveal>
+    </section>
+  );
+}
+function Band() {
+  const ph = [['terrace', 'Terraza · 21:40', 'aspect-[4/5] md:aspect-[3/4]'], ['toast', 'Brindis', 'aspect-[4/5] md:aspect-[3/4]'], ['powder', 'Holi', 'aspect-[4/5] md:aspect-[3/4]']];
+  return (
+    <section aria-label="Fotos" className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+      {ph.map(([k, c, a], i) => <Reveal key={k} delay={i * 130}><Photo src={IMG[k]} alt={c + ', foto analógica'} className={a} caption={c} /></Reveal>)}
+    </section>
   );
 }
 
@@ -197,7 +276,7 @@ function Buy({ note, onNote }) {
   };
   const pick = i => { setCi(i); setView('front'); };
   return (
-    <section id="top" className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 pt-8 md:px-10 lg:grid-cols-12 lg:gap-20 lg:pb-36 lg:pt-14">
+    <section id="comprar" className="mx-auto grid max-w-[1240px] gap-12 px-5 pb-24 pt-32 md:px-10 lg:grid-cols-12 lg:gap-20 lg:pb-36 lg:pt-14">
       <Reveal className="lg:sticky lg:top-24 lg:col-span-7 lg:self-start">
         <div className="stage relative grid aspect-[4/3.3] place-items-center overflow-hidden transition-colors duration-700 sm:aspect-[4/3]" style={{ background: c.bg }}
           onMouseMove={move} onMouseLeave={() => setTilt({ x: 0, y: 0 })}>
@@ -421,7 +500,12 @@ function EmailPopup() {
   useEffect(() => {
     if (!P.enabled) return;
     try { if (sessionStorage.getItem('x9-popup')) return; } catch (e) {}
-    const t = setTimeout(() => setOpen(true), P.delaySec * 1000); return () => clearTimeout(t);
+    let timer = false, scrolled = false, fired = false;
+    const go = () => { if (!fired && timer && scrolled) { fired = true; setOpen(true); } };
+    const t = setTimeout(() => { timer = true; go(); }, P.delaySec * 1000);
+    const sc = () => { if (scrollY > innerHeight * 0.5) { scrolled = true; go(); } };
+    addEventListener('scroll', sc, { passive: true });
+    return () => { clearTimeout(t); removeEventListener('scroll', sc); };
   }, []);
   const close = () => { setOpen(false); try { sessionStorage.setItem('x9-popup', '1'); } catch (e) {} };
   useEffect(() => { if (!open) return; const k = e => e.key === 'Escape' && close(); addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, [open]);
@@ -458,15 +542,17 @@ function EmailPopup() {
 /* ============ CTA final + footer ============ */
 function Final() {
   return (
-    <section className="bg-ink text-bone">
-      <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-12 px-5 py-28 md:flex-row md:items-center md:px-10 lg:py-40">
-        <Reveal><h2 className="display max-w-2xl text-4xl sm:text-6xl">La próxima vez que importe, <span className="text-clay">no mires la pantalla.</span></h2></Reveal>
-        <Reveal delay={150} className="w-full md:w-auto">
-          <a href="#top" className="btn shine flex min-h-[68px] w-full items-center justify-center bg-clay px-12 text-lg font-semibold text-ink hover:bg-bone md:w-auto">Elegir mi color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
-        </Reveal>
+    <section className="relative isolate bg-ink text-bone">
+      <div className="hero-grain absolute inset-0 -z-10 overflow-hidden">
+        <img src={IMG.h_valley} alt="Valle con río y montañas al amanecer, foto analógica" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/25 to-black/30" />
       </div>
-      <div className="border-t border-bone/15">
-        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-6 px-5 py-10 text-sm text-bone/60 md:px-10">
+      <div className="mx-auto flex min-h-[80svh] max-w-[1400px] flex-col justify-end gap-10 px-5 pb-20 pt-40 md:px-10">
+        <Reveal><h2 className="display max-w-4xl text-4xl sm:text-6xl lg:text-7xl">La próxima vez que importe, <span className="text-clay">no mires la pantalla.</span></h2></Reveal>
+        <Reveal delay={150}><a href="#comprar" className="btn shine inline-flex min-h-[68px] w-full items-center justify-center bg-clay px-12 text-lg font-semibold text-ink hover:bg-white sm:w-auto">Elegir mi color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a></Reveal>
+      </div>
+      <div className="border-t border-white/20 bg-ink">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-6 px-5 py-10 text-sm text-bone/60 md:px-10">
           <p>© {new Date().getFullYear()} Bravo · Fotografías de Unsplash con tratamiento analógico</p>
           <nav className="flex gap-8" aria-label="Legal"><a href="#top" className="link-u">Envíos</a><a href="#top" className="link-u">Devoluciones</a><a href="#top" className="link-u">Privacidad</a><a href="#top" className="link-u">Términos</a></nav>
         </div>
@@ -478,15 +564,18 @@ function Final() {
 function StickyBar() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const el = document.getElementById('top'); if (!el) return;
-    const io = new IntersectionObserver(([e]) => setShow(!e.isIntersecting && e.boundingClientRect.top < 0), { threshold: 0 });
-    io.observe(el); return () => io.disconnect();
+    const el = document.getElementById('comprar'); if (!el) return;
+    let past = false, onBuy = false; const upd = () => setShow(past && !onBuy);
+    const sc = () => { past = scrollY > innerHeight * 0.9; upd(); };
+    const io = new IntersectionObserver(([e]) => { onBuy = e.isIntersecting; upd(); }, { threshold: 0.05 });
+    io.observe(el); addEventListener('scroll', sc, { passive: true }); sc();
+    return () => { io.disconnect(); removeEventListener('scroll', sc); };
   }, []);
   return (
     <div aria-hidden={!show} className="fixed inset-x-3 z-50 flex items-center justify-between bg-ink p-2 pl-5 text-bone shadow-2xl transition-transform duration-500 md:hidden"
       style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', transform: show ? 'none' : 'translateY(170%)', transitionTimingFunction: 'cubic-bezier(.2,.7,.2,1)' }}>
       <span className="display text-lg">Bravo X9 · {money(CONFIG.price)}</span>
-      <a href="#top" className="btn bg-clay px-5 py-3 text-sm font-semibold text-ink">Comprar</a>
+      <a href="#comprar" className="btn bg-clay px-5 py-3 text-sm font-semibold text-ink">Comprar</a>
     </div>
   );
 }
@@ -496,7 +585,7 @@ function App() {
   const [note, setNote] = useState('');
   return (
     <div className="overflow-x-clip">
-      <ScrollBar /><Header /><main><Buy note={note} onNote={setNote} /><Press /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
+      <ScrollBar /><Header /><main><Hero /><Statement /><Band /><Buy note={note} onNote={setNote} /><Press /><Features /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
     </div>
   );
 }
