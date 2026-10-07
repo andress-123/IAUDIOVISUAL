@@ -40,11 +40,12 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .btn:hover{background:var(--red);color:#fff}
 
 /* hero */
-.hero{padding:56px 0 24px;text-align:center}
-.hero h1{font-size:clamp(3.2rem,11vw,8rem);text-transform:uppercase;margin:14px 0 6px}
-.hero .sub{font-size:clamp(1rem,2.4vw,1.25rem);max-width:34em;margin:0 auto 28px;color:var(--mute)}
-.hero-img{margin:28px auto 0;max-width:1100px}
-.hero-img img{width:100%;height:auto}
+.hero{padding:36px 0 0;text-align:center}
+.hero h1{font-size:clamp(3rem,9vw,6.5rem);text-transform:uppercase;margin:10px 0 4px}
+.hero .sub{font-size:clamp(1rem,2.2vw,1.2rem);max-width:34em;margin:0 auto 22px;color:var(--mute)}
+.hero-img{margin-top:36px;width:100%;background:#b9b9bd}
+.hero-img img{width:100%;height:auto;aspect-ratio:2000/1116;object-fit:cover}
+@media(max-width:700px){.hero-img img{aspect-ratio:1/1;object-position:50% 55%}}
 
 /* drop */
 .drop{padding:72px 0}
@@ -122,10 +123,10 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
       <h1>Picatel</h1>
       <p class="sub">Aceite de oliva virgen extra picante de La Vera, Extremadura. Ingredientes 100% naturales.</p>
       <a class="btn" href="#suscribirse">Quiero ser el primero</a>
-      <div class="hero-img">
+    </div>
+    <div class="hero-img">
         <img src="img/picatel-hero.webp" width="2000" height="1116" alt="Frasco ámbar con gotero y caja de Picatel AOVE picante, flotando sobre fondo gris">
       </div>
-    </div>
   </section>
 
   <section class="drop" id="suscribirse">
