@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picatel — AOVE picante de La Vera</title>
+<meta name="description" content="Picatel es un aceite de oliva virgen extra picante de La Vera, Extremadura. Ingredientes 100% naturales. Próximo drop: suscríbete para ser el primero en saberlo.">
+<meta property="og:title" content="Picatel — AOVE picante de La Vera">
+<meta property="og:description" content="Aceite de oliva virgen extra picante de La Vera (Extremadura). Próximo drop: suscríbete.">
+<meta property="og:image" content="img/picatel-hero.webp">
+<meta name="theme-color" content="#ececee">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ececee; --bg2:#f6f6f7; --ink:#111; --mute:#6b6b70; --line:#d4d4d8;
+  --red:#e8402a; --amber:#6b3a12;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Instrument Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#121212;--bg2:#1a1a1b;--ink:#f1f1f1;--mute:#98989d;--line:#2e2e31}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.eyebrow{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.dot{display:inline-block;width:.55em;height:.55em;border-radius:50%;background:var(--red);margin-right:.6em;vertical-align:middle}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.05;letter-spacing:-.01em}
+
+/* nav */
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-family:var(--serif);font-size:1.6rem;letter-spacing:.02em;text-decoration:none;text-transform:uppercase}
+.btn{display:inline-block;background:var(--ink);color:var(--bg);border:0;padding:.85em 1.6em;font:600 .78rem var(--sans);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;cursor:pointer;transition:background .2s}
+.btn:hover{background:var(--red);color:#fff}
+
+/* hero */
+.hero{padding:56px 0 24px;text-align:center}
+.hero h1{font-size:clamp(3.2rem,11vw,8rem);text-transform:uppercase;margin:14px 0 6px}
+.hero .sub{font-size:clamp(1rem,2.4vw,1.25rem);max-width:34em;margin:0 auto 28px;color:var(--mute)}
+.hero-img{margin:28px auto 0;max-width:1100px}
+.hero-img img{width:100%;height:auto}
+
+/* drop */
+.drop{padding:72px 0}
+.drop-box{display:grid;gap:40px;grid-template-columns:1fr;border:1px solid var(--line);background:var(--bg2);padding:36px 24px}
+@media(min-width:860px){.drop-box{grid-template-columns:1.1fr 1fr;padding:56px;gap:64px}}
+.drop h2{font-size:clamp(2.2rem,5vw,3.6rem);margin:12px 0 14px}
+.count{display:flex;gap:10px;margin:22px 0}
+.count div{flex:1;border-top:2px solid var(--ink);padding-top:8px}
+.count b{display:block;font:500 2.2rem/1 var(--serif);font-variant-numeric:tabular-nums}
+.count span{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+form{display:flex;flex-direction:column;gap:12px}
+label{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+input[type=email]{width:100%;padding:.95em 1em;background:var(--bg);color:var(--ink);border:1px solid var(--ink);font:inherit;border-radius:0}
+input[type=email]:focus{outline:2px solid var(--red);outline-offset:2px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.8rem;color:var(--mute);letter-spacing:0;text-transform:none}
+.check input{margin-top:.3em;accent-color:var(--red)}
+.hp{position:absolute;left:-9999px}
+.msg{min-height:1.4em;font-size:.9rem}
+.msg.ok{color:#2e7d32}.msg.err{color:var(--red)}
+.note{font-size:.78rem;color:var(--mute)}
+
+/* product */
+.product{padding:72px 0;border-top:1px solid var(--line)}
+.grid{display:grid;gap:48px;grid-template-columns:1fr}
+@media(min-width:860px){.grid{grid-template-columns:1fr 1fr;align-items:center}}
+.product h2,.origin h2{font-size:clamp(2.2rem,5vw,3.6rem);margin:12px 0 18px}
+.product p,.origin p{color:var(--mute);max-width:32em;margin-bottom:1em}
+.specs{margin-top:28px;border-top:1px solid var(--line)}
+.specs div{display:flex;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.specs dt{color:var(--mute);letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;padding-top:.2em}
+.specs dd{text-align:right}
+.label-art{background:var(--bg2);border:1px solid var(--line);aspect-ratio:4/5;display:flex;flex-direction:column;justify-content:space-between;padding:28px;max-width:420px;margin:0 auto;width:100%}
+.label-art .row{display:flex;justify-content:space-between;font-size:.8rem;letter-spacing:.1em;color:var(--mute)}
+.label-art svg{width:56%;margin:0 auto;color:var(--ink)}
+
+/* origin */
+.origin{padding:72px 0;border-top:1px solid var(--line)}
+.points{display:grid;gap:28px;grid-template-columns:1fr;margin-top:36px}
+@media(min-width:760px){.points{grid-template-columns:repeat(3,1fr)}}
+.points h3{font-size:1.5rem;margin:6px 0}
+.points p{font-size:.92rem;color:var(--mute)}
+.points .n{font:.75rem var(--sans);letter-spacing:.16em;color:var(--red)}
+
+/* uses */
+.uses{padding:72px 0;border-top:1px solid var(--line)}
+.uses h2{font-size:clamp(2rem,4.5vw,3rem);margin:12px 0 28px}
+.uses ul{list-style:none;display:flex;flex-wrap:wrap;gap:10px}
+.uses li{border:1px solid var(--ink);padding:.5em 1.1em;font-size:.9rem;border-radius:999px}
+
+/* final cta */
+.cta{padding:96px 0;text-align:center;background:var(--ink);color:var(--bg)}
+.cta h2{font-size:clamp(2.4rem,7vw,5rem);margin-bottom:14px}
+.cta p{opacity:.7;margin-bottom:28px}
+.cta .btn{background:var(--bg);color:var(--ink)}
+.cta .btn:hover{background:var(--red);color:#fff}
+
+footer{padding:32px 0;font-size:.8rem;color:var(--mute)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#top">Picatel</a>
+    <a class="btn" href="#suscribirse">Avísame del drop</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow"><span class="dot"></span>Próximo drop · Edición limitada</p>
+      <h1>Picatel</h1>
+      <p class="sub">Aceite de oliva virgen extra picante de La Vera, Extremadura. Ingredientes 100% naturales.</p>
+      <a class="btn" href="#suscribirse">Quiero ser el primero</a>
+      <div class="hero-img">
+        <img src="img/picatel-hero.webp" width="2000" height="1116" alt="Frasco ámbar con gotero y caja de Picatel AOVE picante, flotando sobre fondo gris">
+      </div>
+    </div>
+  </section>
+
+  <section class="drop" id="suscribirse">
+    <div class="wrap">
+      <div class="drop-box">
+        <div>
+          <p class="eyebrow"><span class="dot"></span>Drop 01</p>
+          <h2>Pocas botellas. Mucho picante.</h2>
+          <p style="color:var(--mute)">Suscríbete y te avisamos antes que a nadie cuando abramos la venta. Sin spam: solo el aviso del drop y novedades de Picatel.</p>
+          <div class="count" id="count" aria-live="off">
+            <div><b id="d">--</b><span>días</span></div>
+            <div><b id="h">--</b><span>horas</span></div>
+            <div><b id="m">--</b><span>min</span></div>
+            <div><b id="s">--</b><span>seg</span></div>
+          </div>
+        </div>
+        <form id="form" novalidate>
+          <label for="email">Tu email</label>
+          <input type="email" id="email" name="email" placeholder="nombre@correo.com" autocomplete="email" required>
+          <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label class="check"><input type="checkbox" id="consent" required> Acepto recibir emails de Picatel sobre el drop y novedades. Puedo darme de baja en cualquier momento.</label>
+          <button class="btn" type="submit">Suscribirme</button>
+          <p class="msg" id="msg" role="status"></p>
+          <p class="note">Tus datos solo se usan para avisarte del lanzamiento.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="product">
+    <div class="wrap grid">
+      <div>
+        <p class="eyebrow">El producto</p>
+        <h2>AOVE picante, en gotas.</h2>
+        <p>Un aceite de oliva virgen extra con picante natural, pensado para usarse con medida: unas gotas sobre el plato final y todo cambia.</p>
+        <p>Presentado en frasco ámbar con gotero para dosificar el picante a tu gusto y proteger el aceite de la luz.</p>
+        <dl class="specs">
+          <div><dt>Tipo</dt><dd>AOVE picante</dd></div>
+          <div><dt>Origen</dt><dd>La Vera, Extremadura</dd></div>
+          <div><dt>Formato</dt><dd>Frasco con gotero · 50 ml</dd></div>
+          <div><dt>Ingredientes</dt><dd>100% naturales</dd></div>
+          <div><dt>Edición</dt><dd>Limitada y numerada</dd></div>
+        </dl>
+      </div>
+      <div class="label-art" aria-hidden="true">
+        <div class="row"><span>PICATEL</span><span>50 ML</span></div>
+        <svg viewBox="0 0 100 140" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round">
+          <path d="M52 132 C50 100 54 70 50 30"/><path d="M50 30 L40 12 M50 30 L50 8 M50 30 L62 14 M50 38 L34 26 M50 38 L68 28"/>
+          <path d="M51 96 C38 90 30 80 26 70"/><path d="M52 80 C64 76 72 68 76 58"/>
+          <circle cx="30" cy="52" r="4" fill="currentColor"/><circle cx="68" cy="92" r="3" fill="currentColor"/>
+          <path d="M72 110 C80 104 82 96 78 90" /><path d="M30 104 C24 98 22 92 26 86"/>
+        </svg>
+        <div class="row"><span>V / 2</span><span>1 / 25</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="origin">
+    <div class="wrap">
+      <p class="eyebrow">Origen</p>
+      <h2>De La Vera, a tu mesa.</h2>
+      <p>La Vera, en el norte de Extremadura, es tierra de pimiento y de sabores intensos. Picatel nace de ese territorio para llevar un picante limpio y natural al aceite de oliva virgen extra.</p>
+      <div class="points">
+        <div><span class="n">01</span><h3>Territorio</h3><p>Producto de La Vera, Extremadura. Cercanía y carácter de origen.</p></div>
+        <div><span class="n">02</span><h3>Natural</h3><p>Ingredientes 100% naturales. Sin artificios, solo aceite y picante.</p></div>
+        <div><span class="n">03</span><h3>A tu medida</h3><p>El gotero te deja decidir cuánto pica cada plato, gota a gota.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="uses">
+    <div class="wrap">
+      <p class="eyebrow">Cómo usarlo</p>
+      <h2>Unas gotas lo cambian todo.</h2>
+      <ul>
+        <li>Pizza</li><li>Huevos fritos</li><li>Pasta</li><li>Tostadas</li><li>Ensaladas</li><li>Carnes a la brasa</li><li>Arroces</li><li>Verduras asadas</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <p class="eyebrow" style="color:inherit;opacity:.6"><span class="dot"></span>Próximo drop</p>
+      <h2>No te quedes sin tu botella.</h2>
+      <p>Las ediciones limitadas vuelan. Suscríbete y entra primero.</p>
+      <a class="btn" href="#suscribirse">Suscribirme</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr"></span> Picatel · La Vera, Extremadura</span>
+    <span>AOVE picante · Ingredientes 100% naturales</span>
+  </div>
+</footer>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+// Fecha del próximo drop (hora de España). Cámbiala por la real. Déjala vacía ("") para ocultar la cuenta atrás.
+const DROP_DATE = "2026-11-15T19:00:00+01:00";
+// URL donde enviar las altas (Mailchimp, Formspree, Brevo, Make, tu API...). Recibe POST JSON {email}.
+// Mientras esté vacía, el email solo se guarda en este navegador (modo prueba).
+const SUBSCRIBE_ENDPOINT = "";
+
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* Cuenta atrás */
+(function(){
+  const box = document.getElementById('count');
+  if(!DROP_DATE){ box.style.display='none'; return; }
+  const t = new Date(DROP_DATE).getTime();
+  const el = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2,'0');
+  function tick(){
+    let diff = Math.max(0, t - Date.now());
+    const d = Math.floor(diff/864e5); diff%=864e5;
+    const h = Math.floor(diff/36e5); diff%=36e5;
+    const m = Math.floor(diff/6e4); const s = Math.floor(diff%6e4/1e3);
+    el('d').textContent=pad(d); el('h').textContent=pad(h); el('m').textContent=pad(m); el('s').textContent=pad(s);
+  }
+  tick(); setInterval(tick,1000);
+})();
+
+/* Suscripción */
+(function(){
+  const form = document.getElementById('form'), msg = document.getElementById('msg');
+  const say = (t,c)=>{msg.textContent=t;msg.className='msg '+c};
+  form.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const email = form.email.value.trim();
+    if(form.website.value) return; // honeypot
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return say('Introduce un email válido.','err');
+    if(!form.consent.checked) return say('Necesitamos tu consentimiento para avisarte.','err');
+    const btn = form.querySelector('button'); btn.disabled = true;
+    try{
+      if(SUBSCRIBE_ENDPOINT){
+        const r = await fetch(SUBSCRIBE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,source:'picatel-landing'})});
+        if(!r.ok) throw new Error(r.status);
+      }else{
+        try{const l=JSON.parse(localStorage.getItem('picatel_subs')||'[]');l.push(email);localStorage.setItem('picatel_subs',JSON.stringify(l));}catch(_){}
+      }
+      form.reset(); say('¡Listo! Te avisaremos antes que a nadie del drop.','ok');
+    }catch(_){ say('No hemos podido registrarte. Inténtalo de nuevo.','err'); }
+    btn.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>
