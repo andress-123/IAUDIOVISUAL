@@ -1,4 +1,5 @@
-<title>Bravo X9 Cámara Sin Pantalla</title>
+<title>Bravo X9 Cámara Digital Retro</title>
+<meta name="description" content="Bravo X9: cámara digital retro sin pantalla. Captura los momentos como son, con grano y carácter, en una tarjeta SD y sin pagar revelado.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -87,15 +88,16 @@ const IMG = window.IMG;
 
 /* ============ CONFIG: edita aquí ============ */
 const CONFIG = {
-  price: 39.90, oldPrice: 49.90, currency: '€',
+  price: 39.90, oldPrice: null, currency: '€',   // oldPrice: solo si fue tu precio real en los últimos 30 días
   pack2Discount: 0.10,
   checkoutUrl: '',          // enlace de pago real (Shopify, Stripe, WhatsApp…). Vacío = aviso de ejemplo.
-  reviewsAreExamples: true, // pon false cuando sustituyas las opiniones por reseñas reales
+  reviews: [],              // reseñas reales: [{ n: 'Nombre', t: 'Texto', stars: 5 }]. Vacío = la sección no se muestra
+  legal: { envios: '', devoluciones: '', privacidad: '', terminos: '' },  // URL de cada página legal; las vacías no se muestran
+  email: '', company: '',   // contacto y datos de empresa (razón social, CIF) para el pie
   freeShippingFrom: 40,
   addons: [                 // venta cruzada (precios de ejemplo)
     { id: 'funda', name: 'Funda protectora', desc: 'Para llevarla en la mochila sin un rasguño', price: 12 },
     { id: 'sd',    name: 'Tarjeta Micro SD 64G extra', desc: 'Más fotos sin pensar en el espacio', price: 9 },
-    { id: 'urgente', name: 'Envío urgente 24 h', desc: 'Para que llegue antes del viaje o la fiesta', price: 4.9, noShipCount: true },
   ],
   popup: { enabled: true, delaySec: 8, discount: '10 %', code: 'BIENVENIDA10', endpoint: '' }, // endpoint: tu proveedor de email
   press: [],                // medios donde has salido: ['Nombre del medio', ...]. Vacío = no se muestra
@@ -123,11 +125,7 @@ const COLORS = [
   { id: 'celeste', name: 'Celeste',      hex: '#56B2D8', bg: '#DCEAF0', acc: '43 155 216',  on: '15 15 14' },
   { id: 'oliva',   name: 'Verde oliva',  hex: '#58683A', bg: '#DEE2D3', acc: '122 154 46',  on: '15 15 14' },
 ];
-const REVIEWS = [
-  { n: 'Laura M.', t: 'La llevé a un festival y es otra forma de vivirlo. No miras la pantalla, solo disparas. Las fotos tienen un grano precioso.' },
-  { n: 'Carlos R.', t: 'Se la regalé a mi sobrino de 9 años y no la suelta. Lo de la tarjeta atornillada es genial para niños.' },
-  { n: 'Ana P.', t: 'Cuesta poco, pesa nada y da fotos con mucho carácter. La uso en los viajes en vez del móvil.' },
-];
+const REVIEWS = CONFIG.reviews;
 
 /* ============ Hooks y utilidades de animación ============ */
 function useJs() { useEffect(() => { document.documentElement.classList.add('js'); }, []); }
@@ -164,20 +162,20 @@ function ScrollBar() {
 }
 
 /* ============ Cabecera ============ */
-const MSGS = ['Feeling analógico · cero gasto en revelado', 'Entrega en 24–72 h · envío gratis desde 40 €', '30 días para probarla'];
+const MSGS = ['Entrega en 6–8 días · Envío gratis desde 40 € · 30 días para probarla'];
 function Header() {
   const [i, setI] = useState(0); const [sc, setSc] = useState(false);
   useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % MSGS.length), 3600); return () => clearInterval(t); }, []);
   useEffect(() => { const f = () => setSc(scrollY > 12); addEventListener('scroll', f, { passive: true }); f(); return () => removeEventListener('scroll', f); }, []);
   return (
     <header className={`sticky top-0 z-40 bg-bone/92 backdrop-blur transition-all duration-300 ${sc ? 'border-b border-[color:var(--line)]' : 'border-b border-transparent'}`}>
-      <div className="label flex h-9 items-center justify-center bg-ink text-bone"><span key={i} className="fade">{MSGS[i]}</span></div>
+      <div className="label flex min-h-9 items-center justify-center bg-ink px-4 py-2 text-center text-bone"><span key={i} className="fade">{MSGS[i]}</span></div>
       <div className={`mx-auto flex max-w-[1500px] items-center justify-between px-5 transition-all duration-300 md:px-10 ${sc ? 'h-14' : 'h-20'}`}>
         <a href="#top" className="flex items-baseline gap-2" aria-label="Bravo X9, inicio">
           <span className="display text-[26px]" style={{ textTransform: 'none' }}>Bravo<span className="text-clay">.</span></span><span className="label text-ink/55">X9</span>
         </a>
         <nav className="hidden gap-10 text-sm font-medium md:flex" aria-label="Principal">
-          <a className="link-u" href="#comprar">La cámara</a><a className="link-u" href="#caracteristicas">Características</a><a className="link-u" href="#opiniones">Opiniones</a><a className="link-u" href="#faq">Preguntas</a>
+          <a className="link-u" href="#comprar">La cámara</a><a className="link-u" href="#caracteristicas">Características</a>{CONFIG.reviews.length > 0 && <a className="link-u" href="#opiniones">Opiniones</a>}<a className="link-u" href="#faq">Preguntas</a>
         </nav>
         <a href="#comprar" className="btn shine flex min-h-[44px] items-center bg-ink px-6 text-sm font-semibold text-bone hover:bg-clay hover:text-onclay">Comprar</a>
       </div>
@@ -195,7 +193,7 @@ const TILES = [
   { k: 'toast',   c: 'Brindis',      l: 15, t: 72, w: 10,   ar: '3/4', f: 12 },
   { k: 'terrace', c: 'Terraza · 21:40', l: 76, t: 72, w: 17, ar: '3/2', f: 18 },
 ];
-const SUBTXT = 'La cámara con alma de carrete: grano, color y el gusto de esperar a ver las fotos. Sin gastar un euro en revelar.';
+const SUBTXT = 'Cámara digital retro sin pantalla. Captura los momentos como son, con los ojos cerrados y el pelo revuelto. Las fotos van a una tarjeta SD, sin pagar revelado.';
 function Hero({ ci }) {
   const angle = useAngle(); const ref = useRef(null);
   const move = e => { const el = ref.current; if (!el) return; el.style.setProperty('--mx', (e.clientX / innerWidth - .5).toFixed(3)); el.style.setProperty('--my', (e.clientY / innerHeight - .5).toFixed(3)); };
@@ -219,22 +217,24 @@ function Hero({ ci }) {
         ))}
         <div className="absolute inset-x-0 top-[3%] z-10 mx-auto flex w-[min(48%,720px)] flex-col items-center text-center">
           {angle && <p key={angle.tag} className="label fade mb-4 bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
-          <p className="label up mb-4 !text-[0.66rem] text-ink/55" style={{ animationDelay: '.1s' }}>Unplug · Capture · Cherish</p>
-          <h1 className="display up text-[clamp(1.8rem,3vw,3.2rem)]" style={{ animationDelay: '.25s' }}>Textura analógica.<span className="block text-clay">Cero revelados.</span></h1>
+          <p className="label up mb-4 !text-[0.66rem] text-ink/55" style={{ animationDelay: '.1s' }}>Cámara digital retro · sin pantalla</p>
+          <h1 className="display up text-[clamp(1.8rem,3vw,3.2rem)]" style={{ animationDelay: '.25s' }}>Los mejores momentos<span className="block text-clay">no son postales.</span></h1>
           <p className="up mt-4 max-w-sm text-[13.5px] leading-relaxed text-ink/65" style={{ animationDelay: '.4s' }}>{angle ? angle.line : SUBTXT}</p>
           <Cam cls="bloom -mt-1 w-[96%]" />
-          <a href="#comprar" className="btn shine up -mt-2 inline-flex min-h-[54px] items-center bg-clay px-8 text-[14px] font-semibold text-onclay hover:bg-ink hover:text-bone" style={{ animationDelay: '.7s' }}>Consigue la tuya · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+          <a href="#comprar" className="btn shine up -mt-2 inline-flex min-h-[54px] items-center bg-clay px-8 text-[14px] font-semibold text-onclay hover:bg-ink hover:text-bone" style={{ animationDelay: '.7s' }}>Elige tu color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+          <p className="up mt-4 text-[12px] text-ink/55" style={{ animationDelay: '.8s' }}>Entrega en 6–8 días · 30 días de devolución</p>
         </div>
       </div>
 
       {/* móvil */}
       <div className="px-5 pb-16 pt-10 md:hidden">
         {angle && <p key={angle.tag} className="label fade mb-4 inline-block bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
-        <p className="label up mb-4 !text-[0.66rem] text-ink/55">Unplug · Capture · Cherish</p>
-        <h1 className="display up text-[2.2rem]" style={{ animationDelay: '.15s' }}>Textura analógica.<span className="block text-clay">Cero revelados.</span></h1>
+        <p className="label up mb-4 !text-[0.66rem] text-ink/55">Cámara digital retro · sin pantalla</p>
+        <h1 className="display up text-[2.2rem]" style={{ animationDelay: '.15s' }}>Los mejores momentos<span className="block text-clay">no son postales.</span></h1>
         <Cam cls="bloom my-4 w-[110%] -ml-[5%]" />
         <p className="up text-[14px] leading-relaxed text-ink/65" style={{ animationDelay: '.3s' }}>{angle ? angle.line : SUBTXT}</p>
-        <a href="#comprar" className="btn shine up mt-6 flex min-h-[56px] w-full items-center justify-center bg-clay text-[14px] font-semibold text-onclay" style={{ animationDelay: '.45s' }}>Consigue la tuya · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+        <a href="#comprar" className="btn shine up mt-6 flex min-h-[56px] w-full items-center justify-center bg-clay text-[14px] font-semibold text-onclay" style={{ animationDelay: '.45s' }}>Elige tu color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
+        <p className="up mt-3 text-center text-[12px] text-ink/55">Entrega en 6–8 días · 30 días de devolución</p>
         <div className="mt-14 grid grid-cols-2 gap-x-4 gap-y-6">
           {TILES.map((t, i) => (
             <figure key={t.k} className={`bloom ${i % 2 ? 'mt-12' : ''}`} style={{ animationDelay: 0.3 + i * 0.1 + 's' }}>
@@ -253,10 +253,10 @@ function Statement() {
   return (
     <section id="idea" className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-44">
       <Reveal><p className="label mb-8 text-ink/55">La idea</p>
-        <h2 className="display max-w-5xl text-4xl sm:text-6xl lg:text-7xl">Todo el feeling del carrete. <span className="text-clay">Ninguna factura de revelado.</span></h2></Reveal>
+        <h2 className="display max-w-5xl text-4xl sm:text-6xl lg:text-7xl">Sales con los ojos cerrados. <span className="text-clay">Y es la mejor foto.</span></h2></Reveal>
       <div className="mt-14 grid gap-8 md:grid-cols-2 md:gap-16">
-        <Reveal delay={120}><p className="text-[15.5px] leading-[1.8] text-ink/75">Una cámara desechable parece barata hasta que la revelas, y cada foto cuesta dinero. La X9 te da lo que buscas de lo analógico: el grano, los colores, la imperfección y esa espera por ver cómo salió todo.</p></Reveal>
-        <Reveal delay={240}><p className="text-[15.5px] leading-[1.8] text-ink/75">Sin pantalla no hay segundas oportunidades, y por USB-C las fotos pasan a tu móvil al momento. Sin laboratorio, sin esperas y sin coste por foto.</p></Reveal>
+        <Reveal delay={120}><p className="text-[15.5px] leading-[1.8] text-ink/75">Nadie recuerda la foto perfecta. Recuerda la risa a medias, el pelo revuelto, al que parpadeó justo con el flash. Eso es lo que pasó de verdad, y los mejores momentos nunca son postales.</p></Reveal>
+        <Reveal delay={240}><p className="text-[15.5px] leading-[1.8] text-ink/75">La X9 no tiene pantalla, así que nadie pregunta «¿salgo bien?» ni repite el momento hasta que deja de serlo. Disparas, sigues a lo tuyo y descubres las fotos después, con el grano de las de siempre y sin pagar revelado.</p></Reveal>
       </div>
     </section>
   );
@@ -272,7 +272,7 @@ function Buy({ note, onNote, ci, setCi }) {
   const angle = useAngle();
   const c = COLORS[ci];
   const totalT = qty === 2 ? CONFIG.price * 2 * (1 - CONFIG.pack2Discount) : CONFIG.price;
-  const oldT = CONFIG.oldPrice * qty;
+  const oldT = (CONFIG.oldPrice || CONFIG.price) * qty;
   const addT = CONFIG.addons.filter(a => extras.includes(a.id)).reduce((t, a) => t + a.price, 0);
   const shipBase = totalT + CONFIG.addons.filter(a => extras.includes(a.id) && !a.noShipCount).reduce((t, a) => t + a.price, 0);
   const left = Math.max(0, CONFIG.freeShippingFrom - shipBase);
@@ -310,15 +310,15 @@ function Buy({ note, onNote, ci, setCi }) {
       </Reveal>
 
       <Reveal delay={120} className="lg:col-span-5 lg:pt-4">
-        <p className="label flex items-center gap-3"><span className="dotpulse h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · entrega en 24–72 h</p>
+        <p className="label flex items-center gap-3"><span className="dotpulse h-2 w-2 rounded-full bg-[#2F8F5B]" />En stock · entrega en 6–8 días</p>
         <h1 className="display mt-6 text-5xl sm:text-6xl">Bravo X9</h1>
         {angle && <p key={angle.tag} className="label fade mt-6 inline-block bg-ink px-3 py-1.5 text-bone">{angle.tag}</p>}
-        <p key={angle ? angle.tag : 'd'} className="fade mt-5 text-[15px] text-ink/70">{angle ? angle.line : <>La cámara con alma analógica y sin pantalla. <span className="text-clay">El grano de siempre, sin pagar revelado.</span></>}</p>
+        <p key={angle ? angle.tag : 'd'} className="fade mt-5 text-[15px] text-ink/70">{angle ? angle.line : <>Cámara digital retro, sin pantalla. <span className="text-clay">Los momentos como son, no como posan.</span></>}</p>
 
         <p className="mt-10 flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <span className="display text-5xl">{money(total)}</span>
-          <s className="text-ink/45">{money(old)}</s>
-          <span className="label bg-clay px-2.5 py-1.5 text-onclay">Ahorras {money(save)}</span>
+          {oldT - totalT > 0.005 && <><s className="text-ink/45">{money(old)}</s>
+          <span className="label bg-clay px-2.5 py-1.5 text-onclay">Ahorras {money(save)}</span></>}
         </p>
 
         <fieldset className="mt-12">
@@ -370,17 +370,16 @@ function Buy({ note, onNote, ci, setCi }) {
         {note && <p key={note} role="status" className="fade mt-4 bg-clay/15 p-4 text-sm font-medium">{note}</p>}
 
         <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[color:var(--line)] pt-8 text-sm">
-          {['Envío gratis desde 40 €', '30 días de devolución', '12 meses de garantía', 'Pago seguro'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
+          {['Entrega en 6–8 días', 'Envío gratis desde 40 €', '30 días de devolución', 'Garantía legal incluida'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
         </ul>
         <ul className="mt-8 grid gap-3.5 border-t border-[color:var(--line)] pt-8 text-[14px]">
-          {['Textura y color de carrete, sin pagar un solo revelado', 'Sin pantalla ni ajustes: apuntas, disparas y descubres después', '8 MP · flash LED · 3 estilos de película · USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
+          {['Como las que se revelan, pero sin pagar revelado: tus fotos van a una tarjeta SD', 'Sin pantalla ni ajustes: apuntas, disparas y sigues disfrutando', '8 MP · flash LED · 3 estilos de película · USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
         </ul>
         <div className="mt-8 border-l-2 border-clay bg-black/[.03] px-5 py-4">
           <p className="label mb-2 text-ink">Qué esperar</p>
-          <p className="text-[13.5px] leading-relaxed text-ink/70">Momentos reales, no fotos perfectas. Sensor de 8 MP (3264 × 2448) y foco fijo: la estética de una compacta clásica, con su grano y su carácter.</p>
+          <p className="text-[13.5px] leading-relaxed text-ink/70">Aquí no hay fotos perfectas, y esa es la gracia. Sensor de 8 MP (3264 × 2448) y foco fijo: imágenes con el grano y el carácter de una compacta clásica, con sus ojos cerrados y sus pelos revueltos incluidos.</p>
         </div>
-        <p className="mt-6 border-t border-[color:var(--line)] pt-6 text-sm text-ink/70"><span className="label mr-2 text-ink">En la caja</span>Cámara, manual y cable USB-C. Funciona al sacarla de la caja.</p>
-        <p className="mt-6 text-xs text-ink/50">Precios y condiciones de ejemplo; ajústalos a tu política real.</p>
+        <p className="mt-6 border-t border-[color:var(--line)] pt-6 text-sm text-ink/70"><span className="label mr-2 text-ink">En la caja</span>Cámara, manual y cable USB-C.</p>
       </Reveal>
     </section>
   );
@@ -389,10 +388,10 @@ function Buy({ note, onNote, ci, setCi }) {
 /* ============ Franja «Sin…» ============ */
 function Sin() {
   const it = [
-    ['pantalla', 'Nada que revisar ni borrar. Vives el momento.'],
+    ['pantalla', 'Nada que revisar. Nadie repite el momento para salir mejor.'],
     ['carrete', 'Las fotos se guardan en una tarjeta Micro SD, hasta 128G.'],
     ['revelado', 'Sacas la tarjeta o conectas el USB-C. Sin laboratorio ni coste por foto.'],
-    ['apps', 'Sin cuentas, sin nube y sin registrarte.'],
+    ['apps', 'Sin cuentas ni nube. Archivos JPG normales.'],
   ];
   return (
     <section aria-label="Sin" className="border-y border-[color:var(--line)]">
@@ -409,6 +408,28 @@ function Sin() {
   );
 }
 
+/* ============ Cómo funciona ============ */
+function How() {
+  const st = [
+    ['Dispara', 'Apuntas por el visor y aprietas. Sin pantalla, sin ajustes y sin repetir.'],
+    ['Guarda', 'Las fotos se quedan en la tarjeta Micro SD, hasta 128G.'],
+    ['Descubre', 'Conecta el USB-C o saca la tarjeta cuando quieras. Sin laboratorio.'],
+  ];
+  return (
+    <section id="como" className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-40">
+      <Reveal><p className="label mb-6 text-ink/55">Cómo funciona</p><h2 className="display max-w-3xl text-4xl sm:text-5xl">Tres pasos. Sin laboratorio.</h2></Reveal>
+      <ol className="mt-16 grid gap-10 md:grid-cols-3 md:gap-14">
+        {st.map(([t, d], i) => (
+          <Reveal key={t} delay={i * 120} as="li">
+            <div className="line mb-6 h-[2px] bg-ink" /><p className="label text-ink/50">0{i + 1}</p>
+            <h3 className="display mt-2 text-2xl">{t}</h3><p className="mt-3 max-w-xs text-[14px] leading-relaxed text-ink/65">{d}</p>
+          </Reveal>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 /* ============ Características ============ */
 function Photo({ src, alt, className = '', caption }) {
   return (
@@ -420,18 +441,18 @@ function Photo({ src, alt, className = '', caption }) {
 }
 function Features() {
   const f = [
-    ['Revelado gratis', 'Una desechable se paga cada vez que la revelas. Aquí pasas las fotos por USB-C y ya está.'],
-    ['Textura de carrete', 'Retro, Classic y Mono: grano, color y contraste de película cargados en la cámara.'],
-    ['Sin pantalla', 'No hay nada que perfeccionar. Vives el momento y descubres las fotos después.'],
+    ['Momentos sin posar', 'Sin pantalla nadie revisa ni repite. Salen los gestos de verdad, también los de ojos cerrados.'],
+    ['Como las que se revelan', 'El mismo ritual de disparar y esperar a ver las fotos, sin pagar un revelado por cada una.'],
+    ['Textura de película', 'Retro, Classic y Mono: estilos con grano y color inspirados en la película.'],
     ['Se usa mil veces', 'No la tiras: la recargas y vuelves a usarla en cada viaje, fiesta o domingo.'],
-    ['A prueba de peques', 'Un botón, un selector de flash y una Micro SD que solo sale con un destornillador.'],
+    ['Tarjeta bien guardada', 'La Micro SD solo sale con un destornillador, así que no se pierde por el camino.'],
     ['Flash LED y 95 g', 'Flash de 2×3 W para interiores y fiestas. Cabe en el bolsillo y carga por USB-C.'],
   ];
   const s = [['retro', 'Retro'], ['classic', 'Classic'], ['mono', 'Mono']];
   return (
     <section id="caracteristicas" className="border-t border-[color:var(--line)]">
       <div className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-40">
-        <Reveal><p className="label mb-6 text-ink/55">Características</p><h2 className="display max-w-3xl text-4xl sm:text-6xl">El carrete, sin la factura.</h2></Reveal>
+        <Reveal><p className="label mb-6 text-ink/55">Características</p><h2 className="display max-w-3xl text-4xl sm:text-6xl">Hecha para captar, no para posar.</h2></Reveal>
         <dl className="mt-20 grid gap-x-14 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
           {f.map(([t, d], i) => (
             <Reveal key={t} delay={(i % 3) * 120}>
@@ -465,11 +486,11 @@ function Press() {
 function Compare() {
   const rows = [
     ['Sin pantalla que te distraiga', true, true],
-    ['Grano y look de película', true, true],
+    ['Estética de película', true, true],
     ['Sin pagar revelado', true, false],
-    ['Fotos en tu móvil al momento (USB-C)', true, false],
+    ['Tus fotos en una tarjeta SD, cuando tú quieras', true, false],
     ['Reutilizable y recargable', true, false],
-    ['Coste por foto', 'Ninguno', 'Un revelado por carrete'],
+    ['Coste por foto', 'Ninguno', 'Pagas el revelado'],
   ];
   const Cell = ({ v, hi }) => typeof v === 'string'
     ? <span className={`text-[13.5px] ${hi ? 'font-semibold' : 'text-ink/60'}`}>{v}</span>
@@ -502,19 +523,19 @@ function Compare() {
 
 /* ============ Opiniones ============ */
 function Reviews() {
+  if (!CONFIG.reviews.length) return null;
   return (
     <section id="opiniones" className="border-t border-[color:var(--line)] bg-[#EDEAE2]">
       <div className="mx-auto max-w-[1240px] px-5 py-28 md:px-10 lg:py-40">
         <Reveal className="flex flex-wrap items-end justify-between gap-6">
           <h2 className="display text-4xl sm:text-6xl">Lo que dicen<br />quienes la usan.</h2>
-          {CONFIG.reviewsAreExamples && <p className="label border border-dashed border-ink/40 px-4 py-3 text-ink/60">Opiniones de ejemplo · sustitúyelas por reseñas reales</p>}
         </Reveal>
         <div className="mt-20 grid gap-6 md:grid-cols-3 lg:gap-8">
           {REVIEWS.map((r, i) => (
             <Reveal key={r.n} delay={i * 130}>
               <figure className="lift flex h-full flex-col justify-between bg-bone p-8 lg:p-10">
                 <div>
-                  <p className="text-xl tracking-wider text-clay" style={{ '--d': i * 130 + 'ms' }} aria-label="5 de 5 estrellas">{[0, 1, 2, 3, 4].map(n => <span key={n} className="star" style={{ '--i': n }}>★</span>)}</p>
+                  <p className="text-xl tracking-wider text-clay" style={{ '--d': i * 130 + 'ms' }} aria-label={`${r.stars || 5} de 5 estrellas`}>{[0, 1, 2, 3, 4].slice(0, r.stars || 5).map(n => <span key={n} className="star" style={{ '--i': n }}>★</span>)}</p>
                   <blockquote className="mt-6 text-[15px] leading-[1.75]">“{r.t}”</blockquote>
                 </div>
                 <figcaption className="label mt-10 text-ink/60">{r.n}</figcaption>
@@ -542,13 +563,17 @@ function Acc({ q, a }) {
 }
 function SpecsFaq() {
   const qs = [
-    ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas al móvil o al ordenador.'],
-    ['¿Es una cámara analógica de verdad?', 'Es una cámara digital retro, sin pantalla, como las que se revelan, pero las fotos se guardan en una tarjeta Micro SD. Tienes el grano y la espera de descubrirlas, sin carrete y sin pagar revelado.'],
-    ['¿Tengo que pagar revelado?', 'No. A diferencia de una cámara desechable, no hay laboratorio: conectas la cámara y las fotos pasan a tu móvil u ordenador sin coste por foto.'],
+    ['¿Es analógica o digital?', 'Digital. Es una cámara retro sin pantalla, como las que se revelan, pero guarda las fotos en una tarjeta Micro SD. Tienes el grano y la espera de descubrirlas, sin carrete y sin pagar revelado.'],
+    ['¿De verdad no tiene pantalla?', 'No. Tiene un mini OLED trasero con el estilo de película y el contador de fotos. Las imágenes se ven al pasarlas a un ordenador o a otro dispositivo.'],
+    ['¿Y si salgo con los ojos cerrados?', 'Pasará, y ese es el plan. La X9 no tiene pantalla para repetir la foto, así que se queda lo que ocurrió de verdad: ojos cerrados, pelo revuelto y risas a medias.'],
+    ['¿Tengo que pagar revelado?', 'No. No hay laboratorio: sacas la tarjeta o conectas el cable USB-C y las fotos están en tu ordenador. Sin coste por foto.'],
+    ['¿Cómo saco las fotos?', 'Con el cable USB-C incluido conectado a tu ordenador, o sacando la Micro SD con un destornillador y usando un lector. Son archivos JPG normales, sin app ni cuenta.'],
+    ['¿Puedo pasarlas al móvil?', 'Si tu móvil admite USB-C o tienes un lector de tarjetas compatible, sí. Funciona igual que con cualquier tarjeta Micro SD.'],
+    ['¿Qué tarjeta necesito?', 'Admite tarjetas Micro SD de hasta 128G.'],
     ['¿Se puede reutilizar?', 'Sí. Se recarga por USB-C y sirve para tantas fotos como quepan en la tarjeta. No se tira después de usarla.'],
-    ['¿Cómo saco las fotos?', 'Por USB-C con el cable incluido o sacando la Micro SD con un destornillador. Son JPG normales, sin app ni cuenta.'],
-    ['¿Qué calidad tiene?', 'Sensor de 8 MP con foco fijo: estética de compacta clásica, con grano y carácter. Para disfrutar, no para sustituir a una réflex.'],
-    ['¿Y si no me convence?', 'Tienes 30 días para devolverla. (Ajusta el plazo a tu política real.)'],
+    ['¿Qué calidad tiene?', 'Sensor de 8 MP con foco fijo: fotos con grano y carácter de compacta clásica, no perfectas, y esa es la idea. Para disfrutar, no para sustituir a una réflex.'],
+    ['¿Cuánto tarda en llegar?', 'Entre 6 y 8 días desde que haces el pedido.'],
+    ['¿Y si no me convence?', 'Tienes 30 días para devolverla.'],
   ];
   return (
     <section id="faq" className="border-t border-[color:var(--line)]">
@@ -595,11 +620,12 @@ function EmailPopup() {
         <button onClick={close} aria-label="Cerrar" className="absolute right-4 top-4 grid h-10 w-10 place-items-center text-2xl transition hover:rotate-90 hover:text-clay">×</button>
         {!done ? (
           <form onSubmit={submit}>
-            <p className="label text-clay">Antes de irte</p>
+            <p className="label text-clay">Regalo de bienvenida</p>
             <h2 id="pp-t" className="display mt-4 text-3xl">{P.discount} en tu primera cámara</h2>
-            <p className="mt-4 text-ink/70">Apúntate y te damos el código al momento. Nada de spam, solo novedades de verdad.</p>
+            <p className="mt-4 text-ink/70">Apúntate y te damos el código al momento. Solo te escribiremos cuando haya algo que contar.</p>
             <label htmlFor="pp-email" className="sr-only">Correo electrónico</label>
             <input id="pp-email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@correo.com" className="mt-6 w-full border border-ink/30 bg-white px-4 py-4 outline-none transition focus:border-ink" />
+            <label htmlFor="pp-ok" className="mt-4 flex cursor-pointer items-start gap-3 text-[12px] leading-relaxed text-ink/60"><input id="pp-ok" type="checkbox" required className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]" /><span>Acepto recibir emails de Bravo{CONFIG.legal.privacidad ? <> y la <a href={CONFIG.legal.privacidad} className="underline">política de privacidad</a></> : ' y la política de privacidad'}. Puedo darme de baja cuando quiera.</span></label>
             <button className="btn shine mt-3 flex min-h-[56px] w-full items-center justify-center bg-clay font-semibold text-onclay hover:bg-ink hover:text-bone">Quiero mi código</button>
             <button type="button" onClick={close} className="mt-4 w-full text-center text-sm text-ink/50 link-u">No, gracias</button>
           </form>
@@ -608,7 +634,7 @@ function EmailPopup() {
             <p className="label text-[#2F8F5B]">✓ Listo</p>
             <h2 className="display mt-4 text-3xl">Tu código</h2>
             <p className="display mt-6 border-2 border-dashed border-ink px-4 py-5 text-3xl tracking-wider">{P.code}</p>
-            <p className="mt-4 text-sm text-ink/60">Úsalo al comprar para tener {P.discount} de descuento.{!P.endpoint && ' (Demo: conecta tu proveedor de email en CONFIG.popup.endpoint para guardar los correos.)'}</p>
+            <p className="mt-4 text-sm text-ink/60">Úsalo en tu primera compra para tener {P.discount} de descuento.</p>
             <button onClick={close} className="btn mt-6 flex min-h-[52px] w-full items-center justify-center bg-ink font-semibold text-bone hover:bg-clay hover:text-onclay">Seguir mirando</button>
           </div>
         )}
@@ -622,15 +648,15 @@ function Final() {
   return (
     <section className="bg-ink text-bone">
       <div className="mx-auto flex max-w-[1240px] flex-col items-start justify-between gap-12 px-5 py-28 md:flex-row md:items-center md:px-10 lg:py-40">
-        <Reveal><h2 className="display max-w-2xl text-4xl sm:text-6xl">El feeling de lo analógico, <span className="text-clay">sin gastar en revelar.</span></h2></Reveal>
+        <Reveal><h2 className="display max-w-2xl text-4xl sm:text-6xl">No guardes postales. <span className="text-clay">Guarda momentos.</span></h2></Reveal>
         <Reveal delay={150} className="w-full md:w-auto">
           <a href="#comprar" className="btn shine flex min-h-[68px] w-full items-center justify-center bg-clay px-12 text-base font-semibold text-onclay hover:bg-bone md:w-auto">Elegir mi color · {money(CONFIG.price)} <span className="arrow ml-3">→</span></a>
         </Reveal>
       </div>
       <div className="border-t border-bone/15">
         <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-6 px-5 py-10 text-sm text-bone/60 md:px-10">
-          <p>© {new Date().getFullYear()} Bravo · Fotografías de Unsplash con tratamiento analógico</p>
-          <nav className="flex gap-8" aria-label="Legal"><a href="#top" className="link-u">Envíos</a><a href="#top" className="link-u">Devoluciones</a><a href="#top" className="link-u">Privacidad</a><a href="#top" className="link-u">Términos</a></nav>
+          <p>© {new Date().getFullYear()} Bravo{CONFIG.company ? ' · ' + CONFIG.company : ''}{CONFIG.email ? ' · ' + CONFIG.email : ''}</p>
+          <nav className="flex flex-wrap gap-x-8 gap-y-2" aria-label="Legal">{[['Envíos', 'envios'], ['Devoluciones', 'devoluciones'], ['Privacidad', 'privacidad'], ['Términos', 'terminos']].filter(([, k]) => CONFIG.legal[k]).map(([t, k]) => <a key={k} href={CONFIG.legal[k]} className="link-u">{t}</a>)}</nav>
         </div>
       </div>
     </section>
@@ -666,7 +692,7 @@ function App() {
   }, [ci]);
   return (
     <div className="overflow-x-clip">
-      <ScrollBar /><Header /><main><Hero ci={ci} /><Statement /><Buy note={note} onNote={setNote} ci={ci} setCi={setCi} /><Press /><Sin /><Features /><Compare /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
+      <ScrollBar /><Header /><main><Hero ci={ci} /><Statement /><Buy note={note} onNote={setNote} ci={ci} setCi={setCi} /><Press /><Sin /><How /><Features /><Compare /><Reviews /><SpecsFaq /><Final /></main><StickyBar /><EmailPopup />
     </div>
   );
 }
