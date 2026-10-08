@@ -7,6 +7,8 @@
   // decoración con la paleta
   const mid = k => PALETA[k][4];
   $('logo').innerHTML = ['blue', 'cyan', '', 'yellow', 'red', 'green', '', 'blue', 'yellow'].map(k => `<b style="background:${k ? mid(k) : 'transparent'}"></b>`).join('');
+  const pasos = k => 'linear-gradient(90deg,' + PALETA[k].map((h, i) => `${h} ${i * 12.5}% ${(i + 1) * 12.5}%`).join(',') + ')';
+  $('r1').style.background = pasos('green'); $('r2').style.background = pasos('blue'); $('r3').style.background = 'linear-gradient(90deg,' + PALETA.red.slice().reverse().map((h, i) => `${h} ${i * 12.5}% ${(i + 1) * 12.5}%`).join(',') + ')';
   $('franja').innerHTML = ['blue', 'cyan', 'green', 'yellow', 'red'].map(k => `<span style="background:linear-gradient(90deg,${PALETA[k][0]},${PALETA[k][7]})"></span>`).join('');
   $('paleta').innerHTML = Object.keys(PALETA).map(k => `<div title="${k}">${PALETA[k].map(h => `<span style="background:${h}" title="${h}"></span>`).join('')}</div>`).join('');
   $('sws').innerHTML = COLORES.map(([k, n]) => `<button class="sw" type="button" data-k="${k}" aria-label="${n}" aria-pressed="${k === S.familia}" style="background:linear-gradient(135deg,${PALETA[k][0]},${PALETA[k][7]})"></button>`).join('');
@@ -90,14 +92,14 @@
 
   // descargas
   function bajar(blob, nombre) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
-  $('d-svg').onclick = () => S.svg && bajar(new Blob([S.svg], { type: 'image/svg+xml' }), 'cuadros.svg');
+  $('d-svg').onclick = () => S.svg && bajar(new Blob([S.svg], { type: 'image/svg+xml' }), 'playground.svg');
   $('d-png').onclick = () => {
     if (!S.svg) return;
     const im = new Image(), m = S.svg.match(/width="(\d+)" height="(\d+)"/), w = +m[1], h = +m[2], k = Math.max(1, Math.round(2000 / w));
     im.onload = () => {
       const c = document.createElement('canvas'); c.width = w * k; c.height = h * k;
       const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
-      c.toBlob(b => bajar(b, 'cuadros.png'), 'image/png');
+      c.toBlob(b => bajar(b, 'playground.png'), 'image/png');
     };
     im.src = S.url;
   };

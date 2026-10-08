@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cuadros · convierte tu foto en una nube de píxeles</title>
-<meta name="description" content="Sube una foto y conviértela en una nube de cuadros o en un retrato de píxeles de tamaños mezclados, con una paleta cerrada de degradados. Se procesa en tu navegador y se descarga en SVG o PNG.">
+<title>Playground · forma y color en cuadros</title>
+<meta name="description" content="Playground: ejercicio de exploración de la expansión de la forma y el color como elemento de diseño. Sube una foto y conviértela en una nube de cuadros o en un retrato de píxeles de tamaños mezclados, con una paleta cerrada de degradados. Se procesa en tu navegador y se descarga en SVG o PNG.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#fff; --ink:#0b0f1a; --muted:#5b6475; --line:#e3e6ec; --panel:#f6f7fa;
@@ -12,14 +13,19 @@
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Rubik,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
   a{color:inherit}
   .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
   header{padding:22px 0 0}
-  .marca{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em}
+  .marca{display:flex;align-items:center;gap:10px}
   .marca i{display:grid;grid-template-columns:repeat(3,9px);grid-auto-rows:9px;gap:2px}
   .marca i b{display:block}
-  h1{font-size:clamp(30px,4.6vw,50px);line-height:1.05;letter-spacing:-.025em;margin:16px 0 8px}
+  .wm{position:relative;display:inline-block;margin:26px 0 8px;font-weight:300;font-size:clamp(40px,9vw,104px);line-height:1;letter-spacing:.01em;color:#3a3a3a}
+  h1{margin:0;font:inherit}
+  .wm .r{position:absolute;display:block}
+  .wm .r1{left:13%;top:-24%;width:10%;height:58%}
+  .wm .r2{left:46%;top:46%;width:19%;height:62%}
+  .wm .r3{left:79%;top:52%;width:14%;height:44%}
   .lead{font-size:clamp(17px,2vw,20px);color:var(--muted);max-width:56ch;margin:0 0 6px}
   .franja{display:flex;height:6px;margin:18px 0 0}
   .franja span{flex:1}
@@ -71,9 +77,9 @@
 <body>
 <header>
   <div class="wrap">
-    <div class="marca" aria-label="Cuadros"><i id="logo" aria-hidden="true"></i><span>Cuadros</span></div>
-    <h1>Tu foto, hecha de cuadros.</h1>
-    <p class="lead">Sube una imagen y conviértela en una nube de píxeles de tamaños mezclados, con degradados de una paleta cerrada. Se procesa en tu navegador: la foto no sale de tu equipo.</p>
+    <div class="marca" aria-hidden="true"><i id="logo"></i></div>
+    <h1 class="wm" aria-label="Playground"><span aria-hidden="true">PLAYGROUND</span><i class="r r1" id="r1" aria-hidden="true"></i><i class="r r2" id="r2" aria-hidden="true"></i><i class="r r3" id="r3" aria-hidden="true"></i></h1>
+    <p class="lead">Ejercicio de exploración de la expansión de la forma y el color como elemento de diseño. Sube una imagen y conviértela en una nube de cuadros con la paleta cerrada. Se procesa en tu navegador: la foto no sale de tu equipo.</p>
     <div class="franja" id="franja" aria-hidden="true"></div>
   </div>
 </header>

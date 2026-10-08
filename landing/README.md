@@ -1,4 +1,4 @@
-# Cuadros · landing
+# Playground · landing
 
 Web estática (HTML + JS, sin dependencias ni servidor) para convertir una foto en
 una nube de cuadros o en un retrato de píxeles de tamaños mezclados con la paleta exacta.
