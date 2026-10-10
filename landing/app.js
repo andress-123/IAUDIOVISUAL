@@ -4,23 +4,18 @@
   const COLORES = [['blue', 'Azul'], ['cyan', 'Cian'], ['green', 'Verde'], ['yellow', 'Naranja'], ['red', 'Magenta']];
   const S = { img: null, modo: 'nube', familia: 'blue', degradado: true, relleno: .55, dispersion: 1, celda: 5, fondo: .05, esquema: 'triAzulMagentaNaranja', semilla: 7, svg: null, url: null };
 
-  // decoración con la paleta
-  const mid = k => PALETA[k][4];
-  $('logo').innerHTML = ['blue', 'cyan', '', 'yellow', 'red', 'green', '', 'blue', 'yellow'].map(k => `<b style="background:${k ? mid(k) : 'transparent'}"></b>`).join('');
-  const pasos = k => 'linear-gradient(90deg,' + PALETA[k].map((h, i) => `${h} ${i * 12.5}% ${(i + 1) * 12.5}%`).join(',') + ')';
-  $('r1').style.background = pasos('green'); $('r2').style.background = pasos('blue'); $('r3').style.background = 'linear-gradient(90deg,' + PALETA.red.slice().reverse().map((h, i) => `${h} ${i * 12.5}% ${(i + 1) * 12.5}%`).join(',') + ')';
-  $('franja').innerHTML = ['blue', 'cyan', 'green', 'yellow', 'red'].map(k => `<span style="background:linear-gradient(90deg,${PALETA[k][0]},${PALETA[k][7]})"></span>`).join('');
-  $('paleta').innerHTML = Object.keys(PALETA).map(k => `<div title="${k}">${PALETA[k].map(h => `<span style="background:${h}" title="${h}"></span>`).join('')}</div>`).join('');
-  $('sws').innerHTML = COLORES.map(([k, n]) => `<button class="sw" type="button" data-k="${k}" aria-label="${n}" aria-pressed="${k === S.familia}" style="background:linear-gradient(135deg,${PALETA[k][0]},${PALETA[k][7]})"></button>`).join('');
+  // identidad: solo la paleta exacta
+  $('logo').innerHTML = ['blue', 'cyan', '', 'yellow', 'red', 'green', '', 'blue', 'yellow'].map(k => `<b style="background:${k ? PALETA[k][4] : 'transparent'}"></b>`).join('');
+  $('sws').innerHTML = COLORES.map(([k, n]) => `<button class="sw" type="button" data-k="${k}" aria-label="${n}" aria-pressed="${k === S.familia}"><span style="background:linear-gradient(135deg,${PALETA[k][0]},${PALETA[k][7]})"></span></button>`).join('');
   $('esquema').innerHTML = Object.keys(ESQUEMAS).map(k => `<option value="${k}">${ESQUEMAS[k].nombre}</option>`).join('');
   $('esquema').value = S.esquema;
 
-  // ejemplo procedural (sin fotos de terceros)
+  // ejemplo procedural, sin fotos de terceros
   function ejemplo() {
     const c = document.createElement('canvas'); c.width = 600; c.height = 600;
     const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 600, 600);
     x.save(); x.beginPath(); x.arc(300, 300, 250, 0, 7); x.clip();
-    let g = x.createRadialGradient(220, 210, 20, 300, 300, 260); g.addColorStop(0, '#9fd6ff'); g.addColorStop(.55, '#2d7fe0'); g.addColorStop(1, '#0a2e8a');
+    const g = x.createRadialGradient(220, 210, 20, 300, 300, 260); g.addColorStop(0, '#9fd6ff'); g.addColorStop(.55, '#2d7fe0'); g.addColorStop(1, '#0a2e8a');
     x.fillStyle = g; x.fillRect(0, 0, 600, 600);
     const mancha = (pts, col) => { x.fillStyle = col; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; x.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2); } x.closePath(); x.fill(); };
     mancha([[200, 190], [270, 170], [330, 200], [320, 260], [290, 320], [250, 380], [220, 330], [190, 260]], 'rgba(170,230,120,.95)');
@@ -30,48 +25,50 @@
     return x.getImageData(0, 0, 600, 600);
   }
 
+  function aviso(txt) { const a = $('aviso'); a.textContent = txt; a.hidden = !txt; if (txt) { clearTimeout(aviso.t); aviso.t = setTimeout(() => { a.hidden = true; }, 5000); } }
+
   function cargarArchivo(f) {
-    if (!f || !f.type.startsWith('image/')) { $('estado').textContent = 'Ese archivo no parece una imagen.'; return; }
+    if (!f || !f.type.startsWith('image/')) { aviso('Ese archivo no parece una imagen.'); return; }
     const url = URL.createObjectURL(f), im = new Image();
     im.onload = () => {
       const k = Math.min(1, 600 / im.width, 760 / im.height), w = Math.max(40, Math.round(im.width * k)), h = Math.max(40, Math.round(im.height * k));
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, w, h);
-      S.img = x.getImageData(0, 0, w, h); URL.revokeObjectURL(url); pintar();
+      S.img = x.getImageData(0, 0, w, h); URL.revokeObjectURL(url); mostrar(); pintar();
     };
-    im.onerror = () => { $('estado').textContent = 'No he podido abrir esa imagen.'; };
+    im.onerror = () => aviso('No he podido abrir esa imagen.');
     im.src = url;
   }
+  function mostrar() { $('vacio').hidden = true; $('acciones').hidden = false; $('dock').hidden = false; }
 
   let t = 0;
   function pintar() { clearTimeout(t); t = setTimeout(ahora, 120); }
   function ahora() {
-    if (!S.img) { S.img = ejemplo(); }
-    $('lienzo').classList.add('cargando');
+    if (!S.img) return;
+    $('stage').classList.add('carga');
     setTimeout(() => {
       const r = generar(S.img, { modo: S.modo, familia: S.familia, degradado: S.degradado, relleno: S.relleno, dispersion: S.dispersion, celda: S.celda, fondo: S.fondo, esquema: S.esquema, semilla: S.semilla });
-      $('lienzo').classList.remove('cargando');
-      if (!r) { $('estado').textContent = 'No he podido separar la figura del fondo. Prueba con fondo liso o sube la detección de fondo.'; return; }
+      $('stage').classList.remove('carga');
+      if (!r) { aviso('No he podido separar la figura del fondo. Prueba con fondo liso o abre Ajustes y sube la detección de fondo.'); return; }
       S.svg = r.svg; if (S.url) URL.revokeObjectURL(S.url);
       S.url = URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' }));
-      const im = $('res'); im.src = S.url; im.hidden = false;
-      $('estado').textContent = r.bloques.toLocaleString('es') + ' cuadros';
-      $('d-svg').disabled = $('d-png').disabled = false;
+      const im = $('res'); im.src = S.url; im.hidden = false; requestAnimationFrame(() => im.classList.add('ok'));
+      $('meta').textContent = r.bloques.toLocaleString('es') + ' cuadros';
     }, 20);
   }
 
   // controles
-  const ajustes = () => {
+  function ajustes() {
     $('v-relleno').textContent = Math.round(S.relleno * 100) + '%';
     $('v-celda').textContent = S.celda;
     $('v-dispersion').textContent = S.dispersion === 0 ? 'ninguno' : Math.round(S.dispersion * 100) + '%';
     $('v-fondo').textContent = Math.round(S.fondo * 100);
     const nube = S.modo === 'nube';
-    $('g-color').classList.toggle('oculto', !nube); $('g-relleno').classList.toggle('oculto', !nube); $('g-esquema').classList.toggle('oculto', nube);
-    $('t-nube').setAttribute('aria-selected', nube); $('t-pixel').setAttribute('aria-selected', !nube);
-  };
+    $('m-nube').setAttribute('aria-pressed', nube); $('m-pixel').setAttribute('aria-pressed', !nube);
+    $('sws').hidden = !nube; $('esquema').hidden = nube; $('c-relleno').hidden = !nube; $('c-degradado').hidden = !nube;
+  }
   const modo = m => { S.modo = m; S.celda = m === 'nube' ? 5 : 3; $('celda').value = S.celda; ajustes(); pintar(); };
-  $('t-nube').onclick = () => modo('nube'); $('t-pixel').onclick = () => modo('pixel');
+  $('m-nube').onclick = () => modo('nube'); $('m-pixel').onclick = () => modo('pixel');
   $('sws').onclick = e => { const b = e.target.closest('.sw'); if (!b) return; S.familia = b.dataset.k; document.querySelectorAll('.sw').forEach(s => s.setAttribute('aria-pressed', s === b)); pintar(); };
   $('degradado').onchange = e => { S.degradado = e.target.checked; pintar(); };
   $('esquema').onchange = e => { S.esquema = e.target.value; pintar(); };
@@ -80,15 +77,21 @@
   $('dispersion').oninput = e => { S.dispersion = e.target.value / 100; ajustes(); pintar(); };
   $('fondo').oninput = e => { S.fondo = e.target.value / 100; ajustes(); pintar(); };
   $('otra').onclick = () => { S.semilla = (S.semilla * 7919 + 13) >>> 0; pintar(); };
-  $('subir').onclick = () => $('fichero').click();
-  $('fichero').onchange = e => cargarArchivo(e.target.files[0]);
-  $('ejemplo').onclick = () => { S.img = ejemplo(); pintar(); };
+  const abrirAj = v => { $('ajustes').hidden = !v; $('aj').setAttribute('aria-expanded', v); };
+  $('aj').onclick = () => abrirAj($('ajustes').hidden);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') abrirAj(false); });
+  document.addEventListener('pointerdown', e => { if (!$('ajustes').hidden && !e.target.closest('#ajustes,#aj')) abrirAj(false); });
 
-  // arrastrar y soltar
-  const lz = $('lienzo');
-  ['dragenter', 'dragover'].forEach(n => lz.addEventListener(n, e => { e.preventDefault(); lz.classList.add('arrastrando'); }));
-  ['dragleave', 'drop'].forEach(n => lz.addEventListener(n, e => { e.preventDefault(); lz.classList.remove('arrastrando'); }));
-  lz.addEventListener('drop', e => cargarArchivo(e.dataTransfer.files[0]));
+  $('subir').onclick = $('nueva').onclick = () => $('fichero').click();
+  $('fichero').onchange = e => { cargarArchivo(e.target.files[0]); e.target.value = ''; };
+  $('ejemplo').onclick = () => { S.img = ejemplo(); mostrar(); pintar(); };
+
+  // arrastrar y soltar en toda la pantalla
+  const st = $('stage');
+  ['dragenter', 'dragover'].forEach(n => document.addEventListener(n, e => { e.preventDefault(); st.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(n => document.addEventListener(n, e => { e.preventDefault(); if (n === 'drop' || e.target === document.documentElement) st.classList.remove('drag'); }));
+  document.addEventListener('drop', e => cargarArchivo(e.dataTransfer.files[0]));
+  document.addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])][0]; if (f) cargarArchivo(f); });
 
   // descargas
   function bajar(blob, nombre) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
@@ -104,5 +107,5 @@
     im.src = S.url;
   };
 
-  ajustes(); pintar();
+  ajustes();
 })();
