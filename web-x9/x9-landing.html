@@ -88,13 +88,13 @@ const IMG = window.IMG;
 
 /* ============ CONFIG: edita aquí ============ */
 const CONFIG = {
-  price: 39.90, oldPrice: null, currency: '€',   // oldPrice: solo si fue tu precio real en los últimos 30 días
+  price: 49.90, oldPrice: null, currency: '€',   // oldPrice: solo si fue tu precio real en los últimos 30 días
   pack2Discount: 0.10,
   checkoutUrl: '',          // enlace de pago real (Shopify, Stripe, WhatsApp…). Vacío = aviso de ejemplo.
   reviews: [],              // reseñas reales: [{ n: 'Nombre', t: 'Texto', stars: 5 }]. Vacío = la sección no se muestra
   legal: { envios: '', devoluciones: '', privacidad: '', terminos: '' },  // URL de cada página legal; las vacías no se muestran
   email: '', company: '',   // contacto y datos de empresa (razón social, CIF) para el pie
-  freeShippingFrom: 40,
+  freeShippingFrom: 0,   // 0 = envío gratis siempre (la barra de progreso se oculta)
   addons: [                 // venta cruzada (precios de ejemplo)
     { id: 'funda', name: 'Funda protectora', desc: 'Para llevarla en la mochila sin un rasguño', price: 12 },
     { id: 'sd',    name: 'Tarjeta Micro SD 64G extra', desc: 'Más fotos sin pensar en el espacio', price: 9 },
@@ -162,7 +162,7 @@ function ScrollBar() {
 }
 
 /* ============ Cabecera ============ */
-const MSGS = ['Entrega en 6–8 días · Envío gratis desde 40 € · 30 días para probarla'];
+const MSGS = ['Entrega en 6–8 días · Envío gratis · 30 días para probarla'];
 function Header() {
   const [i, setI] = useState(0); const [sc, setSc] = useState(false);
   useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % MSGS.length), 3600); return () => clearInterval(t); }, []);
@@ -359,10 +359,10 @@ function Buy({ note, onNote, ci, setCi }) {
           </div>
         </fieldset>
 
-        <div className="mt-8">
+        {CONFIG.freeShippingFrom > 0 && <div className="mt-8">
           <p className="mb-2 text-sm">{left > 0 ? <>Te faltan <b>{money(left)}</b> para el envío gratis.</> : <b className="text-[#2F8F5B]">✓ Tienes envío gratis.</b>}</p>
           <div className="h-1.5 w-full bg-black/10"><div className="h-full bg-clay transition-[width] duration-700" style={{ width: Math.min(100, shipBase / CONFIG.freeShippingFrom * 100) + '%' }} /></div>
-        </div>
+        </div>}
 
         <button onClick={buy} className={`btn shine group mt-8 flex min-h-[68px] w-full items-center justify-center gap-3 text-base font-semibold ${added ? 'bg-[#2F8F5B] text-white' : 'bg-clay text-onclay hover:bg-ink hover:text-bone'}`}>
           {added ? <span className="fade">✓ Añadido</span> : <span>Comprar ahora · {money(grand)} <span className="arrow">→</span></span>}
@@ -370,7 +370,7 @@ function Buy({ note, onNote, ci, setCi }) {
         {note && <p key={note} role="status" className="fade mt-4 bg-clay/15 p-4 text-sm font-medium">{note}</p>}
 
         <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[color:var(--line)] pt-8 text-sm">
-          {['Entrega en 6–8 días', 'Envío gratis desde 40 €', '30 días de devolución', 'Garantía legal incluida'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
+          {['Entrega en 6–8 días', 'Envío gratis', '30 días de devolución', 'Garantía legal incluida'].map(t => <li key={t} className="flex gap-2.5"><span className="text-clay">✓</span>{t}</li>)}
         </ul>
         <ul className="mt-8 grid gap-3.5 border-t border-[color:var(--line)] pt-8 text-[14px]">
           {['Como las que se revelan, pero sin pagar revelado: tus fotos van a una tarjeta SD', 'Sin pantalla ni ajustes: apuntas, disparas y sigues disfrutando', '8 MP · flash LED · 3 estilos de película · USB-C'].map(t => <li key={t} className="flex gap-4"><span className="mt-[11px] h-1.5 w-1.5 shrink-0 bg-ink" />{t}</li>)}
